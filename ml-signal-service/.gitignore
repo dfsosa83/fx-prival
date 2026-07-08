@@ -1,0 +1,35 @@
+# ── data ──────────────────────────────────────────────────────────────────────
+data/raw/mt5/
+data/raw/histdata/
+data/raw/yahoo/
+data/interim/
+data/processed/
+!data/raw/mt5/**/.gitkeep
+!data/raw/histdata/**/.gitkeep
+!data/raw/yahoo/**/.gitkeep
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+
+# ── credentials ───────────────────────────────────────────────────────────────
+.env
+
+# ── models ────────────────────────────────────────────────────────────────────
+models_bin/
+*.sav
+*.pkl
+*.joblib
+
+# ── python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+
+# ── notebooks ─────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ── os ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db

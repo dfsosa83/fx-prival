@@ -1,0 +1,57 @@
+pairs:
+  majors:
+    - symbol: EURUSD
+      mt5: "EURUSD"
+      yahoo: "EURUSD=X"
+    - symbol: GBPUSD
+      mt5: "GBPUSD"
+      yahoo: "GBPUSD=X"
+    - symbol: USDJPY
+      mt5: "USDJPY"
+      yahoo: "USDJPY=X"
+    - symbol: USDCHF
+      mt5: "USDCHF"
+      yahoo: "USDCHF=X"
+    - symbol: USDCAD
+      mt5: "USDCAD"
+      yahoo: "USDCAD=X"
+    - symbol: AUDUSD
+      mt5: "AUDUSD"
+      yahoo: "AUDUSD=X"
+    - symbol: NZDUSD
+      mt5: "NZDUSD"
+      yahoo: "NZDUSD=X"
+
+  minors:
+    - symbol: EURAUD
+      mt5: "EURAUD"
+      yahoo: "EURAUD=X"
+    - symbol: EURCHF
+      mt5: "EURCHF"
+      yahoo: "EURCHF=X"
+    - symbol: AUDJPY
+      mt5: "AUDJPY"
+      yahoo: "AUDJPY=X"
+
+  commodities:
+    - symbol: XAUUSD
+      mt5: "XAUUSD"
+      yahoo: "GC=F"           # Gold futures — closest free proxy for spot gold
+
+timeframes:
+  - name: H1
+    mt5_constant: TIMEFRAME_H1
+    yahoo_interval: "1h"
+    bars_per_day: 24
+  - name: D1
+    mt5_constant: TIMEFRAME_D1
+    yahoo_interval: "1d"
+    bars_per_day: 1
+
+history:
+  start_date: "2019-01-01"    # MT5 training history start
+
+inference:
+  lookback_bars: 300           # bars fetched at inference time (must cover all indicator windows)
+  max_staleness_minutes_h1: 90
+  max_staleness_minutes_d1: 1500  # ~25 hours — covers overnight gaps

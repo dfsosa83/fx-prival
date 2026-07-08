@@ -1,0 +1,15 @@
+paths:
+  # Raw data — one folder per source, one sub-folder per timeframe
+  raw_mt5:      data/raw/mt5         # training history from MetaTrader 5
+  raw_histdata: data/raw/histdata    # optional: manual CSV drops from HistData.com
+  raw_yahoo:    data/raw/yahoo       # inference-time latest bars from Yahoo Finance
+
+  # Downstream steps (populated in later steps)
+  interim:      data/interim         # merged / cleaned
+  processed:    data/processed       # feature-engineered, ready for modeling
+
+mt5:
+  # All sensitive credentials are loaded from .env — do not hardcode here
+  terminal_path_default: "C:/Program Files/MetaTrader 5/terminal64.exe"
+  history_timezone: "Etc/UTC"
+  market_timezone: "Asia/Qatar"

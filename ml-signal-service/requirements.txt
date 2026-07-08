@@ -1,0 +1,16 @@
+# ── data ──────────────────────────────────────────────────────────────────────
+MetaTrader5>=5.0.45      # Windows only — used for training data download
+yfinance>=0.2.40         # inference-time bar fetching (cross-platform)
+pandas>=2.0.0
+numpy>=1.26.0
+pyyaml>=6.0.0
+python-dotenv>=1.0.0
+pytz>=2024.1
+
+# ── step 02 — features (placeholder) ─────────────────────────────────────────
+ta>=0.11.0               # technical indicators library
+
+# ── step 04 — training (placeholder) ─────────────────────────────────────────
+scikit-learn>=1.4.0
+xgboost>=2.1.0
+lightgbm>=4.5.0
