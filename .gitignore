@@ -1,0 +1,8 @@
+# API keys and secrets
+apy-key-roo-code.txt
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
