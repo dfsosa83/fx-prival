@@ -6,3 +6,15 @@ apy-key-roo-code.txt
 __pycache__/
 *.py[cod]
 .venv/
+
+# Kilo local config
+.kilo/
+
+# Temporary workspace
+to_agents/
+
+# Large raw data files
+*.xlsx
+
+# Generated PDFs (regenerable from .md)
+*.pdf
