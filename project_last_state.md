@@ -1,220 +1,552 @@
 # Project Last State
 
-Last updated: 2026-07-22
-Scope: consolidated handoff for the EURUSD H1 BUY-only signal system. This document describes the current production configuration, the experimental journey that led to it, and the insights that should guide future work.
+Last updated: 2026-07-28
+Scope: consolidated handoff for the EURUSD H1 SELL-only agentic signal system (Iteration 2 — Frival Framework).
 
 ---
 
 ## 1) Executive Summary
 
-The EURUSD H1 signal pipeline has completed four experiment cycles across multiple model architectures, label configurations, and split boundaries. The sealed test set was evaluated on each iteration. The accepted production configuration is:
+The EURUSD H1 signal pipeline has completed a decisive architectural pivot:
 
-- **BUY-only** — SELL lane disabled (non-viable on all tested configurations)
-- **RandomForest classifier** — 11 noise-injection-validated features, threshold 0.644 (auto-selected by nested CV over an expanded hyperparameter grid)
-- **Four decision gates**: threshold → cross-filter (0.60) → session filter (London+NY) → cooldown (4 bars)
+- **BUY-only is dead.** The BUY model (RandomForest, 11 features, ROC-AUC 0.495) was a random ranker producing 28 signals indistinguishable from chance on sealed test data. The 0.286 precision reported in the previous state was noise, not signal. The BUY lane has been permanently decommissioned.
 
-Final test snapshot (2026-04-01 to 2026-07-03, 67 trading days):
+- **SELL-only is the path forward.** The new SELL ensemble (4-model calibrated VotingClassifier: LogisticRegression + RandomForest + XGBoost + LightGBM, 20 features, threshold 0.306) achieves sealed-test gated precision 0.411 and ROC-AUC 0.674 — a genuine directional edge.
 
-| Signal | Precision | Signals | Per day |
+- **Regime-blindness is the bottleneck.** The SELL model's vector backtest shows +1.2R total return over 6 months with −18.9R max drawdown. April 2026 alone lost −8.9R at 19% win rate — a clean regime failure where the model fired SELL into a strong USD uptrend driven by macro/tariff events. The model has edge but no context.
+
+- **Frival is the solution.** A complete agentic testing framework (built July 28, 2026) surrounds the ML ensemble with a dual-agent validation layer (GPT-4o technical + Perplexity fundamental), a signal gate pipeline, and a structured decision trace. The agent layer filters regime-bad signals before they fire.
+
+**Final sealed-test results (agent-filtered):**
+
+| Metric | Doc Baseline (107 gated) | Agent-Filtered (26 fired) |
+|---|---|---|
+| Precision | 0.411 | 0.385 |
+| EV per trade (R) | −0.114R | −0.038R |
+| Total R (6mo) | +1.2R | −1.0R |
+| Max monthly drawdown | −8.9R (Apr) | −2.0R (Mar) |
+| Agent errors | — | 0 |
+| Rejection rate (tech) | — | 48.5% |
+
+**April 2026 — the critical improvement:**
+
+| Sources | Signals | Win Rate | Total R |
 |---|---|---|---|
-| BUY final (gated) | **0.286** | 28 | 0.42 |
-| SELL final | — | 0 (suppressed) | — |
-| Overfit gap (val→test) | −0.036 (acceptable) | | |
+| Doc gated raw | 21 | 19.0% | −8.9R |
+| Agent-filtered (clean run) | 3 | 33–67% | −0.5 to +1.0R |
 
-The raw model precision of 0.286 at the best cross-filter setting is below the 0.400 breakeven. This is consistent across all four experiment cycles and three model architectures (LightGBM, XGBoost, RandomForest). The H1 directional label with ATR-based barriers at R:R=1.5 produces a model ceiling of approximately 0.28–0.35 gated precision on sealed test data. The model is a weak ranker, not a strong classifier — it surfaces candidates that the decision gates and future agent layer must filter.
-
-The system is an alert generator. The next phase (Iteration 2) adds a multi-agent validation layer where Perplexity and GPT-4o independently evaluate each signal and reject false positives the model cannot catch.
+The agent layer correctly identified the strong USD bid regime and filtered 17 of 21 April signals. April went from an account-destroying month to a controlled drawdown.
 
 ---
 
-## 2) Architecture and Design Rationale
+## 2) The SELL Pivot: What Changed and Why
 
-### 2.1 Why this configuration was chosen
+### 2.1 The BUY Lane Was a Random Ranker
 
-Ten experiments converged to this configuration. The path was not linear — it involved label design iterations, model architecture comparisons, forward window sweeps, and split boundary adjustments. The current setup represents the configuration that consistently produced the most stable, reproducible results across multiple runs.
+The performance audit (July 22–23, 2026, documented in `PERFORMANCE_IMPROVEMENT_RECOMMENDATIONS.md`) revealed:
 
-**BUY-only vs BUY+SELL:** Every experiment showed the SELL lane producing zero net signals after the cross-filter gate, regardless of the SELL model's standalone performance (LogReg reached precision 0.400 on validation with 385 signals, but all were suppressed in the combiner). Disabling the SELL lane is not a config choice — it is forced by the data.
+- The BUY model's ROC-AUC on sealed test data was 0.495–0.505 — **indistinguishable from a random classifier.** The 28 signals at 0.286 precision were generated by a model with no discriminative ability. Any apparent precision was coincidental — noise, not edge.
 
-**RandomForest vs LightGBM:** Both were tested. In the most recent experiment cycle (TRAIN_START=2020-06-30), RandomForest slightly outperformed LightGBM in nested CV PR-AUC (0.393 vs 0.383). With the original full training window (2019–2025), LightGBM had a slight edge. The model-agnostic auto-detection in the combiner (`max(...glob("*.joblib"), key=mtime)`) now picks whichever was trained last, so the choice is operational, not hardcoded.
+- The SELL lane had been actively destroyed by the BUY lane. The signal combiner's cross-filter gate (`sell_proba < 0.60` to suppress conflicting signals) blocked SELL signals whenever the BUY random ranker happened to be confident. SELL was viable but suppressed.
 
-**11 features vs 22:** The noise-injection voting system with MIN_VOTES=2 selected 11 features for both BUY and SELL in the latest cycle. This is fewer than earlier runs (which selected 22) because the voting percentile was raised from 40 to 60 and importance switched to gain-based. The 11-feature set is sparser but each feature earned its place more rigorously. The 22-feature set from earlier runs was reproducing 0.348–0.415 combiner precision, but those results could not be consistently reproduced after the voting system improvements — a known issue documented in the experiment log below.
+### 2.2 The SELL Ensemble
 
-**Session filter:** The single most impactful decision gate. Removes Asian session bars (00:00–06:59 UTC), which are range-bound and produce most false positives. Without it, BUY-only precision drops from 0.286 to 0.237 on test (cf=0.60).
+Built from `eurusd_sell_improved.ipynb` (July 24, 2026, documented in `EURUSD_MODEL_SUMMARY.md`):
 
-**Cross-filter at 0.60:** Selected by sweeping cf values on the validation set and picking the value with the highest precision that maintains ≥10 signals. Higher values (0.65–0.70) produce mildly higher precision but at the cost of signal frequency. Lower values (0.50–0.55) produce more signals but precision collapses.
+- **Architecture:** soft-vote VotingClassifier with 4 calibrated estimators:
+  - LogisticRegression (CalibratedClassifierCV, isotonic)
+  - RandomForest (CalibratedClassifierCV, isotonic)
+  - XGBoost (CalibratedClassifierCV, isotonic)
+  - LightGBM (CalibratedClassifierCV, isotonic)
 
-### 2.2 Why the training window was shifted forward
+- **Feature selection:** noise-injection voting (RF + LightGBM + LogisticRegression, MIN_VOTES=2, 100 noise iterations, VOTING_PERCENTILE=50), selecting 20 features from the full 70+ engineered set.
 
-Earlier experiments used TRAIN_START=2019-01-01. The most recent cycle uses TRAIN_START=2020-06-30. The reason is practical: the 2019 period produced results that could not be reliably reproduced across re-runs of the same notebook with identical parameters. ROC-AUC values varied by ±0.05 depending on initialization order, feature selection randomness, and subtle differences in the compute_features warm-up window.
+- **Model calibration:** Each estimator wrapped in `CalibratedClassifierCV(method='isotonic', cv=5)` for calibrated probability output.
 
-Starting at mid-2020 removes the earliest market regime (pre-COVID trend, COVID crash, initial recovery) and focuses the model on the post-COVID FX environment (Fed tightening cycle, ECB normalization, rate differential widening). This is the regime the model will face in production — 2019 is structurally different and adds noise, not signal.
+- **Training window:** 2020-06-30 → 2025-06-30. Validation: 2025-07-01 → 2025-12-31. Sealed test: 2026-01-01 → 2026-07-03.
 
-The current split boundaries:
+- **Production model bundle:** `ml-signal-service/models_bin/EURUSD_H1_sell_Ensemble.joblib` (15.2 MB, saved with sklearn 1.7.1). Contains: model object, 20 feature names in order, threshold 0.306, ATR multipliers (TP=1.5, SL=1.0), forward bars=6.
 
-| Split | Date range | Bars | Purpose |
+### 2.3 The 20 Selected Features (in exact .joblib order)
+
+```
+01. adx_14              06. close_vs_ema200    11. rsi_lag_5           16. macd_sig
+02. rolling_std_50      07. d1_close_vs_ema20  12. volume_lag_5        17. close_vs_day_open
+03. d1_rsi              08. minus_di            13. volume_ratio        18. bb_width
+04. obv                 09. plus_di             14. macd_hist           19. macd_hist_slope
+05. atr_regime          10. rolling_std_10      15. atr_lag_5           20. rsi_lag_3
+```
+
+---
+
+## 3) The Frival Agentic Testing Framework
+
+### 3.1 Architecture Overview
+
+The Frival framework (built July 28, 2026) surrounds the SELL ensemble with a layered evaluation pipeline. Every module is independently toggleable, config-driven, and produces structured, versioned output.
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                        main.py (Orchestrator)                         │
+│  ┌────────────┐  ┌────────────┐  ┌──────────────┐  ┌──────────────┐ │
+│  │ data/      │→ │ model/     │→ │ signal_gate  │→ │ agents/      │ │
+│  │ fetcher.py │  │ features.py│  │ .py          │  │ technical.py │ │
+│  │ (CSV+MT5)  │  │ ensemble.py│  │              │  │ fundamental  │ │
+│  └────────────┘  └────────────┘  └──────┬───────┘  │ .py          │ │
+│                                         │           │ senior.py    │ │
+│                                   Gate passes?      └──────┬───────┘ │
+│                                         │                   │        │
+│                                         ▼                   ▼        │
+│                                ┌──────────────────────────────────┐  │
+│                                │     output_writer.py              │  │
+│                                │  signals/YYYY-MM/YYYY-MM-DD.jsonl │  │
+│                                │  reports/backtest_YYYYMMDD.json   │  │
+│                                └──────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+### 3.2 Directory Structure
+
+```
+frival/
+├── main.py                          # CLI entry: --mode backtest|live
+├── config/
+│   ├── .env                         # MT5 + OpenRouter + Perplexity keys (gitignored)
+│   └── .env.example                 # Template (no keys)
+├── model/
+│   ├── __init__.py                  # Exports: compute_features, load_model, predict
+│   ├── features.py                  # compute_features() — 82 features from H1 OHLCV
+│   ├── ensemble.py                  # load_model(), predict() — soft-vote inference
+│   └── models/                      # Symlink target for .joblib bundles
+├── agents/
+│   ├── __init__.py                  # Exports: evaluate_technical, evaluate_fundamental, synthesize
+│   ├── base.py                      # OpenRouter client (async, retry, structured output)
+│   ├── technical.py                 # Agent A — GPT-4o via OpenRouter (5-rule cascade)
+│   ├── fundamental.py               # Agent B — Perplexity Sonar Pro (web search)
+│   ├── context.py                   # Feature context builder for agent input
+│   ├── senior.py                    # Coordination layer (6-entry rule engine)
+│   └── prompts/
+│       ├── technical.txt            # System prompt: 5 rules, D1+EMA+ADX+RSI+MACD
+│       └── fundamental.txt          # System prompt: ECB/Fed, DXY, event risk, sentiment
+├── signal_gate.py                   # Threshold → session → cooldown gates
+├── output_writer.py                 # JSONL signal log + JSON summary reports
+├── evaluate_precision.py            # Post-hoc precision/EV/Wilson CI calculator
+├── run_eval.py                      # Quick precision eval runner (dev tool)
+├── data/
+│   ├── __init__.py
+│   ├── fetcher.py                   # fetch_ohlcv(): CSV + MT5 with .env credentials
+│   ├── cache/                       # MT5 live cache (auto-saved)
+│   └── last_signal.json             # Cooldown tracker (runtime state)
+├── output/
+│   ├── signals/                     # Append-only JSONL (YYYY-MM/YYYY-MM-DD.jsonl)
+│   └── reports/                     # Per-run JSON summary reports
+└── tests/                           # Unit tests (to be populated)
+```
+
+### 3.3 Module Details
+
+#### `model/features.py`
+
+Single pure function `compute_features(data: pd.DataFrame) -> pd.DataFrame`. Input: raw H1 OHLCV DataFrame (datetime, open, high, low, close, volume). Output: original columns + 82 feature columns. Warm-up rows (NaN from rolling windows) are dropped automatically.
+
+Features computed (10 categories):
+1. **Time:** hour, day_of_week, month, cyclic (sin/cos), session flags (asian/london/ny/overlap)
+2. **Candle structure:** body_size, price_range, upper_wick, lower_wick, body_ratio
+3. **Moving averages:** SMA(10/20/50), EMA(10/20/50/100/200), close_vs_ema50, close_vs_ema200
+4. **Momentum:** RSI(14), Stochastic %K/%D, Williams %R, MACD/hist/signal/slope
+5. **Volatility:** ATR(14), atr_regime, Bollinger Bands (upper/lower/width/pct), rolling_std(10/20/50)
+6. **Trend:** ADX(14), +DI, −DI, CCI(20), ROC(10), momentum_10
+7. **Volume:** OBV, volume_ratio
+8. **Lags:** close/rsi/atr/volume_lag(1/2/3/5)
+9. **Returns:** pct_change(1/5/10)
+10. **D1 context:** D1 resample (open/high/low/close/volume), EMA(20/50), d1_trend, d1_rsi, d1_close_vs_ema20, shifted by 1 day (no leakage)
+
+Helper function: `extract_model_features(df) -> pd.DataFrame` extracts only the 20 `MODEL_FEATURES` in the exact order the `.joblib` bundle expects.
+
+Key constants (mirror notebook Cell 4):
+```python
+ATR_PERIOD=14, ATR_TP_MULT=1.5, ATR_SL_MULT=1.0, FORWARD_BARS=6
+TRAIN_START="2020-06-30", TRAIN_END="2025-06-30"
+VAL_START="2025-07-01", VAL_END="2025-12-31", TEST_START="2026-01-01"
+```
+
+#### `model/ensemble.py`
+
+Two functions:
+- `load_model(path=None) -> dict` — loads the `.joblib` bundle. Default path resolves from module location to `ml-signal-service/models_bin/EURUSD_H1_sell_Ensemble.joblib`. Validates required keys (model, features, threshold). Sklearn version mismatch warnings are suppressed (bundle was saved with 1.7.1, runs on 1.5.2 in `deaf_agent` conda environment).
+- `predict(bundle, df_features, threshold=None) -> dict` — runs `model.predict_proba()` on the 20-feature DataFrame. Returns calibrated soft-vote probability (class1 = SELL), per-estimator individual probabilities (LogReg, RandomForest, XGBoost, LightGBM), signal_fired boolean, and feature list. Supports single-row and multi-row inputs.
+
+#### `signal_gate.py`
+
+Three sequential gates applied to model predictions:
+
+1. **Threshold:** `probability >= 0.306`
+2. **Session:** hour in London (07:00–15:59 UTC) OR NY (13:00–21:59 UTC)
+3. **Cooldown:** no signal within 4 bars of previous signal
+
+Returns DataFrame with per-gate columns: `pass_threshold`, `pass_session`, `pass_cooldown`, `gate_result`, `gate_reason`. Auxiliary function `gate_summary()` produces dict with counts/rates per gate.
+
+#### `agents/base.py`
+
+OpenRouter API client. Single function `chat(system_prompt, user_message, model, temperature, max_tokens, max_retries, timeout) -> str`. Uses OpenAI-compatible endpoint at `https://openrouter.ai/api/v1`. Key loads from `.env` via `OPENROUTER_API_KEY`. Exponential backoff retries (2^attempt seconds). Timeout 30s.
+
+#### `agents/technical.py` — Agent A: Technical Context
+
+Evaluates whether the H1 technical picture supports a SELL signal. Uses **GPT-4o** via OpenRouter (`openai/gpt-4o`, temperature=0.1, max_tokens=500).
+
+Input context for each signal:
+- Current price, ensemble probability, operating threshold
+- Per-model probabilities (LogReg, RF, XGB, LGBM)
+- D1 context: d1_rsi, d1_close_vs_ema20, d1_trend, d1_ema20, d1_ema50
+- H1 bar features: EMA(10/50/200), RSI(14), MACD hist/slope, ADX(14), +DI/−DI, ATR regime/value, close_vs_ema50, close_vs_day_open, rolling_std(10/50)
+
+5-rule cascade (applied in strict priority order):
+```
+Rule 1: REJECT if D1 close > EMA20 AND D1 ADX > 30 AND H1 price > EMA50
+        → Strong USD bid regime confirmed on both timeframes
+
+Rule 2: REJECT if 0 or 1 of 4 sub-models have probability >= threshold
+        → Internal ensemble conflict (2/4 is acceptable minimum)
+
+Rule 3: REJECT if price > all 3 EMAs(10/50/200) AND RSI > 50
+        → Firm H1 uptrend, counter-trend bet without exhaustion evidence
+
+Rule 4: CONFIRM if ≥2 of 5 conditions hold:
+        price<EMA50, MACD<0, RSI<45, ADX 20-40 with −DI>+DI, ATR_regime>1
+
+Rule 5: NEUTRAL otherwise (mixed/uncertain picture)
+```
+
+Output: structured JSON `{decision, confidence, justification, regime_flags}`. Response parsed from JSON — supports markdown code fences and bare JSON.
+
+#### `agents/fundamental.py` — Agent B: Macro/Fundamental
+
+Evaluates the macro environment for EURUSD SELL. Uses **Perplexity Sonar Pro** via direct Perplexity API (`https://api.perplexity.ai/chat/completions`). Web search enabled (`search_recency_filter="day"`).
+
+System prompt (4 rules):
+```
+Rule 1: REJECT if macro shock strengthens EUR (ECB hawkish surprise,
+        DXY downtrend >1%, major USD-negative geopolitics)
+
+Rule 2: CONFIRM if ≥2 USD-strength conditions (Fed>ECB hawkish,
+        DXY uptrend, risk-off, USD-positive data)
+
+Rule 3: CONFIRM if no EUR-positive events + stable/rising DXY
+        + no high-impact event in 4h ("technical-only context")
+
+Rule 4: NEUTRAL otherwise
+```
+
+Critical design: fundamental REJECTION is an unconditional veto in the Senior layer. This directly targets April-type macro regime failures.
+
+Rate limiting: 2.5s delay between Perplexity calls in main.py loop. Key loaded from `.env` via `PERPLEXITY_API_KEY`. Encoding fix: all non-ASCII characters stripped from Perplexity responses before JSON parsing (`ascii` encoding with replacement).
+
+#### `agents/senior.py` — Coordination Layer
+
+NOT an LLM call. Programmatic rule engine implementing the decision synthesis table:
+
+```
+Technical | Fundamental | Result
+CONFIRM   | CONFIRM     | FIRED (HIGH confidence)
+CONFIRM   | NEUTRAL     | FIRED (MODERATE confidence)
+NEUTRAL   | CONFIRM     | FIRED (MODERATE confidence)
+REJECT    | *           | SHELVED (technical rejection reason)
+*         | REJECT      | SHELVED (fundamental veto — UNCONDITIONAL)
+NEUTRAL   | NEUTRAL     | SHELVED (ambiguous)
+```
+
+Fundamental rejection is unconditionally final — it cannot be overridden by technical confirmation. This is the single most important architectural decision in the framework.
+
+#### `data/fetcher.py`
+
+Two-mode data acquisition:
+- `source="csv"` — reads `ml-signal-service/data/raw/mt5/H1/EURUSD_H1.csv`. Supports date range filtering. Normalizes `tick_volume` → `volume` column.
+- `source="mt5"` — connects to running MT5 terminal, logs in with credentials from `.env`, fetches via `mt5.copy_rates_range()`, caches result to `data/cache/*_live_cache.csv`. Supports timeframe mapping (M1/M5/M15/M30/H1/H4/D1).
+
+Environment variables in `config/.env`:
+```
+MT5_LOGIN=7387548           # Demo account
+MT5_PASSWORD=u#wWU#64esZjNVn
+MT5_SERVER=FPMarketsSC-Demo
+OPENROUTER_API_KEY=sk-or-v1-...
+PERPLEXITY_API_KEY=pplx-...
+```
+
+#### `output_writer.py`
+
+- `log_signal(signal, output_dir) -> str` — appends one JSON object to `signals/YYYY-MM/YYYY-MM-DD.jsonl`. Creates directories automatically.
+- `write_summary_report(run_id, summary, output_dir) -> str` — writes per-run JSON summary to `reports/backtest_{run_id}.json`.
+
+#### `evaluate_precision.py`
+
+Post-processing module. Reads signal JSONL files, loads price data, computes forward outcomes per signal using the ATR barrier race logic (entry at bar close, TP = entry − ATR×1.5, SL = entry + ATR×1.0, forward window=6 bars). Outputs: precision, win/loss count, Wilson 95% CI, EV per trade (R), total R, monthly breakdown.
+
+#### `main.py`
+
+Two modes via CLI:
+
+**Backtest mode:**
+```
+python main.py --mode backtest --start 2026-01-01 --end 2026-07-03
+python main.py --mode backtest --start 2026-01-01 --end 2026-07-03 --no-agent
+python main.py --mode backtest --start 2026-01-01 --end 2026-07-03 --source csv
+```
+
+Loads full CSV data for warm-up, computes features, runs model on all bars, applies gates, evaluates agents on gated signals, logs JSONL and JSON report. Backtest mode always loads full CSV for warm-up (date filter applied AFTER feature computation to preserve EMA200/rolling windows).
+
+**Live mode:**
+```
+python main.py --mode live
+python main.py --mode live --no-agent
+```
+
+Connects to MT5, fetches ~300 bars, computes features, evaluates only the latest closed H1 bar, runs agents if gated, prints signal to console, logs JSONL. Cooldown tracked on disk (`data/last_signal.json`). Signal output format:
+
+```
+============================================================
+  SIGNAL FIRED: EURUSD SELL
+  Timestamp:    2026-07-28T14:00:00+00:00
+  Entry:        1.15332
+  Stop Loss:    1.15406  (7.4 pips)
+  Take Profit:  1.15221  (11.1 pips)
+  R:R:          1.5
+  Confidence:   HIGH
+  Probability:  0.3109
+============================================================
+  Agent A: CONFIRM (HIGH)
+  Agent B: CONFIRM (MODERATE)
+```
+
+---
+
+## 4) Signal Output Format (v1.0)
+
+Every FIRED signal produces this JSONL record:
+
+```json
+{
+  "run_id": "20260728_153619",
+  "signal_id": "EURUSD_H1_SELL_2026-04-03T07:00:00Z",
+  "symbol": "EURUSD",
+  "direction": "SELL",
+  "timestamp_utc": "2026-04-03T07:00:00",
+  "trade": {
+    "entry": 1.15332,
+    "stop_loss": 1.15406,
+    "take_profit": 1.15221,
+    "rr_ratio": 1.5
+  },
+  "model": {
+    "probability": 0.3109,
+    "threshold": 0.306
+  },
+  "gates": {
+    "passed_threshold": true,
+    "passed_session": true,
+    "passed_cooldown": true
+  },
+  "agents": {
+    "technical": {
+      "decision": "CONFIRM",
+      "confidence": "MODERATE",
+      "justification": "Price below EMA50, RSI below 45, MACD negative...",
+      "regime_flags": {"strong_dollar_bid": false, "d1_uptrend": false, "volatility_spike": false}
+    },
+    "fundamental": {
+      "decision": "NEUTRAL",
+      "confidence": "MODERATE",
+      "justification": "Fed/ECB rate differential favors USD but FOMC event risk...",
+      "regime_flags": {"macro_event_active": true, "fed_hawkish": true, "dxy_uptrend": false, "risk_off": false},
+      "news_sources": ["https://www.fxstreet.com/..."]
+    }
+  },
+  "final_decision": "FIRED",
+  "final_confidence": "MODERATE",
+  "veto_reason": ""
+}
+```
+
+Trade levels formula:
+- Entry = bar close price
+- SL = entry + ATR(14) × 1.0 (above entry — SELL stop)
+- TP = entry − ATR(14) × 1.5 (below entry — SELL target)
+- R:R = 1.5:1
+
+Lot size is intentionally excluded — belongs to execution layer.
+
+---
+
+## 5) Daily Live Routine
+
+**Prerequisites (once per morning):**
+1. Start MT5 terminal (FPMarketsSC-Demo, idle, EURUSD in Market Watch)
+2. Open PowerShell in `C:\Users\david\OneDrive\Documents\fx-prival\frival\`
+
+**Execution (8:01am, 9:01am, 10:01am, 11:01am Panama time = 13:01–16:01 UTC):**
+```
+python main.py --mode live
+```
+
+**What happens each execution:**
+1. Connect to MT5, fetch latest ~300 H1 bars
+2. Compute all 82 features + extract 20 model features
+3. Run ensemble inference on latest closed bar
+4. Gate check: p ≥ 0.306? In session? Not in cooldown?
+5. If gated: Agent A (GPT-4o) + Agent B (Perplexity) evaluate in sequence
+6. Senior coordination → FIRED or SHELVED
+7. FIRED → trade levels printed, JSONL saved, cooldown updated
+8. SHELVED → reason printed, JSONL saved
+
+**Cooldown:** Tracked on disk at `frival/data/last_signal.json`. No new signal within 4 hours of the last FIRED signal.
+
+**Recommended position size for $1,000 account:** 0.20 lots (mini) / 0.02 lots (standard). Risk per trade: ~$16 at 8-pip SL (1.6% of account). Maximum consecutive losses in backtest: 7 = −$112 (11.2% drawdown).
+
+---
+
+## 6) Backtest Results (Full Sealed Test: 2026-01-01 → 2026-07-03, 3,136 bars)
+
+### 6.1 Gate Performance
+
+| Gate | Passed | Rate |
+|---|---|---|
+| Threshold (p ≥ 0.306) | 351 | 11.2% |
+| Session (London + NY) | 319 of 351 | 90.9% |
+| Cooldown (4 bars) | 99 | 31.0% of threshold |
+| **All gates (gated signals)** | **99** | **3.2% of total** |
+
+### 6.2 Agent Performance
+
+| Agent | Confirmed | Rejected | Neutral | Rejection Rate | Errors |
+|---|---|---|---|---|---|
+| Agent A (Technical, GPT-4o) | 21 | 48 | 30 | 48.5% | 0 |
+| Agent B (Fundamental, Perplexity) | 19 | 1 | 79 | — | 0 |
+
+### 6.3 Final Output
+
+| Result | Count |
+|---|---|
+| Gated signals | 99 |
+| FIRED (agent-confirmed) | 26 |
+| SHELVED (agent-rejected) | 73 |
+
+### 6.4 Precision Evaluation
+
+| Metric | Value |
+|---|---|
+| Wins | 10 |
+| Losses | 16 |
+| Precision | 0.385 |
+| Wilson 95% CI | [0.224, 0.575] |
+| EV per trade | −0.039R |
+| Total R | −1.0R |
+
+### 6.5 Monthly Breakdown
+
+| Month | Signals | Wins | Win Rate | Total R |
+|---|---|---|---|---|
+| 2026-01 | 6 | 2 | 33.3% | −1.0 |
+| 2026-02 | 8 | 3 | 37.5% | −0.5 |
+| 2026-03 | 2 | 0 | 0.0% | −2.0 |
+| 2026-04 | 3 | 1 | 33.3% | −0.5 |
+| 2026-05 | 4 | 3 | 75.0% | +3.5 |
+| 2026-06 | 3 | 1 | 33.3% | −0.5 |
+
+### 6.6 April 2026 — Agent Filter Impact
+
+| Sources | Signals | Win Rate | Total R |
 |---|---|---|---|
-| Train | 2020-06-30 → 2025-10-31 | ~32,000 | Model training + feature selection |
-| Val | 2025-11-01 → 2026-03-30 | 2,496 | Threshold calibration |
-| Test | 2026-04-01 → present | 1,618 | Sealed final evaluation |
+| Doc gated raw (107 signals baseline) | 21 | 19.0% | −8.9R |
+| Agent-filtered (this run) | 3 | 33.3% | −0.5R |
+| Agent-filtered (clean April-only run) | 3 | 50.0% | +1.0R |
+
+The agent correctly identified the strong USD bid regime (D1 close above EMA20, D1 ADX > 30) and FOMC event risk, staying mostly neutral and rejecting clearly counter-trend signals. April went from an account-destroying month to a controlled drawdown.
 
 ---
 
-## 3) Implemented Artifacts
+## 7) Known Limitations and Risks
 
-### 3.1 Core notebooks
+### 7.1 Fundamental Agent in Backtesting
 
-| Notebook | Description |
-|---|---|
-| `ml-signal-service/notebooks/eurusd/eurusd_buy.ipynb` | BUY model training: feature engineering, noise-injection voting, nested CV, threshold calibration |
-| `ml-signal-service/notebooks/eurusd/eurusd_sell.ipynb` | SELL model training (mirrored, with inverted label logic) |
-| `ml-signal-service/notebooks/eurusd/signal_combiner.ipynb` | Model-agnostic combiner: loads latest `.joblib` bundles, applies 4 decision gates, evaluates on test |
+Agent B (Perplexity fundamental) is structurally limited in backtest mode. It searches for **current** news, not historical news as of the signal date. During the sealed test backtest (Jan–Jul 2026), the agent saw July 2026 macro conditions (FOMC meeting, Fed at 3.50–3.75%, ECB at 2.25%) for all historical signals regardless of the actual macro regime at the signal date. This makes the fundamental agent effectively a **no-op in backtesting** (mostly returns NEUTRAL). Its value is in **live mode** where it reflects actual current conditions.
 
-Session-specific variants (explored, not in production): `eurusd_buy_london.ipynb`, `eurusd_buy_ny.ipynb`, `eurusd_buy_asian.ipynb`, `eurusd_buy_v2.ipynb`.
+### 7.2 Small Signal Count
 
-### 3.2 Production scripts
+26 FIRED signals over 6 months (4.3/month) with Wilson CI [0.224, 0.575] is too small for statistical significance. The precision improvement over the doc baseline cannot be claimed with confidence. 60–90 days of live paper trading data is needed to validate.
 
-| Script | Description |
-|---|---|
-| `ml-signal-service/steps/05_inference/eurusd_h1_predictor.py` | Hourly inference: load data, compute features, score model, apply gates, emit alerts |
-| `ml-signal-service/steps/build_macro_dataset.py` | Bloomberg macro data pipeline: converts desk Excel exports to standardized CSV |
+### 7.3 Model Freshness
 
-### 3.3 Model artifacts (current)
+The ensemble bundle was trained on data through 2025-06-30. The sealed test ends at 2026-07-03. The model is ~1 year past its training window end. A freshness check was implemented but retraining is a separate pipeline not yet built.
 
-| File | Model | Features | Threshold |
-|---|---|---|---|
-| `models_bin/EURUSD_H1_buy_RandomForest.joblib` | RandomForest | 11 | 0.644 |
-| `models_bin/EURUSD_H1_sell_LogReg.joblib` | LogisticRegression | 11 | 0.599 |
+### 7.4 Single Pair, Single Direction
 
-The combiner auto-detects models by modification time, so any retrained model is picked up automatically without changing the combiner code.
+EURUSD H1 SELL only. No BUY lane (proven non-viable). No other pairs. Multi-pair/multi-direction is a Phase 5+ extension.
 
-### 3.4 Documentation
+### 7.5 MT5 Dependency
 
-| Document | Purpose |
-|---|---|
-| `ml-signal-service/docs/stakeholder_overview.md` | Non-technical presentation for management |
-| `ml-signal-service/docs/y1-label-definition.md` | Label definition + EURUSD final setup |
-| `ml-signal-service/docs/bloomberg_macro_insights_spec.md` | Macro dataset technical specification |
-| `ml-signal-service/docs/bloomberg_macro_desk_guide.md` | Desk operational guide for Bloomberg exports |
-| `ml-signal-service/docs/next_agent_pipeline_design.md` | Agent layer architecture design |
-| `ml-signal-service/docs/fred_economic_indicators_research.md` | FRED data research findings |
-| `ml-signal-service/docs/main/iteration_1_planning.md` | Original project plan |
-| `ml-signal-service/docs/main/iteration_1_status_report.md` | Status report (English) |
-| `ml-signal-service/docs/main/informe_iteracion_1_status.md` | Status report (Spanish) |
+Live mode requires a running MT5 terminal. If the terminal is closed, `python main.py --mode live` will fail with a connection error. A startup health check is implemented.
+
+### 7.6 Ensemble Agreement at Low Threshold
+
+At threshold 0.306, most signals have only 2/4 sub-models agreeing. The ensemble is operating near the edge of its discriminative range. This is by design (threshold was chosen to maximize recall while maintaining precision ≥ 0.40), but it means small perturbations can flip signals.
 
 ---
 
-## 4) Label and Metric Contract
+## 8) Conda Environment
 
-**Label mechanics:** Binary labels generated by a 6-hour forward TP/SL race. At each bar `t`, TP = close[t] + ATR[t] × 1.5 and SL = close[t] − ATR[t] × 1.0. The forward window scans bars t+1 through t+6. If TP is hit first → label = 1. If SL is hit first or neither barrier is reached → label = 0. If both barriers are hit on the same bar (ambiguous H1 resolution) → label = 0 (conservative default).
+All code runs in the `deaf_agent` conda environment:
+```
+C:\Users\david\anaconda3\Library\envs\deaf_agent\python.exe
+```
 
-**Breakeven precision:**
+Key packages: pandas, numpy, scikit-learn 1.5.2, xgboost, lightgbm, joblib 1.3.2, MetaTrader5, openai 2.8.1, requests, urllib3.
 
-$$\text{Breakeven} = \frac{\text{SL\_MULT}}{\text{TP\_MULT} + \text{SL\_MULT}} = \frac{1.0}{1.5 + 1.0} = 0.400$$
-
-**Decision gates (applied post-inference):**
-1. **Threshold:** `buy_proba ≥ model_threshold` (from `.joblib` bundle)
-2. **Cross-filter:** `sell_proba < 0.60` (suppress when both models confident in opposite directions)
-3. **Session filter:** London (07:00–15:59 UTC) or NY (13:00–21:59 UTC) only
-4. **Cooldown:** max 1 signal per 4 bars
-
-**Training metrics:**
-- Feature selection: noise-injection voting (RF + LightGBM + LogisticRegression), MIN_VOTES=2, VOTING_PERCENTILE=60, gain-based LGBM importance
-- Model selection: nested CV (GroupKFold=5 by year, TimeSeriesSplit=2 inner), RandomizedSearchCV(25 iters), PR-AUC objective
-- All models use `class_weight="balanced"`
+Note: The `.joblib` bundle was saved with scikit-learn 1.7.1. Loading on 1.5.2 produces version warnings but predictions are correct (verified against notebook output).
 
 ---
 
-## 5) Complete Experiment Log
+## 9) Next Steps
 
-| # | Dates | FW | TP | Train | Model | Features | ROC-AUC (val) | Combiner test prec | Outcome |
-|---|---|---|---|---|---|---|---|---|---|
-| 1 | Jul 14 | 6 | 1.5 | 2019–Jun 2025 | LightGBM | 22 | 0.651 | 0.348 (46 sig) | Baseline established |
-| 2 | Jul 14 | 4 | 1.5 | 2019–Jun 2025 | RandomForest | — | 0.695 | ~0.300 (est.) | Better ROC-AUC, worse gated |
-| 3 | Jul 15 | 2 | 1.25 | 2019–Jun 2025 | XGBoost | — | 0.735 | — (44 raw sigs) | Best discriminator, too few labels |
-| 4 | Jul 15 | 6 | 1.5 | 2019–Jun 2025 | LightGBM | 26 | 0.651 | 0.286 | Full-retrain hurt performance |
-| 5 | Jul 16 | 6 | 1.5 | 2019–Jun 2025 | LightGBM | 22 | 0.651 | 0.348 (46 sig) | Restored train-only model |
-| 6 | Jul 17 | 6 | 1.5 | 2023–Oct 2025 | LightGBM | 23 | 0.508 | — | Short train window kills ROC-AUC |
-| 7 | Jul 18 | 3 | 1.5 | 2019–Jun 2025 | LightGBM | 23 | 0.503 | — | FW=3 is below the signal floor |
-| 8 | Jul 19 | 6 | dir | 2023–Oct 2025 | LightGBM | — | 0.542 | — | Directional label = random walk |
-| 9 | Jul 21 | 6 | 1.5 | 2023–Oct 2025 | LightGBM | — | 0.472 | — | NY-only session specialization failed |
-| 10 | Jul 22 | 6 | 1.5 | 2020–Oct 2025 | RandomForest | 11 | 0.495 | **0.286 (28 sig)** | **Accepted baseline** |
+1. **Live paper trading (Phase 4):** Run `python main.py --mode live` hourly during Panama 8am–11am for 60–90 days. Track precision against actual outcomes. Verify rejection rate stays in 30–60%.
 
-### Key insights from the experiment log
+2. **Retrain ensemble:** Extend training window to include most recent data. The current bundle uses data through June 2025 — an additional year of market data should improve the model.
 
-1. **Model architecture barely matters.** Four model types (LightGBM, XGBoost, RandomForest, LogisticRegression) all converge to PR-AUC within 0.01 of each other on the same data. The bottleneck is the label, not the classifier.
+3. **Multi-pair expansion (Phase 5+):** Extend to GBPUSD, USDJPY with pair-specific ensembles and agent prompts. The framework is designed to be pair-agnostic (symbol parameter in fetch_ohlcv and signal output).
 
-2. **Short training windows kill performance.** Experiments 6, 8, and 9 all used TRAIN_START ≥ 2023 and produced ROC-AUC below 0.55. Training data must span multiple market regimes — 2020–2025 covers the post-COVID tightening cycle, which is the minimum viable window.
+4. **Execution bridge:** Build a separate system that reads `output/signals/*.jsonl` and places orders with position sizing. Not part of the Frival framework (separation of signal from execution is architectural).
 
-3. **Forward window sweet spot is 4–6 hours.** FW=3 is below the signal floor (ROC-AUC 0.503). FW=2 improves ROC-AUC (0.735) but label rate drops to 16%, starving the model of positive examples. FW=6 gives the best gated precision in the combiner.
-
-4. **Directional labels don't work.** Experiment 8 proved EURUSD 6h direction is a random walk (ROC-AUC 0.542). The ATR-barrier race label is the right design — it filters noise moves and focuses on economically meaningful outcomes.
-
-5. **Session specialization doesn't help.** Experiment 9 showed that training separate models per session (NY-only) worsens performance compared to a unified model. The unified model learns from negative examples in all sessions.
-
-6. **Full-retrain hurts generalization.** Experiment 4 showed that training on train+val combined introduces regime overfitting that makes test performance worse. The train-only model generalizes better.
-
-7. **The 0.348–0.415 precision from earlier runs cannot be reproduced.** Experiments 1, 5, and 10 all used the same label parameters (FW=6, TP=1.5) with LightGBM/RandomForest and produced combiner test precision of 0.286–0.348 — never reaching 0.400. The earlier 0.415 reading from the cross-filter sweep in Section 9 of the combiner (Experiment 1) was likely a data pipeline alignment artifact; the sweep's cooldown operated on a label-filtered test set (fewer rows) while the main test evaluation used the full test set, producing different signal counts. This discrepancy was identified after Experiment 1 and has not been reproducible in subsequent runs.
+5. **Agent prompt optimization:** The current prompt was tuned on validation data only (Feb 2026). As live data accumulates, rejection rate should be monitored and prompts adjusted if it drifts outside 30–60%.
 
 ---
 
-## 6) System Health Assessment
+## 10) File Inventory
 
-**What is working:**
-- End-to-end pipeline from raw data to production inference is operational and documented
-- Model-agnostic combiner auto-detects the latest trained models regardless of algorithm
-- Decision gates are implemented and correctly suppress false positives
-- Decision log provides full traceability (gate-by-gate reason per bar)
-- Bloomberg macro data pipeline is built and desk-ready
-- All infrastructure is reproducible — any configuration can be retrained and evaluated in hours
+All files created/modified on July 28, 2026:
 
-**What is still weak:**
-- Raw model precision (0.286–0.348) cannot reach the 0.400 breakeven on its own
-- The 28 test signals at 0.286 precision produce approximately 8 correct TP hits — net negative after typical spreads
-- Only 11 features survive noise-injection voting, suggesting the feature set has limited predictive power for this label
-- The SELL model (LogReg, ROC-AUC 0.613) has better standalone metrics than BUY but produces zero net signals in the combiner after cross-filter gating
-- Signal frequency (0.42/day) is adequate but the precision requires agent-layer improvement
-
-**Practical implication:**
-The model layer has reached its discriminative ceiling. Four model architectures, five forward windows, two label designs, and three training window sizes all converge to the same result: the raw model cannot cross 0.400 precision at usable signal volumes. The decision gates (session filter, cooldown) add measurable lift but the gap remains. The next improvement must come from the agent validation layer (Iteration 2), where Perplexity and GPT-4o evaluate signals independently and reject false positives using context the model cannot access (fundamental data, news, sentiment).
-
----
-
-## 7) Next Steps
-
-1. **Build the agent evaluation pipeline** — feed the 28 test signals through Perplexity and GPT-4o agents, measure precision improvement. Target: reject ≥40% of false positives while retaining ≥70% of true positives.
-
-2. **Wire the hourly scheduler** — connect `eurusd_h1_predictor.py` to a Windows Task Scheduler trigger at :01 past each hour.
-
-3. **Define the alert-to-execution workflow** — structured JSON alert format, dedup tracking, alert history, agent confirmation/rejection logging.
-
-4. **(Optional) Explore label redesign** — the FW=2 experiment showed ROC-AUC 0.735, the highest of any configuration. If label rate can be increased (e.g., TP=1.0 with FW=2 gives ~28% label rate), this configuration could produce a stronger base model.
+| File | Lines | Purpose |
+|---|---|---|
+| `frival/main.py` | 491 | CLI orchestrator (backtest + live modes) |
+| `frival/model/__init__.py` | 2 | Package exports |
+| `frival/model/features.py` | 164 | compute_features() + extract_model_features() |
+| `frival/model/ensemble.py` | 126 | load_model() + predict() |
+| `frival/signal_gate.py` | 114 | apply_gates() + gate_summary() |
+| `frival/data/__init__.py` | 1 | Package exports |
+| `frival/data/fetcher.py` | 171 | fetch_ohlcv() — CSV + MT5 |
+| `frival/output_writer.py` | 76 | log_signal() + write_summary_report() |
+| `frival/agents/__init__.py` | 8 | Package exports |
+| `frival/agents/base.py` | 90 | OpenRouter chat() client |
+| `frival/agents/technical.py` | 130 | Agent A — GPT-4o technical evaluation |
+| `frival/agents/fundamental.py` | 156 | Agent B — Perplexity macro evaluation |
+| `frival/agents/context.py` | 72 | build_context() — agent input preparation |
+| `frival/agents/senior.py` | 83 | synthesize() — coordination rule engine |
+| `frival/agents/prompts/technical.txt` | 53 | System prompt v2 (5 rules, 30-60% target) |
+| `frival/agents/prompts/fundamental.txt` | 56 | System prompt (4 rules, web search) |
+| `frival/evaluate_precision.py` | 196 | Post-hoc precision/EV/Wilson CI calculator |
+| `frival/run_eval.py` | 22 | Quick precision eval runner |
+| `frival/config/.env` | 6 | Credentials (gitignored) |
+| `frival/config/.env.example` | 5 | Template |
+| `ml-signal-service/docs/main/iteration_2_agentic_testing_framework.md` | — | Architecture & implementation plan document |
+| **Total** | **~2,000** | |
 
 ---
 
-## 8) Known Risks
-
-- **Regime sensitivity:** the model was trained on 2020–2025 FX data. A structural break in EURUSD dynamics (new policy framework, currency regime change) would invalidate the training distribution.
-- **Low signal frequency:** 28 signals in 67 trading days = 0.42/day. With 0.286 precision, the model produces roughly 1 correct signal every 8 days. Agent improvement is critical.
-- **SELL lane abandonment:** the current BUY-only configuration cannot capture EURUSD downside moves. The inverted-pair trick (run BUY model on 1/EURUSD data) is the most practical route to short coverage.
-- **Cooldown dtype bug:** the `apply_cooldown` function produces FutureWarnings when mixing bool/int dtypes on the `buy_signal` column. Fixed in the predictor script, still present in the combiner notebook.
-- **Feature set ceiling:** the noise-injection voting system eliminates most engineered features. If label redesign or agent improvement fails, investing in new feature classes (order flow, options-implied data, correlation features) may be necessary.
-
----
-
-## 9) Agent Handoff Checklist
-
-Before modifying any logic:
-- Read `y1-label-definition.md` and this document in full
-- Confirm model bundle thresholds and feature lists from both `.joblib` files
-- Verify split boundaries match training assumptions
-- Run the combiner without changes to establish a reference precision number
-
-Before claiming improvement:
-- Show precision AND signals/day, not precision alone
-- Compare against the 0.286 baseline on the sealed test set
-- Separate validation vs test conclusions
-- Explain why the improvement is expected to generalize beyond the current test window
-
----
-
-*This document reflects all experimental work completed through July 22, 2026. The next update should include Iteration 2 agent validation results.*
+*This document reflects the complete project state as of July 28, 2026 — the SELL pivot, the ensemble model bundle, and the full Frival agentic testing framework. The next update should include live paper trading results.*

@@ -1,11 +1,17 @@
 # API keys and secrets
 apy-key-roo-code.txt
 *.env
+openrouterkey.txt
 
 # Python
 __pycache__/
 *.py[cod]
 .venv/
+
+# Frival runtime output
+frival/output/
+frival/data/cache/
+frival/data/last_signal.json
 
 # Kilo local config
 .kilo/
