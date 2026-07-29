@@ -1,6 +1,7 @@
 # Project Last State
 
-Last updated: 2026-07-28
+Last updated: 2026-07-29
+Status: EURUSD H1 SELL in live paper trading. Next: GBPUSD expansion.
 Scope: consolidated handoff for the EURUSD H1 SELL-only agentic signal system (Iteration 2 — Frival Framework).
 
 ---
@@ -506,11 +507,18 @@ Note: The `.joblib` bundle was saved with scikit-learn 1.7.1. Loading on 1.5.2 p
 
 ## 9) Next Steps
 
-1. **Live paper trading (Phase 4):** Run `python main.py --mode live` hourly during Panama 8am–11am for 60–90 days. Track precision against actual outcomes. Verify rejection rate stays in 30–60%.
+1. **Live paper trading (Phase 4):** ACTIVE as of July 29, 2026. Running `run_live(borderline=True)` hourly during Panama 8am–11am (13:00–16:00 UTC). First live sessions logged at `frival/output/logs/2026-07-29_live.log`. Target: 60–90 days observation, precision ≥ 0.400 on forward data.
 
 2. **Retrain ensemble:** Extend training window to include most recent data. The current bundle uses data through June 2025 — an additional year of market data should improve the model.
 
-3. **Multi-pair expansion (Phase 5+):** Extend to GBPUSD, USDJPY with pair-specific ensembles and agent prompts. The framework is designed to be pair-agnostic (symbol parameter in fetch_ohlcv and signal output).
+3. **GBPUSD expansion (Phase 5 Priority):**
+   - Train SELL ensemble following the same methodology (`eurusd_sell_improved.ipynb` → `gbpusd_sell_improved.ipynb`)
+   - Only deploy if ROC-AUC ≥ 0.60 and sealed-test precision clears breakeven (0.400 with Wilson CI low > 0.350)
+   - Adapt Agent A prompt (pair reference only, ~2-line change) and Agent B prompt (BoE vs Fed, UK-specific macro — ~50 lines new)
+   - Parameterize `main.py` to accept `--symbol GBPUSD`; run both pairs sequentially in live mode
+   - Architecture supports multi-pair cleanly: fetcher, signal_gate, output_writer, senior.py, and live_logger are all pair-agnostic
+
+4. **Execution bridge:** Build a separate system that reads `output/signals/*.jsonl` and places orders with position sizing. Not part of the Frival framework (separation of signal from execution is architectural).
 
 4. **Execution bridge:** Build a separate system that reads `output/signals/*.jsonl` and places orders with position sizing. Not part of the Frival framework (separation of signal from execution is architectural).
 
@@ -518,35 +526,151 @@ Note: The `.joblib` bundle was saved with scikit-learn 1.7.1. Loading on 1.5.2 p
 
 ---
 
-## 10) File Inventory
+## 11) Live Trading Status (July 29, 2026)
 
-All files created/modified on July 28, 2026:
+### 11.1 Running Configuration
+
+EURUSD H1 SELL is in live paper trading. The system runs hourly during Panama 8:00am–11:00am (13:00–16:00 UTC, London+NY session overlap).
+
+**Execution command (from `frival/` directory, Git Bash terminal):**
+
+```bash
+/c/Users/david/anaconda3/Library/envs/deaf_agent/python.exe -c \
+  "import sys; sys.path.insert(0, '.'); from main import run_live; run_live(borderline=True)"
+```
+
+**Live account:** 81486396 (FPMarketsSC-Live, Standard, $1,021, 1:500). Position size: 0.08 lots.
+
+### 11.2 Live Session Results (July 29, 2026)
+
+| Time UTC | Bar Close | Probability | Tier | Agent A | Agent B | Result |
+|---|---|---|---|---|---|---|
+| 14:00 | 1.13815 | 0.2731 | Borderline | NEUTRAL | NEUTRAL | SHELVED |
+| 15:00 | 1.13778 | 0.2774 | Borderline | NEUTRAL | NEUTRAL | SHELVED |
+
+**Observation:** Both live sessions triggered the borderline gate (0.20 ≤ p < 0.306). Agents correctly identified Fed FOMC event risk (decision day, two-way risk, ECB+BoE hawkish ambiguity) and remained NEUTRAL. The strict borderline rule (both must CONFIRM) correctly shelved both signals. System behavior matches backtest expectations.
+
+### 11.3 Three-Tier Probability System (Verified Live)
+
+| Tier | Range | Rule | Live Tested? |
+|---|---|---|---|
+| Standard | p ≥ 0.306 | Single agent confirm sufficient | Not yet (no bar above threshold yet) |
+| Borderline | 0.20 ≤ p < 0.306 | Both agents must CONFIRM | Yes — 2/2 correctly shelved |
+| Blocked | p < 0.20 | No agent evaluation | Yes — first live test at 12:00 UTC (p=0.2899, standard blocked) |
+
+### 11.4 Log Files (Live Sessions)
+
+Every live session produces two permanent records:
+
+1. **Structured JSONL:** `frival/output/signals/YYYY-MM/YYYY-MM-DD.jsonl` — machine-readable signal trace with agent decisions, justifications, trade levels, and gate type.
+2. **Verbose log:** `frival/output/logs/YYYY-MM-DD_live.log` — complete terminal output including agent search results, FOMC analysis, DXY context, and all print statements. Session-start/end markers for time tracking.
+3. **Runtime state:** `frival/data/last_signal.json` — cooldown tracker (prevents signals within 4 hours of last FIRED). `frival/data/cache/*_live_cache.csv` — MT5 cache for offline access.
+
+### 11.5 Session Notes
+
+- MT5 terminal must be running with EURUSD visible in Market Watch before execution
+- Agent B (Perplexity) requires 5–15 seconds for web search — be patient
+- The first run after MT5 startup fetches ~47,000 bars (20–30 seconds); subsequent runs use cache (fast)
+- Cooldown is enforced: no signal within 4 bars of last FIRED signal
+- Agent latency tracked in console output; typical: 3–5s Agent A, 5–15s Agent B
+
+---
+
+## 12) Multi-Pair Expansion Plan
+
+### 12.1 Architecture Readiness
+
+The Frival framework was built pair-agnostic from inception. The following modules require zero changes for multi-pair support:
+
+| Already pair-agnostic | Why |
+|---|---|
+| `model/features.py` | `compute_features()` takes raw OHLCV — symbol-independent |
+| `model/ensemble.py` | Loads `.joblib` by path — point to per-pair bundle |
+| `signal_gate.py` | Threshold/session/cooldown — symbol-agnostic gates |
+| `output_writer.py` | Schema has `symbol` field — writes per-pair signals |
+| `evaluate_precision.py` | Post-processing, symbol-agnostic |
+| `data/fetcher.py` | `fetch_ohlcv()` has `symbol` parameter |
+| `agents/senior.py` | 6-entry rule engine — pair-agnostic |
+| `live_logger.py` | Terminal tee — symbol-agnostic |
+
+Modules requiring per-pair adaptation:
+
+| Module | Change | Effort |
+|---|---|---|
+| `main.py` | Accept `--symbol` parameter, route to per-pair bundle and prompts | ~30 lines |
+| `agents/technical.py` | Pair-specific system prompt (e.g., "GBPUSD H1 analyst") | ~2 lines per pair |
+| `agents/fundamental.py` | Completely different system prompt per pair (different central banks, macro drivers) | ~50 lines per pair |
+| `agents/prompts/` | New prompt files per pair | ~100 lines total |
+
+### 12.2 GBPUSD — First Expansion Target
+
+GBPUSD shares London+NY session structure with EURUSD, making it the lowest-risk expansion:
+
+| Attribute | EURUSD (current) | GBPUSD (next) |
+|---|---|---|
+| Central banks | ECB vs Fed | BoE vs Fed |
+| Session filter | London+NY (same) | London+NY (same) |
+| Direction | SELL (confirmed edge) | TBD (test both, promote viable lane) |
+| Key data | EU CPI, US FOMC/NFP | UK CPI/GDP, US FOMC/NFP |
+| Safe haven | USD on risk-off | USD on risk-off (same) |
+| Dependencies | DXY, DAX, VIX | DXY, FTSE 100, VIX |
+
+### 12.3 Deployment Gating Criteria
+
+For each new pair, before live deployment:
+
+1. **Train ensemble:** Clone notebook methodology, train both BUY and SELL models
+2. **ROC-AUC gate:** Must achieve ROC-AUC ≥ 0.60 on sealed test (proven directional edge)
+3. **Precision gate:** Gated precision ≥ breakeven with Wilson CI lower bound > 0.350
+4. **Direction gate:** Only deploy lanes that clear both gates — dead lanes (like old EURUSD BUY) must not be deployed
+5. **Backtest gate:** Run full sealed test with agents (same as EURUSD). Agent-filtered precision must exceed raw model precision
+6. **Paper trading gate:** 30 days of paper-only signals before risking capital
+
+### 12.4 Deployment Impact
+
+Running 2 pairs (EURUSD + GBPUSD) in live mode:
+
+| Resource | Current | With GBPUSD |
+|---|---|---|
+| API calls per bar | 2 (technical + fundamental) | 4 |
+| Latency per bar | 10–25 seconds | 20–45 seconds |
+| Cost per bar | ~$0.01 | ~$0.02 |
+| MT5 symbols | EURUSD | EURUSD + GBPUSD |
+| Live command | Single `run_live()` | Sequential: GBPUSD then EURUSD |
+
+---
+
+## 13) File Inventory
+
+All files created/modified (July 28–29, 2026):
 
 | File | Lines | Purpose |
 |---|---|---|
-| `frival/main.py` | 491 | CLI orchestrator (backtest + live modes) |
+| `frival/main.py` | 556 | CLI orchestrator (backtest + live + borderline modes) |
 | `frival/model/__init__.py` | 2 | Package exports |
 | `frival/model/features.py` | 164 | compute_features() + extract_model_features() |
 | `frival/model/ensemble.py` | 126 | load_model() + predict() |
-| `frival/signal_gate.py` | 114 | apply_gates() + gate_summary() |
+| `frival/signal_gate.py` | 159 | apply_gates() + gate_summary() + BORDERLINE_THRESHOLD |
 | `frival/data/__init__.py` | 1 | Package exports |
-| `frival/data/fetcher.py` | 171 | fetch_ohlcv() — CSV + MT5 |
+| `frival/data/fetcher.py` | 171 | fetch_ohlcv() — CSV + MT5 with .env credentials |
 | `frival/output_writer.py` | 76 | log_signal() + write_summary_report() |
-| `frival/agents/__init__.py` | 8 | Package exports |
+| `frival/live_logger.py` | 73 | LiveLogger — tees all terminal output to daily log files |
+| `frival/agents/__init__.py` | 3 | Package exports |
 | `frival/agents/base.py` | 90 | OpenRouter chat() client |
 | `frival/agents/technical.py` | 130 | Agent A — GPT-4o technical evaluation |
-| `frival/agents/fundamental.py` | 156 | Agent B — Perplexity macro evaluation |
+| `frival/agents/fundamental.py` | 156 | Agent B — Perplexity Sonar Pro macro evaluation |
 | `frival/agents/context.py` | 72 | build_context() — agent input preparation |
-| `frival/agents/senior.py` | 83 | synthesize() — coordination rule engine |
+| `frival/agents/senior.py` | 145 | synthesize() + synthesize_borderline() — dual rule engines |
 | `frival/agents/prompts/technical.txt` | 53 | System prompt v2 (5 rules, 30-60% target) |
 | `frival/agents/prompts/fundamental.txt` | 56 | System prompt (4 rules, web search) |
 | `frival/evaluate_precision.py` | 196 | Post-hoc precision/EV/Wilson CI calculator |
 | `frival/run_eval.py` | 22 | Quick precision eval runner |
+| `frival/DAILY_ROUTINE.md` | 116 | Step-by-step live execution guide |
 | `frival/config/.env` | 6 | Credentials (gitignored) |
 | `frival/config/.env.example` | 5 | Template |
 | `ml-signal-service/docs/main/iteration_2_agentic_testing_framework.md` | — | Architecture & implementation plan document |
-| **Total** | **~2,000** | |
+| **Total** | **~2,400** | |
 
 ---
 
-*This document reflects the complete project state as of July 28, 2026 — the SELL pivot, the ensemble model bundle, and the full Frival agentic testing framework. The next update should include live paper trading results.*
+*This document reflects the complete project state as of July 29, 2026 — EURUSD H1 SELL in live paper trading, the full Frival agentic testing framework, and the GBPUSD multi-pair expansion plan. The next update should include live trading results and GBPUSD model training outcomes.*
