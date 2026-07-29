@@ -78,6 +78,12 @@ def get_features_for_pair(pair: str) -> list:
         return MODEL_FEATURES
     elif pair_upper == "GBPUSD":
         return GBPUSD_SELL_FEATURES
+    elif pair_upper == "USDCHF":
+        # TODO: Replace with actual features after noise-injection voting completes
+        raise NotImplementedError(
+            "USDCHF features not yet generated. Run usdchf_sell_improved.ipynb "
+            "first, then update get_features_for_pair() with the selected features."
+        )
     else:
         raise ValueError(f"Unknown pair: {pair}. Supported: EURUSD, GBPUSD")
 

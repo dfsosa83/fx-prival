@@ -54,6 +54,12 @@ PAIR_CONFIG = {
         "technical_prompt": str(PROMPTS_DIR / "technical_gbpusd.txt"),
         "fundamental_prompt": str(PROMPTS_DIR / "fundamental_gbpusd.txt"),
     },
+    "USDCHF": {
+        "threshold": 0.367,  # placeholder — update after training
+        "model_file": MODELS_BIN / "USDCHF_H1_sell_Ensemble.joblib",
+        "technical_prompt": str(PROMPTS_DIR / "technical_usdchf.txt"),
+        "fundamental_prompt": str(PROMPTS_DIR / "fundamental_usdchf.txt"),
+    },
 }
 
 
