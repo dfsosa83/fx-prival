@@ -28,6 +28,7 @@ from model.features import ATR_TP_MULT, ATR_SL_MULT, FORWARD_BARS
 from signal_gate import apply_gates, gate_summary, BORDERLINE_THRESHOLD
 from output_writer import log_signal, write_summary_report
 from data import fetch_ohlcv
+from live_logger import LiveLogger
 from agents import evaluate_technical, evaluate_fundamental, synthesize, synthesize_borderline
 from agents.context import build_context
 
@@ -315,12 +316,13 @@ def _print_signal(signal: dict):
 def run_live(threshold: float = 0.306, agent_enabled: bool = True, borderline: bool = False):
     """
     Run the pipeline on the current H1 bar via MT5.
-
-    1. Fetch latest ~300 H1 bars from MT5
-    2. Compute features, evaluate latest bar
-    3. Apply gates (cooldown tracked on disk)
-    4. Run agents if gated, print/save result
+    All output is saved to frival/output/logs/YYYY-MM-DD_live.log.
     """
+    with LiveLogger() as log_path:
+        _run_live_inner(threshold, agent_enabled, borderline, log_path)
+
+
+def _run_live_inner(threshold, agent_enabled, borderline, log_path):
     import json
     from datetime import datetime, timezone
 
