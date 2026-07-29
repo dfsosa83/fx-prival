@@ -287,15 +287,15 @@ def _print_signal(signal: dict):
     t = signal["trade"]
     sl_pips = round((t["stop_loss"] - t["entry"]) * 10000, 1)
     tp_pips = round((t["entry"] - t["take_profit"]) * 10000, 1)
-    conf = signal.get("final_confidence") or "—"
+    conf = signal.get("final_confidence") or "-"
     prob = signal["model"]["probability"]
     zone = t.get("entry_zone", [t["entry"], t["entry"]])
-    expires = t.get("expires_at_utc", "—")
+    expires = t.get("expires_at_utc", "-")
 
     print("\n" + "=" * 60)
     print("  SIGNAL FIRED: EURUSD SELL")
     print(f"  Timestamp:    {signal['timestamp_utc']}")
-    print(f"  Entry zone:   {zone[0]:.5f} — {zone[1]:.5f}")
+    print(f"  Entry zone:   {zone[0]:.5f} - {zone[1]:.5f}")
     print(f"  Stop Loss:    {t['stop_loss']:.5f}  ({sl_pips:.1f} pips)")
     print(f"  Take Profit:  {t['take_profit']:.5f}  ({tp_pips:.1f} pips)")
     print(f"  R:R:          {t['rr_ratio']}")
@@ -446,7 +446,7 @@ def run_live(threshold: float = 0.306, agent_enabled: bool = True, borderline: b
     else:
         print(f"\nSignal SHELVED: {veto_reason}")
 
-    print(f"Agents: A={tech_result.get('decision','ERR')} B={fund_result.get('decision','ERR')} → {final_decision}")
+    print(f"Agents: A={tech_result.get('decision','ERR')} B={fund_result.get('decision','ERR')} -> {final_decision}")
     if errors:
         print(f"Agent errors: {errors}")
 
