@@ -45,18 +45,21 @@ PAIR_CONFIG = {
     "EURUSD": {
         "threshold": 0.306,
         "model_file": MODELS_BIN / "EURUSD_H1_sell_Ensemble.joblib",
+        "direction": "SELL",
         "technical_prompt": None,  # uses default technical.txt
         "fundamental_prompt": None,  # uses default fundamental.txt
     },
     "GBPUSD": {
         "threshold": 0.367,
         "model_file": MODELS_BIN / "GBPUSD_H1_sell_Ensemble.joblib",
+        "direction": "SELL",
         "technical_prompt": str(PROMPTS_DIR / "technical_gbpusd.txt"),
         "fundamental_prompt": str(PROMPTS_DIR / "fundamental_gbpusd.txt"),
     },
     "USDCHF": {
-        "threshold": 0.367,  # placeholder — update after training
-        "model_file": MODELS_BIN / "USDCHF_H1_sell_Ensemble.joblib",
+        "threshold": 0.359,
+        "model_file": MODELS_BIN / "USDCHF_H1_buy_Ensemble.joblib",
+        "direction": "BUY",
         "technical_prompt": str(PROMPTS_DIR / "technical_usdchf.txt"),
         "fundamental_prompt": str(PROMPTS_DIR / "fundamental_usdchf.txt"),
     },
@@ -146,7 +149,8 @@ def run_backtest(
             continue
 
         bar_dt = row["datetime"]
-        signal_id = f"{pair}_H1_SELL_{bar_dt.strftime('%Y-%m-%dT%H:%M:%SZ')}"
+        direction = pcfg.get("direction", "SELL")
+        signal_id = f"{pair}_H1_{direction}_{bar_dt.strftime('%Y-%m-%dT%H:%M:%SZ')}"
 
         tech_result = {}
         fund_result = {}
@@ -217,20 +221,29 @@ def run_backtest(
         # ── Compute trade levels ─────────────────────────────────────
         entry_price = float(row["close"])
         bar_atr = float(row["atr_14"]) if "atr_14" in row.index else 0.0
-        stop_loss = round(entry_price + bar_atr * ATR_SL_MULT, 5)
-        take_profit = round(entry_price - bar_atr * ATR_TP_MULT, 5)
+
+        if direction == "BUY":
+            stop_loss = round(entry_price - bar_atr * ATR_SL_MULT, 5)
+            take_profit = round(entry_price + bar_atr * ATR_TP_MULT, 5)
+            entry_zone = [
+                round(entry_price - 0.00020, 5),  # enter as low as possible
+                round(entry_price + 0.00020, 5),
+            ]
+        else:
+            stop_loss = round(entry_price + bar_atr * ATR_SL_MULT, 5)
+            take_profit = round(entry_price - bar_atr * ATR_TP_MULT, 5)
+            entry_zone = [
+                round(entry_price + 0.00020, 5),  # enter as high as possible
+                round(entry_price - 0.00020, 5),
+            ]
         rr_ratio = round(ATR_TP_MULT / ATR_SL_MULT, 1)
-        entry_zone = [
-            round(entry_price + 0.00020, 5),   # upper: better price for sell
-            round(entry_price - 0.00020, 5),   # lower: don't enter below
-        ]
         expires_at = bar_dt + pd.Timedelta(hours=FORWARD_BARS)
 
         signal = {
             "run_id": run_id,
             "signal_id": signal_id,
             "symbol": pair,
-            "direction": "SELL",
+            "direction": direction,
             "timestamp_utc": bar_dt.isoformat(),
             "trade": {
                 "entry": entry_price,
@@ -318,15 +331,21 @@ def run_backtest(
 def _print_signal(signal: dict):
     """Print a fired signal to console."""
     t = signal["trade"]
-    sl_pips = round((t["stop_loss"] - t["entry"]) * 10000, 1)
-    tp_pips = round((t["entry"] - t["take_profit"]) * 10000, 1)
+    direction = signal.get("direction", "SELL")
+    symbol = signal.get("symbol", "EURUSD")
+    if direction == "BUY":
+        sl_pips = round((t["entry"] - t["stop_loss"]) * 10000, 1)
+        tp_pips = round((t["take_profit"] - t["entry"]) * 10000, 1)
+    else:
+        sl_pips = round((t["stop_loss"] - t["entry"]) * 10000, 1)
+        tp_pips = round((t["entry"] - t["take_profit"]) * 10000, 1)
     conf = signal.get("final_confidence") or "-"
     prob = signal["model"]["probability"]
     zone = t.get("entry_zone", [t["entry"], t["entry"]])
     expires = t.get("expires_at_utc", "-")
 
     print("\n" + "=" * 60)
-    print("  SIGNAL FIRED: EURUSD SELL")
+    print(f"  SIGNAL FIRED: {symbol} {direction}")
     print(f"  Timestamp:    {signal['timestamp_utc']}")
     print(f"  Entry zone:   {zone[0]:.5f} - {zone[1]:.5f}")
     print(f"  Stop Loss:    {t['stop_loss']:.5f}  ({sl_pips:.1f} pips)")
@@ -475,10 +494,10 @@ def _run_live_inner(threshold, agent_enabled, borderline, log_path, pair):
     veto_reason = senior.get("veto_reason", "")
 
     # ── Save and print ──────────────────────────────────────────────────
-    signal = _build_signal(latest, probability, threshold, ind_probs,
+    signal = _build_signal(latest, probability, model_threshold, ind_probs,
                            tech_result, fund_result,
                            final_decision, final_confidence, veto_reason,
-                           gate_type=gate_type)
+                           gate_type=gate_type, pair=pair, direction=pcfg.get("direction", "SELL"))
     log_signal(signal)
 
     if final_decision == "FIRED":
@@ -494,7 +513,7 @@ def _run_live_inner(threshold, agent_enabled, borderline, log_path, pair):
 
 def _build_signal(latest_row, probability, threshold, ind_probs,
                   tech_result, fund_result, final_decision, final_confidence, veto_reason,
-                  gate_type="standard"):
+                  gate_type="standard", pair="EURUSD", direction="SELL"):
     """Build the signal dict from a single bar row."""
     from datetime import datetime
     bar_dt = latest_row["datetime"]
@@ -502,19 +521,28 @@ def _build_signal(latest_row, probability, threshold, ind_probs,
 
     entry_price = float(latest_row["close"])
     bar_atr = float(latest_row.get("atr_14", 0))
-    stop_loss = round(entry_price + bar_atr * ATR_SL_MULT, 5)
-    take_profit = round(entry_price - bar_atr * ATR_TP_MULT, 5)
-    entry_zone = [
-        round(entry_price + 0.00020, 5),
-        round(entry_price - 0.00020, 5),
-    ]
+
+    if direction == "BUY":
+        stop_loss = round(entry_price - bar_atr * ATR_SL_MULT, 5)
+        take_profit = round(entry_price + bar_atr * ATR_TP_MULT, 5)
+        entry_zone = [
+            round(entry_price - 0.00020, 5),
+            round(entry_price + 0.00020, 5),
+        ]
+    else:
+        stop_loss = round(entry_price + bar_atr * ATR_SL_MULT, 5)
+        take_profit = round(entry_price - bar_atr * ATR_TP_MULT, 5)
+        entry_zone = [
+            round(entry_price + 0.00020, 5),
+            round(entry_price - 0.00020, 5),
+        ]
     expires_at = bar_dt + pd.Timedelta(hours=FORWARD_BARS)
 
     return {
         "run_id": run_id,
-        "signal_id": f"EURUSD_H1_SELL_{bar_dt.strftime('%Y-%m-%dT%H:%M:%SZ')}",
-        "symbol": "EURUSD",
-        "direction": "SELL",
+        "signal_id": f"{pair}_H1_{direction}_{bar_dt.strftime('%Y-%m-%dT%H:%M:%SZ')}",
+        "symbol": pair,
+        "direction": direction,
         "timestamp_utc": bar_dt.isoformat(),
         "trade": {
             "entry": entry_price,

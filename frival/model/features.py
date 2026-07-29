@@ -70,8 +70,36 @@ GBPUSD_SELL_FEATURES = [
     "upper_wick",
 ]
 
+# ── USDCHF BUY (24 features from noise-injection voting) ───────────────────────
+USDCHF_BUY_FEATURES = [
+    "rolling_std_50",
+    "obv",
+    "adx_14",
+    "d1_rsi",
+    "close_vs_ema200",
+    "atr_regime",
+    "d1_close_vs_ema20",
+    "minus_di",
+    "close_vs_day_open",
+    "rolling_std_10",
+    "plus_di",
+    "volume_ratio",
+    "atr_lag_5",
+    "volume_lag_5",
+    "macd_sig",
+    "rsi_lag_5",
+    "volume_lag_1",
+    "macd_hist",
+    "bb_width",
+    "volume_lag_3",
+    "lower_wick",
+    "d1_ema50",
+    "upper_wick",
+    "macd_hist_slope",
+]
 
-def get_features_for_pair(pair: str) -> list:
+
+def get_features_for_pair(pair: str, direction: str = "SELL") -> list:
     """Return the model feature list for a given pair."""
     pair_upper = pair.upper()
     if pair_upper == "EURUSD":
@@ -79,11 +107,7 @@ def get_features_for_pair(pair: str) -> list:
     elif pair_upper == "GBPUSD":
         return GBPUSD_SELL_FEATURES
     elif pair_upper == "USDCHF":
-        # TODO: Replace with actual features after noise-injection voting completes
-        raise NotImplementedError(
-            "USDCHF features not yet generated. Run usdchf_sell_improved.ipynb "
-            "first, then update get_features_for_pair() with the selected features."
-        )
+        return USDCHF_BUY_FEATURES
     else:
         raise ValueError(f"Unknown pair: {pair}. Supported: EURUSD, GBPUSD")
 
