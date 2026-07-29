@@ -10,7 +10,7 @@ import os
 import re
 import time
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 import requests
 import urllib3
@@ -36,8 +36,9 @@ def _load_api_key() -> str:
     return key
 
 
-def _load_prompt() -> str:
-    with open(PROMPT_FILE, encoding="utf-8") as f:
+def _load_prompt(prompt_file: Optional[str] = None) -> str:
+    path = Path(prompt_file) if prompt_file else PROMPT_FILE
+    with open(path, encoding="utf-8") as f:
         return f.read()
 
 
@@ -73,6 +74,7 @@ def evaluate(
     currency_pair: str = "EURUSD",
     *,
     max_retries: int = 2,
+    prompt_file: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Evaluate the macro environment for a EURUSD SELL signal via Perplexity.
@@ -89,7 +91,7 @@ def evaluate(
     dict with: decision, confidence, justification, regime_flags, news_sources
     """
     api_key = _load_api_key()
-    system_prompt = _load_prompt()
+    system_prompt = _load_prompt(prompt_file)
     user_message = _build_user_message(currency_pair, current_price, probability)
 
     headers = {

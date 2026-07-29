@@ -9,7 +9,7 @@ and ensemble internal agreement.
 import json
 import re
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from .base import chat
 
@@ -17,8 +17,9 @@ from .base import chat
 PROMPT_FILE = Path(__file__).resolve().parent / "prompts" / "technical.txt"
 
 
-def _load_prompt() -> str:
-    with open(PROMPT_FILE, encoding="utf-8") as f:
+def _load_prompt(prompt_file: Optional[str] = None) -> str:
+    path = Path(prompt_file) if prompt_file else PROMPT_FILE
+    with open(path, encoding="utf-8") as f:
         return f.read()
 
 
@@ -90,6 +91,7 @@ def evaluate(
     top_features: Dict[str, float],
     *,
     model: str = "openai/gpt-4o",
+    prompt_file: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Evaluate whether the technical picture supports a SELL signal.
@@ -115,7 +117,7 @@ def evaluate(
     -------
     dict with keys: decision, confidence, justification, regime_flags.
     """
-    system_prompt = _load_prompt()
+    system_prompt = _load_prompt(prompt_file)
     user_message = _build_user_message(
         current_price, probability, threshold,
         individual_probs, d1_context, top_features,

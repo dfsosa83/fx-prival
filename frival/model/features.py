@@ -5,6 +5,7 @@ Extracted from eurusd_sell_improved.ipynb Cell 12.
 Pure function: takes raw H1 OHLCV, returns feature DataFrame.
 """
 
+from typing import List, Optional, Dict, Any
 import numpy as np
 import pandas as pd
 
@@ -45,6 +46,40 @@ MODEL_FEATURES = [
     "macd_hist_slope",
     "rsi_lag_3",
 ]
+
+# ── GBPUSD SELL (19 features from noise-injection voting) ────────────────────
+GBPUSD_SELL_FEATURES = [
+    "adx_14",
+    "rolling_std_50",
+    "d1_rsi",
+    "atr_regime",
+    "d1_close_vs_ema20",
+    "obv",
+    "close_vs_ema200",
+    "rolling_std_10",
+    "minus_di",
+    "plus_di",
+    "atr_lag_5",
+    "volume_lag_5",
+    "close_vs_day_open",
+    "macd_sig",
+    "volume_ratio",
+    "macd_hist",
+    "rsi_lag_5",
+    "bb_width",
+    "upper_wick",
+]
+
+
+def get_features_for_pair(pair: str) -> list:
+    """Return the model feature list for a given pair."""
+    pair_upper = pair.upper()
+    if pair_upper == "EURUSD":
+        return MODEL_FEATURES
+    elif pair_upper == "GBPUSD":
+        return GBPUSD_SELL_FEATURES
+    else:
+        raise ValueError(f"Unknown pair: {pair}. Supported: EURUSD, GBPUSD")
 
 
 def compute_features(data: pd.DataFrame) -> pd.DataFrame:
@@ -218,11 +253,19 @@ def compute_features(data: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def extract_model_features(df_features: pd.DataFrame) -> pd.DataFrame:
+def extract_model_features(df_features: pd.DataFrame, features: Optional[list] = None) -> pd.DataFrame:
     """
-    Extract only the 20 features the trained model expects, in the correct order.
+    Extract only the model features in the correct order.
+
+    Parameters
+    ----------
+    df_features : pd.DataFrame
+        Full feature DataFrame from compute_features().
+    features : list, optional
+        Feature list to extract. Defaults to MODEL_FEATURES (EURUSD).
     """
-    missing = [f for f in MODEL_FEATURES if f not in df_features.columns]
+    feats = features if features is not None else MODEL_FEATURES
+    missing = [f for f in feats if f not in df_features.columns]
     if missing:
         raise KeyError(f"Missing required features: {missing}")
-    return df_features[MODEL_FEATURES].copy()
+    return df_features[feats].copy()

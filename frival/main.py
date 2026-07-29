@@ -23,7 +23,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from model import compute_features, extract_model_features, load_model, predict
+from model import compute_features, extract_model_features, load_model, predict, get_features_for_pair
 from model.features import ATR_TP_MULT, ATR_SL_MULT, FORWARD_BARS
 from signal_gate import apply_gates, gate_summary, BORDERLINE_THRESHOLD
 from output_writer import log_signal, write_summary_report
@@ -33,11 +33,28 @@ from agents import evaluate_technical, evaluate_fundamental, synthesize, synthes
 from agents.context import build_context
 
 
-# ── Paths ────────────────────────────────────────────────────────────────────
-MODEL_FILE = (
+# ── Pair configurations ──────────────────────────────────────────────────────
+MODELS_BIN = (
     Path(__file__).resolve().parents[1]
-    / "ml-signal-service" / "models_bin" / "EURUSD_H1_sell_Ensemble.joblib"
+    / "ml-signal-service" / "models_bin"
 )
+
+PROMPTS_DIR = Path(__file__).resolve().parent / "agents" / "prompts"
+
+PAIR_CONFIG = {
+    "EURUSD": {
+        "threshold": 0.306,
+        "model_file": MODELS_BIN / "EURUSD_H1_sell_Ensemble.joblib",
+        "technical_prompt": None,  # uses default technical.txt
+        "fundamental_prompt": None,  # uses default fundamental.txt
+    },
+    "GBPUSD": {
+        "threshold": 0.367,
+        "model_file": MODELS_BIN / "GBPUSD_H1_sell_Ensemble.joblib",
+        "technical_prompt": str(PROMPTS_DIR / "technical_gbpusd.txt"),
+        "fundamental_prompt": str(PROMPTS_DIR / "fundamental_gbpusd.txt"),
+    },
+}
 
 
 def run_backtest(
@@ -47,6 +64,7 @@ def run_backtest(
     source: str = "csv",
     agent_enabled: bool = True,
     borderline: bool = False,
+    pair: str = "EURUSD",
 ) -> dict:
     """
     Run the ML pipeline over a date range.
@@ -60,13 +78,16 @@ def run_backtest(
 
     Returns summary dict.
     """
-    print(f"\n=== Backtest: {start_date} -> {end_date} ===\n")
+    print(f"\n=== Backtest: {pair} {start_date} -> {end_date} ===\n")
+
+    pcfg = PAIR_CONFIG.get(pair, PAIR_CONFIG["EURUSD"])
+    model_threshold = threshold if threshold != 0.306 else pcfg["threshold"]
 
     # ── Fetch data ────────────────────────────────────────────────────────
     if source == "csv":
-        df = fetch_ohlcv("EURUSD", "H1", source="csv")
+        df = fetch_ohlcv(pair, "H1", source="csv")
     else:
-        df = fetch_ohlcv("EURUSD", "H1", start_date=start_date, end_date=end_date, source=source)
+        df = fetch_ohlcv(pair, "H1", start_date=start_date, end_date=end_date, source=source)
 
     # ── Compute features ──────────────────────────────────────────────────
     df_feat = compute_features(df)
@@ -81,9 +102,10 @@ def run_backtest(
         return {}
 
     # ── Model inference ───────────────────────────────────────────────────
-    df_model = extract_model_features(df_range)
-    bundle = load_model(str(MODEL_FILE))
-    result = predict(bundle, df_model)
+    pair_features = get_features_for_pair(pair)
+    df_model = extract_model_features(df_range, features=pair_features)
+    bundle = load_model(str(pcfg["model_file"]))
+    result = predict(bundle, df_model, threshold=model_threshold)
     df_range["probability"] = result["probability"]
 
     # Store per-model probabilities for agent context
@@ -92,7 +114,7 @@ def run_backtest(
     print(f"Model inference complete: {result['n_samples']} bars")
 
     # ── Apply gates ───────────────────────────────────────────────────────
-    df_gated = apply_gates(df_range, threshold=threshold, borderline=borderline)
+    df_gated = apply_gates(df_range, threshold=model_threshold, borderline=borderline)
     summary = gate_summary(df_gated)
 
     # ── Log signals ───────────────────────────────────────────────────────
@@ -118,7 +140,7 @@ def run_backtest(
             continue
 
         bar_dt = row["datetime"]
-        signal_id = f"EURUSD_H1_SELL_{bar_dt.strftime('%Y-%m-%dT%H:%M:%SZ')}"
+        signal_id = f"{pair}_H1_SELL_{bar_dt.strftime('%Y-%m-%dT%H:%M:%SZ')}"
 
         tech_result = {}
         fund_result = {}
@@ -137,7 +159,7 @@ def run_backtest(
             ctx = build_context(
                 df_range.loc[idx],
                 probability=float(row["probability"]),
-                threshold=threshold,
+                threshold=model_threshold,
                 individual_probs=ind_probs or {"ensemble": float(row["probability"])},
             )
 
@@ -146,10 +168,11 @@ def run_backtest(
                 tech_result = evaluate_technical(
                     current_price=ctx["current_price"],
                     probability=ctx["probability"],
-                    threshold=ctx["threshold"],
+                    threshold=model_threshold,
                     individual_probs=ctx["individual_probs"],
                     d1_context=ctx["d1_context"],
                     top_features=ctx["top_features"],
+                    prompt_file=pcfg["technical_prompt"],
                 )
                 t_dec = tech_result.get("decision", "NEUTRAL")
                 if t_dec == "CONFIRM": agent_tech_confirmed += 1
@@ -165,6 +188,8 @@ def run_backtest(
                 fund_result = evaluate_fundamental(
                     current_price=ctx["current_price"],
                     probability=ctx["probability"],
+                    currency_pair=pair,
+                    prompt_file=pcfg["fundamental_prompt"],
                 )
                 f_dec = fund_result.get("decision", "NEUTRAL")
                 if f_dec == "CONFIRM": agent_fund_confirmed += 1
@@ -198,7 +223,7 @@ def run_backtest(
         signal = {
             "run_id": run_id,
             "signal_id": signal_id,
-            "symbol": "EURUSD",
+            "symbol": pair,
             "direction": "SELL",
             "timestamp_utc": bar_dt.isoformat(),
             "trade": {
@@ -253,9 +278,10 @@ def run_backtest(
     # ── Summary report ────────────────────────────────────────────────────
     report = {
         "run_id": run_id,
+        "pair": pair,
         "date_range": {"start": start_date, "end": end_date},
-        "threshold": threshold,
-        "model_file": MODEL_FILE.name,
+        "threshold": model_threshold,
+        "model_file": pcfg["model_file"].name,
         "agent_enabled": agent_enabled,
         "gates": summary,
         "signals_fired": fired_count,
@@ -313,23 +339,26 @@ def _print_signal(signal: dict):
         print(f"  Agent B: {fa.get('decision','?')} ({fa.get('confidence','?')})")
 
 
-def run_live(threshold: float = 0.306, agent_enabled: bool = True, borderline: bool = False):
+def run_live(threshold: float = 0.306, agent_enabled: bool = True, borderline: bool = False, pair: str = "EURUSD"):
     """
     Run the pipeline on the current H1 bar via MT5.
     All output is saved to frival/output/logs/YYYY-MM-DD_live.log.
     """
     with LiveLogger() as log_path:
-        _run_live_inner(threshold, agent_enabled, borderline, log_path)
+        _run_live_inner(threshold, agent_enabled, borderline, log_path, pair)
 
 
-def _run_live_inner(threshold, agent_enabled, borderline, log_path):
+def _run_live_inner(threshold, agent_enabled, borderline, log_path, pair):
     import json
     from datetime import datetime, timezone
 
-    print(f"\n=== LIVE: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC ===\n")
+    pcfg = PAIR_CONFIG.get(pair, PAIR_CONFIG["EURUSD"])
+    model_threshold = threshold if threshold != 0.306 else pcfg["threshold"]
+
+    print(f"\n=== LIVE: {pair} {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC ===\n")
 
     # ── Fetch live data from MT5 ────────────────────────────────────────
-    df = fetch_ohlcv("EURUSD", "H1", source="mt5")
+    df = fetch_ohlcv(pair, "H1", source="mt5")
     print(f"Fetched {len(df):,} bars from MT5")
 
     # ── Compute features ────────────────────────────────────────────────
@@ -338,8 +367,9 @@ def _run_live_inner(threshold, agent_enabled, borderline, log_path):
     print(f"Latest bar: {latest['datetime']}  close={latest['close']:.5f}")
 
     # ── Model inference (single bar) ───────────────────────────────────
-    df_model = extract_model_features(pd.DataFrame([latest]))
-    bundle = load_model(str(MODEL_FILE))
+    pair_features = get_features_for_pair(pair)
+    df_model = extract_model_features(pd.DataFrame([latest]), features=pair_features)
+    bundle = load_model(str(pcfg["model_file"]))
     result = predict(bundle, df_model)
     probability = result["probability"]
 
@@ -349,8 +379,8 @@ def _run_live_inner(threshold, agent_enabled, borderline, log_path):
         ind_probs[mname] = result["individual_probs"].get(mname, probability)
 
     # ── Gate check ─────────────────────────────────────────────────────
-    passes_threshold = probability >= threshold
-    passes_borderline = borderline and (BORDERLINE_THRESHOLD <= probability < threshold)
+    passes_threshold = probability >= model_threshold
+    passes_borderline = borderline and (BORDERLINE_THRESHOLD <= probability < model_threshold)
     hour = latest["datetime"].hour
     passes_session = ((hour >= 7) & (hour < 16)) | ((hour >= 13) & (hour < 22))
     passes_cooldown = _check_cooldown()
@@ -361,7 +391,7 @@ def _run_live_inner(threshold, agent_enabled, borderline, log_path):
     if not gate_result and not gate_borderline:
         failed = []
         if not passes_threshold and not passes_borderline:
-            failed.append(f"p={probability:.4f} < {threshold}")
+            failed.append(f"p={probability:.4f} < {model_threshold}")
         elif passes_borderline and not passes_cooldown:
             failed.append("cooldown")
         if not passes_session:
@@ -375,10 +405,10 @@ def _run_live_inner(threshold, agent_enabled, borderline, log_path):
         gate_type = "borderline"
 
     if gate_type:
-        print(f"Probability: {probability:.4f}  threshold={threshold}")
+        print(f"Probability: {probability:.4f}  threshold={model_threshold}")
         print(f"Gate result: PASS ({gate_type})")
     else:
-        print(f"Probability: {probability:.4f}  threshold={threshold}")
+        print(f"Probability: {probability:.4f}  threshold={model_threshold}")
         print(f"Gate result: BLOCK  ({'  '.join(failed)})")
 
     if not gate_result and not gate_borderline:
@@ -406,10 +436,11 @@ def _run_live_inner(threshold, agent_enabled, borderline, log_path):
     try:
         tech_result = evaluate_technical(
             current_price=ctx["current_price"],
-            probability=probability, threshold=threshold,
+            probability=probability, threshold=model_threshold,
             individual_probs=ind_probs,
             d1_context=ctx["d1_context"],
             top_features=ctx["top_features"],
+            prompt_file=pcfg["technical_prompt"],
         )
     except Exception as e:
         errors += 1
@@ -421,6 +452,8 @@ def _run_live_inner(threshold, agent_enabled, borderline, log_path):
         fund_result = evaluate_fundamental(
             current_price=ctx["current_price"],
             probability=probability,
+            currency_pair=pair,
+            prompt_file=pcfg["fundamental_prompt"],
         )
     except Exception as e:
         errors += 1
@@ -543,6 +576,7 @@ def main():
     parser.add_argument("--source", choices=["csv", "mt5"], default="csv", help="Data source")
     parser.add_argument("--no-agent", action="store_true", help="Skip agent evaluation (ML-only)")
     parser.add_argument("--borderline", action="store_true", help="Evaluate bars p in [0.20, 0.306) with strict agent rules")
+    parser.add_argument("--symbol", default="EURUSD", help="Trading pair: EURUSD or GBPUSD")
     args = parser.parse_args()
 
     if args.mode == "backtest":
@@ -550,7 +584,7 @@ def main():
             parser.error("--start and --end required for backtest mode")
         run_backtest(args.start, args.end, args.threshold,
                      source=args.source, agent_enabled=not args.no_agent,
-                     borderline=args.borderline)
+                     borderline=args.borderline, pair=args.symbol)
     elif args.mode == "live":
         run_live(args.threshold, agent_enabled=not args.no_agent,
-                 borderline=args.borderline)
+                 borderline=args.borderline, pair=args.symbol)
