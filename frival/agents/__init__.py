@@ -8,4 +8,4 @@ Senior  — Coordination layer (rule engine)
 
 from .technical import evaluate as evaluate_technical
 from .fundamental import evaluate as evaluate_fundamental
-from .senior import synthesize
+from .senior import synthesize, synthesize_borderline

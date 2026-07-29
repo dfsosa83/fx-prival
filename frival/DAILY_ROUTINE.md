@@ -23,30 +23,37 @@ EURUSD must be visible in Market Watch. No other scripts using the terminal.
 
 ## Step 2 — Run at each hour (:01)
 
-Open Bash terminal in this exact directory:
+Open Git Bash, navigate and run:
 
 ```bash
 cd "/c/Users/david/OneDrive/Documents/fx-prival/frival"
-```
-
-Run:
-
-```bash
-/c/Users/david/anaconda3/Library/envs/deaf_agent/python.exe main.py --mode live
+/c/Users/david/anaconda3/Library/envs/deaf_agent/python.exe -u -c "import sys; sys.path.insert(0, '.'); from main import run_live; run_live(borderline=True)"
 ```
 
 Wait 30–60 seconds for agent evaluation. Read the output.
 
+The `-u` flag disables output buffering. The `borderline=True` enables the extended range.
+
 ---
 
-## Step 3 — Interpret the result
+## Step 3 — Three-Tier Probability System
 
-### If signal FIRES:
+| Tier | Probability | Trigger | Rule |
+|---|---|---|---|
+| **Standard** | p ≥ 0.306 | Model confident | Agent A + B vote, single confirm sufficient |
+| **Borderline** | 0.20 ≤ p < 0.306 | Model uncertain | **Both** agents must CONFIRM to fire |
+| **Blocked** | p < 0.20 | Model opposed | No agent evaluation, no signal |
+
+---
+
+## Step 4 — Interpret the result
+
+### If signal FIRES (standard):
 
 ```
+Gate result: PASS (standard)
 ============================================================
   SIGNAL FIRED: EURUSD SELL
-  Timestamp:    2026-07-28T17:00:00+00:00
   Entry zone:   1.15352 — 1.15312
   Stop Loss:    1.15406  (7.4 pips)
   Take Profit:  1.15221  (11.1 pips)
@@ -59,50 +66,59 @@ Wait 30–60 seconds for agent evaluation. Read the output.
   Agent B: CONFIRM (MODERATE)
 ```
 
-**Action:** Place SELL 0.08 lots in MT5:
-- Entry: between 1.15352 and 1.15312
-- Stop Loss: 1.15406
-- Take Profit: 1.15221
+**Action:** Place SELL 0.08 lots in MT5. See trade levels above.
 
-If price is outside the entry zone before you place the order → skip.
-Signal expires at 23:00 UTC (6:00 PM Panama).
+### If signal FIRES (borderline):
+
+```
+Gate result: PASS (borderline)
+============================================================
+  SIGNAL FIRED: EURUSD SELL
+  Confidence:   MODERATE
+  Probability:  0.2572
+============================================================
+  Agent A: CONFIRM (HIGH)
+  Agent B: CONFIRM (MODERATE)
+```
+
+**Action:** Both agents see opportunity despite weak model. Place same 0.08 lots. Monitor closely — the model is less confident.
 
 ### If signal is BLOCKED:
 
 ```
-Probability: 0.2920  threshold=0.306
-Gate result: BLOCK  (p=0.2920 < 0.306)
+Gate result: BLOCK  (p=0.1257 < 0.306)
 ```
 
-Nothing to do. Wait for next hour.
+Model sees no edge. Nothing to do.
 
 ### If signal is SHELVED:
 
 ```
-Signal SHELVED: technical: D1 ADX > 30, strong USD bid — selling adverse
+Signal SHELVED: technical: D1 ADX > 30, strong USD bid
 ```
 
-The agents disagreed. Nothing to do. Wait for next hour.
+The agents disagreed or couldn't reach consensus. Nothing to do.
 
 ---
 
 ## Rules
 
 1. **Max 1 trade at a time.** Never pyramid EURUSD H1 signals.
-2. **Don't chase.** If price breaks above the entry zone, skip. You're selling into strength — it's worse, not better.
-3. **Expiry is real.** No entry after the expiry time. The model's prediction window is closed.
-4. **No manual overrides.** The agents already voted. Trust the output.
-5. **Log everything.** Every FIRED signal goes to `output/signals/YYYY-MM/YYYY-MM-DD.jsonl`. Weekly review against MT5 history.
+2. **Don't chase.** If price breaks above the entry zone, skip. Selling into strength = worse, not better.
+3. **Expiry is real.** No entry after expiry (6 hours from signal). The model's prediction window is closed.
+4. **Borderline = lower conviction.** If a borderline signal fires, expect lower precision (~30–35% vs 38–43% for standard).
+5. **No manual overrides.** The agents + model already voted. Trust the output.
+6. **Log everything.** Signals → `output/signals/` | Reports → `output/reports/`. Weekly review against MT5 history.
 
 ---
 
 ## Expected behavior
 
-- 3–5 signals per month
+- 3–5 standard signals + 1–3 borderline signals per month
 - Cooldown prevents signals within 4 hours of last FIRED
-- Agent A (technical) will reject ~50% of candidates
-- Agent B (fundamental) will veto on macro events, stay neutral otherwise
-- Win rate target: 38–43% at 1.5R
+- Agent A will reject ~50% of candidates
+- Agent B will veto on macro events, stay neutral otherwise
+- Win rate target: 38–43% (standard), 30–35% (borderline) at 1.5R
 
 ---
 
@@ -112,5 +128,6 @@ The agents disagreed. Nothing to do. Wait for next hour.
 |---|---|
 | MT5 connection error | Start MT5 terminal first, then re-run |
 | No output after 60s | Agent B searching the web — wait longer |
-| Python not found | Full path: `/c/Users/david/anaconda3/Library/envs/deaf_agent/python.exe` |
-| Signal but no time to enter | The zone is tight (2 pips). If >3 mins since the run, check if price still in zone |
+| Python not found | Use full path: `/c/Users/david/anaconda3/Library/envs/deaf_agent/python.exe` |
+| Signal but no time to enter | Zone is tight (2 pips). If >3 mins since run, check if price still in zone |
+| Borderline not running | Check `borderline=True` in the run command |

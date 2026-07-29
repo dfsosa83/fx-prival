@@ -25,10 +25,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from model import compute_features, extract_model_features, load_model, predict
 from model.features import ATR_TP_MULT, ATR_SL_MULT, FORWARD_BARS
-from signal_gate import apply_gates, gate_summary
+from signal_gate import apply_gates, gate_summary, BORDERLINE_THRESHOLD
 from output_writer import log_signal, write_summary_report
 from data import fetch_ohlcv
-from agents import evaluate_technical, evaluate_fundamental, synthesize
+from agents import evaluate_technical, evaluate_fundamental, synthesize, synthesize_borderline
 from agents.context import build_context
 
 
@@ -45,6 +45,7 @@ def run_backtest(
     threshold: float = 0.306,
     source: str = "csv",
     agent_enabled: bool = True,
+    borderline: bool = False,
 ) -> dict:
     """
     Run the ML pipeline over a date range.
@@ -90,13 +91,15 @@ def run_backtest(
     print(f"Model inference complete: {result['n_samples']} bars")
 
     # ── Apply gates ───────────────────────────────────────────────────────
-    df_gated = apply_gates(df_range, threshold=threshold)
+    df_gated = apply_gates(df_range, threshold=threshold, borderline=borderline)
     summary = gate_summary(df_gated)
 
     # ── Log signals ───────────────────────────────────────────────────────
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     fired_count = 0
     shelved_count = 0
+    borderline_fired = 0
+    borderline_shelved = 0
     agent_tech_confirmed = 0
     agent_tech_rejected = 0
     agent_tech_neutral = 0
@@ -107,8 +110,10 @@ def run_backtest(
 
     for idx, row in df_gated.iterrows():
 
-        # Only log bars that pass all gates
-        if not row["gate_result"]:
+        # Only log bars that pass gates (standard or borderline)
+        is_standard = row["gate_result"]
+        is_borderline = row.get("gate_borderline", False)
+        if not is_standard and not is_borderline:
             continue
 
         bar_dt = row["datetime"]
@@ -169,7 +174,10 @@ def run_backtest(
                 fund_result = {"error": str(e)}
 
             # Senior — coordinate both agents
-            senior = synthesize(tech_result, fund_result)
+            if is_borderline:
+                senior = synthesize_borderline(tech_result, fund_result)
+            else:
+                senior = synthesize(tech_result, fund_result)
             final_decision = senior["final_decision"]
             final_confidence = senior.get("final_confidence")
             veto_reason = senior.get("veto_reason", "")
@@ -216,15 +224,21 @@ def run_backtest(
             "final_decision": final_decision,
             "final_confidence": final_confidence,
             "veto_reason": veto_reason,
+            "gate_type": "borderline" if is_borderline else "standard",
         }
         log_signal(signal)
 
         if final_decision == "FIRED":
             fired_count += 1
+            if is_borderline:
+                borderline_fired += 1
         else:
             shelved_count += 1
+            if is_borderline:
+                borderline_shelved += 1
 
-    print(f"\nSignals: {fired_count} FIRED, {shelved_count} SHELVED")
+    print(f"\nSignals: {fired_count} FIRED ({borderline_fired} borderline), "
+              f"{shelved_count} SHELVED ({borderline_shelved} borderline)")
     if agent_enabled:
         print(f"Agent A (Technical): {agent_tech_confirmed} confirmed, "
               f"{agent_tech_rejected} rejected, {agent_tech_neutral} neutral")
@@ -245,6 +259,8 @@ def run_backtest(
         "gates": summary,
         "signals_fired": fired_count,
         "signals_shelved": shelved_count,
+        "borderline_fired": borderline_fired,
+        "borderline_shelved": borderline_shelved,
         "agent_stats": {
             "technical": {
                 "confirmed": agent_tech_confirmed,
@@ -296,7 +312,7 @@ def _print_signal(signal: dict):
         print(f"  Agent B: {fa.get('decision','?')} ({fa.get('confidence','?')})")
 
 
-def run_live(threshold: float = 0.306, agent_enabled: bool = True):
+def run_live(threshold: float = 0.306, agent_enabled: bool = True, borderline: bool = False):
     """
     Run the pipeline on the current H1 bar via MT5.
 
@@ -332,21 +348,38 @@ def run_live(threshold: float = 0.306, agent_enabled: bool = True):
 
     # ── Gate check ─────────────────────────────────────────────────────
     passes_threshold = probability >= threshold
+    passes_borderline = borderline and (BORDERLINE_THRESHOLD <= probability < threshold)
     hour = latest["datetime"].hour
     passes_session = ((hour >= 7) & (hour < 16)) | ((hour >= 13) & (hour < 22))
     passes_cooldown = _check_cooldown()
 
     gate_result = passes_threshold and passes_session and passes_cooldown
+    gate_borderline = passes_borderline and passes_session and passes_cooldown
 
-    failed = []
-    if not passes_threshold: failed.append(f"p={probability:.4f} < {threshold}")
-    if not passes_session: failed.append("outside session")
-    if not passes_cooldown: failed.append("cooldown active")
+    if not gate_result and not gate_borderline:
+        failed = []
+        if not passes_threshold and not passes_borderline:
+            failed.append(f"p={probability:.4f} < {threshold}")
+        elif passes_borderline and not passes_cooldown:
+            failed.append("cooldown")
+        if not passes_session:
+            failed.append("session")
+        if not passes_cooldown and passes_threshold:
+            failed.append("cooldown")
+        gate_type = ""
+    elif gate_result:
+        gate_type = "standard"
+    else:
+        gate_type = "borderline"
 
-    print(f"Probability: {probability:.4f}  threshold={threshold}")
-    print(f"Gate result: {'PASS' if gate_result else 'BLOCK'}  ({'  '.join(failed) if failed else 'all passed'})")
+    if gate_type:
+        print(f"Probability: {probability:.4f}  threshold={threshold}")
+        print(f"Gate result: PASS ({gate_type})")
+    else:
+        print(f"Probability: {probability:.4f}  threshold={threshold}")
+        print(f"Gate result: BLOCK  ({'  '.join(failed)})")
 
-    if not gate_result:
+    if not gate_result and not gate_borderline:
         return
 
     # ── Agent evaluation ────────────────────────────────────────────────
@@ -392,7 +425,10 @@ def run_live(threshold: float = 0.306, agent_enabled: bool = True):
         fund_result = {"error": str(e)}
 
     # Senior
-    senior = synthesize(tech_result, fund_result)
+    if gate_type == "borderline":
+        senior = synthesize_borderline(tech_result, fund_result)
+    else:
+        senior = synthesize(tech_result, fund_result)
     final_decision = senior["final_decision"]
     final_confidence = senior.get("final_confidence")
     veto_reason = senior.get("veto_reason", "")
@@ -400,7 +436,8 @@ def run_live(threshold: float = 0.306, agent_enabled: bool = True):
     # ── Save and print ──────────────────────────────────────────────────
     signal = _build_signal(latest, probability, threshold, ind_probs,
                            tech_result, fund_result,
-                           final_decision, final_confidence, veto_reason)
+                           final_decision, final_confidence, veto_reason,
+                           gate_type=gate_type)
     log_signal(signal)
 
     if final_decision == "FIRED":
@@ -415,7 +452,8 @@ def run_live(threshold: float = 0.306, agent_enabled: bool = True):
 
 
 def _build_signal(latest_row, probability, threshold, ind_probs,
-                  tech_result, fund_result, final_decision, final_confidence, veto_reason):
+                  tech_result, fund_result, final_decision, final_confidence, veto_reason,
+                  gate_type="standard"):
     """Build the signal dict from a single bar row."""
     from datetime import datetime
     bar_dt = latest_row["datetime"]
@@ -461,6 +499,7 @@ def _build_signal(latest_row, probability, threshold, ind_probs,
         "final_decision": final_decision,
         "final_confidence": final_confidence,
         "veto_reason": veto_reason,
+        "gate_type": gate_type,
     }
 
 
@@ -501,12 +540,15 @@ def main():
     parser.add_argument("--threshold", type=float, default=0.306, help="Override threshold")
     parser.add_argument("--source", choices=["csv", "mt5"], default="csv", help="Data source")
     parser.add_argument("--no-agent", action="store_true", help="Skip agent evaluation (ML-only)")
+    parser.add_argument("--borderline", action="store_true", help="Evaluate bars p in [0.20, 0.306) with strict agent rules")
     args = parser.parse_args()
 
     if args.mode == "backtest":
         if not args.start or not args.end:
             parser.error("--start and --end required for backtest mode")
         run_backtest(args.start, args.end, args.threshold,
-                     source=args.source, agent_enabled=not args.no_agent)
+                     source=args.source, agent_enabled=not args.no_agent,
+                     borderline=args.borderline)
     elif args.mode == "live":
-        run_live(args.threshold, agent_enabled=not args.no_agent)
+        run_live(args.threshold, agent_enabled=not args.no_agent,
+                 borderline=args.borderline)
