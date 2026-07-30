@@ -1,7 +1,7 @@
 # Project Last State
 
-Last updated: 2026-07-29
-Status: EURUSD H1 SELL in live paper trading. Next: GBPUSD expansion.
+Last updated: 2026-07-30
+Status: 3-pair live paper trading (EURUSD SELL, GBPUSD SELL, USDCHF BUY). Iteration 3 (calendar integration) planned.
 Scope: consolidated handoff for the EURUSD H1 SELL-only agentic signal system (Iteration 2 — Frival Framework).
 
 ---
@@ -637,6 +637,55 @@ Running 2 pairs (EURUSD + GBPUSD) in live mode:
 | Cost per bar | ~$0.01 | ~$0.02 |
 | MT5 symbols | EURUSD | EURUSD + GBPUSD |
 | Live command | Single `run_live()` | Sequential: GBPUSD then EURUSD |
+
+---
+
+## 11) Multi-Pair Pipeline Update (July 30, 2026)
+
+### Portfolio Status
+
+| Pair | Direction | Threshold | ROC-AUC | Test Prec | Lot | Status |
+|---|---|---|---|---|---|---|
+| EURUSD | SELL | 0.306 | 0.674 | 0.411 | 0.08 | **Core** |
+| GBPUSD | SELL | 0.367 | 0.685 | 0.515 | 0.08 | **Core** |
+| USDCHF | BUY | 0.359 | 0.597 | 0.468 | 0.04 | **Experimental** |
+| USDJPY | — | — | 0.516/0.559 | 0.299 | — | **KILLED** ✗ |
+
+**USDJPY killed** — both lanes fail every deployment gate (ROC-AUC < 0.60, precision 0.299, EV −0.254R, max DD −49.6R). The carry-trade proxy dynamics and BoJ intervention make ATR-barrier labels non-viable.
+
+### Key Framework Changes (July 30)
+
+- **Direction-aware config:** `PAIR_CONFIG` now has `direction` (BUY/SELL), `pip_multiplier`, and `entry_zone_size` per pair
+- **USDCHF BUY:** Opposite direction from EURUSD/GBPUSD SELL but same USD-strength thesis
+- **USDJPY pips:** Framework supports per-pair pip scaling (100× for USDJPY vs 10,000× for others)
+- **Live command (3 pairs):** `run_live(borderline=True, pair='EURUSD'); run_live(..., 'GBPUSD'); run_live(..., 'USDCHF')`
+
+### Live Trading Notes
+
+- July 29 sessions: 2 borderline signals (EURUSD p=0.2731, 0.2774), both correctly shelved
+- Agent B consistently identified FOMC event risk (Fed decision day, two-way risk)
+- Agent A correctly flagged weak ensemble agreement (1/4 or 0/4 models) on borderline signals
+- Zero API errors after encoding fix
+
+---
+
+## 12) Iteration 3 — Calendar Integration (Planned)
+
+Economic calendar data (2007–2026, 20 years) will be integrated via two approaches:
+
+**Phase 1 — Feature Engineering:** 10–12 calendar-derived features added to `compute_features()`:
+- Event presence (HIGH events in next 1h/4h/24h)
+- Deviation surprises (Actual vs Consensus, last 24h)
+- Event flags (FOMC/ECB/BoE day, hours since last event)
+- Noise-injection voting determines which features survive
+
+**Phase 2 — RAG/Agent B Context:** Structured calendar summary replaces web search in Agent B prompts:
+- Enables historical backtesting of Agent B (currently limited to live web search only)
+- Provides precise Actual vs Consensus comparisons instead of scraped headlines
+- Reduces Agent B latency (instant vs 5–15s web search)
+- Per-pair filtering (EUR/USD for EURUSD, BoE/Fed for GBPUSD)
+
+Full plan: `ml-signal-service/docs/main/iteration_3_calendar_integration.md`
 
 ---
 
