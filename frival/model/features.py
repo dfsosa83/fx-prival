@@ -108,8 +108,14 @@ def get_features_for_pair(pair: str, direction: str = "SELL") -> list:
         return GBPUSD_SELL_FEATURES
     elif pair_upper == "USDCHF":
         return USDCHF_BUY_FEATURES
+    elif pair_upper == "USDJPY":
+        # TODO: Replace with actual features after noise-injection voting completes
+        raise NotImplementedError(
+            "USDJPY features not yet generated. Run usdjpy_sell_improved.ipynb "
+            "first, then update get_features_for_pair() with the selected features."
+        )
     else:
-        raise ValueError(f"Unknown pair: {pair}. Supported: EURUSD, GBPUSD")
+        raise ValueError(f"Unknown pair: {pair}. Supported: EURUSD, GBPUSD, USDCHF, USDJPY")
 
 
 def compute_features(data: pd.DataFrame) -> pd.DataFrame:
