@@ -565,7 +565,7 @@ def _build_signal(latest_row, probability, threshold, ind_probs,
         "signal_id": f"{pair}_H1_{direction}_{bar_dt.strftime('%Y-%m-%dT%H:%M:%SZ')}",
 "symbol": pair,
             "direction": direction,
-            "pip_multiplier": pip_mult,
+            "pip_multiplier": pip_multiplier,
             "timestamp_utc": bar_dt.isoformat(),
         "trade": {
             "entry": entry_price,
