@@ -114,7 +114,7 @@ def run_backtest(
         df = fetch_ohlcv(pair, "H1", start_date=start_date, end_date=end_date, source=source)
 
     # ── Compute features ──────────────────────────────────────────────────
-    df_feat = compute_features(df)
+    df_feat = compute_features(df, pair=pair)
 
     # Filter to target date range (preserves warm-up from full dataset)
     end_dt = pd.Timestamp(end_date) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
@@ -260,9 +260,9 @@ def run_backtest(
         signal = {
             "run_id": run_id,
             "signal_id": signal_id,
-            "symbol": pair,
-"direction": direction,
-        "pip_multiplier": pip_multiplier,
+"symbol": pair,
+            "direction": direction,
+            "pip_multiplier": pip_mult,
             "timestamp_utc": bar_dt.isoformat(),
             "trade": {
                 "entry": entry_price,
@@ -407,7 +407,7 @@ def _run_live_inner(threshold, agent_enabled, borderline, log_path, pair):
     print(f"Fetched {len(df):,} bars from MT5")
 
     # ── Compute features ────────────────────────────────────────────────
-    df_feat = compute_features(df)
+    df_feat = compute_features(df, pair=pair)
     latest = df_feat.iloc[-1]  # current H1 bar (just closed)
     print(f"Latest bar: {latest['datetime']}  close={latest['close']:.5f}")
 
@@ -565,7 +565,7 @@ def _build_signal(latest_row, probability, threshold, ind_probs,
         "signal_id": f"{pair}_H1_{direction}_{bar_dt.strftime('%Y-%m-%dT%H:%M:%SZ')}",
 "symbol": pair,
             "direction": direction,
-            "pip_multiplier": pip_multiplier,
+"pip_multiplier": pip_mult,
             "timestamp_utc": bar_dt.isoformat(),
         "trade": {
             "entry": entry_price,

@@ -118,7 +118,7 @@ def get_features_for_pair(pair: str, direction: str = "SELL") -> list:
         raise ValueError(f"Unknown pair: {pair}. Supported: EURUSD, GBPUSD, USDCHF, USDJPY")
 
 
-def compute_features(data: pd.DataFrame) -> pd.DataFrame:
+def compute_features(data: pd.DataFrame, pair: Optional[str] = None) -> pd.DataFrame:
     """
     Compute all technical features from raw H1 OHLCV data.
 
@@ -127,11 +127,14 @@ def compute_features(data: pd.DataFrame) -> pd.DataFrame:
     data : pd.DataFrame
         Columns: datetime, open, high, low, close, volume.
         Rows sorted chronologically (oldest first).
+    pair : str, optional
+        Trading pair (EURUSD, GBPUSD, etc.). If provided, economic calendar
+        features are merged after technical feature computation.
 
     Returns
     -------
     pd.DataFrame
-        Original columns + all feature columns.
+        Original columns + all feature columns (+ calendar features if pair given).
         Rows with NaN (warm-up for rolling windows) are dropped.
     """
     df = data.copy()
@@ -285,6 +288,22 @@ def compute_features(data: pd.DataFrame) -> pd.DataFrame:
     df.reset_index(drop=True, inplace=True)
     n_dropped = n_before - len(df)
     print(f"Rows dropped (NaN warm-up): {n_dropped:,}  |  Rows remaining: {len(df):,}")
+
+    # ── Calendar features (optional — no lookahead) ─────────────────────────
+    if pair:
+        try:
+            from data.calendar import compute_calendar_features
+            cal_feats = compute_calendar_features(df["datetime"], pair)
+            df = df.merge(
+                pd.concat([df[["datetime"]], cal_feats.reset_index(drop=True)], axis=1),
+                on="datetime", how="left",
+            )
+            new_cols = [c for c in cal_feats.columns if c not in df.columns]
+            for c in new_cols:
+                df[c] = cal_feats[c].values
+            print(f"Calendar features merged: {list(cal_feats.columns)}")
+        except Exception as e:
+            print(f"Calendar features skipped: {e}")
 
     return df
 
