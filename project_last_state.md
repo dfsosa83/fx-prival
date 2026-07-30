@@ -651,6 +651,22 @@ Running 2 pairs (EURUSD + GBPUSD) in live mode:
 | USDCHF | BUY | 0.359 | 0.597 | 0.468 | 0.04 | **Experimental** |
 | USDJPY | — | — | 0.516/0.559 | 0.299 | — | **KILLED** ✗ |
 
+### Training Results Summary
+
+| Pair | Lane | Features | Best Model | ROC-AUC | Val Prec | Test Prec | Test EV | Total R | Verdict |
+|---|---|---|---|---|---|---|---|---|---|---|
+| EURUSD | SELL | 20 | Ensemble | 0.674 | 0.400 | 0.411 | −0.114R | +1.2R | ✓ Core |
+| GBPUSD | SELL | 19 | Ensemble(LogReg) | 0.685 | 0.400 | 0.515 | +0.175R | +9.0R | ✓ Core |
+| GBPUSD | BUY | 11 | Ensemble(LogReg) | 0.528 | 0.400 | 0.372 | −0.162R | −7.0R | ✗ Dead |
+| USDCHF | BUY | 24 | Ensemble(RF) | 0.597 | 0.440 | 0.468 | +0.081R | +5.0R | ⚠ Exp |
+| USDCHF | SELL | 17 | Ensemble(LogReg) | 0.610 | 0.455 | 0.333 | −0.267R | −5.6R | ✗ Dead |
+| USDJPY | BUY | 21 | Ensemble(LogReg) | 0.516 | 0.490 | ~0 | — | — | ✗ Dead |
+| USDJPY | SELL | 16 | Ensemble(LogReg) | 0.559 | 0.297 | 0.299 | −0.254R | −19.3R | ✗ Dead |
+
+### Calendar Data Available
+
+20 economic calendar files (2007–2026) now available at `data/raw/macro/EconomicCalendarEvents-YYYY.csv`. Iteration 3 integration (features + RAG) ready to build. Plan: `docs/main/iteration_3_calendar_integration.md`.
+
 **USDJPY killed** — both lanes fail every deployment gate (ROC-AUC < 0.60, precision 0.299, EV −0.254R, max DD −49.6R). The carry-trade proxy dynamics and BoJ intervention make ATR-barrier labels non-viable.
 
 ### Key Framework Changes (July 30)

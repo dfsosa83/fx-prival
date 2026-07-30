@@ -1,7 +1,7 @@
 from pathlib import Path
 
 # ── Instrument & timeframe ────────────────────────────────────────────────────
-PAIR      = "USDCHF"
+PAIR      = "GBPUSD"
 TIMEFRAME = "H1"
 
 # ── Data paths ────────────────────────────────────────────────────────────────
@@ -23,7 +23,7 @@ ATR_SL_MULT  = 1.0    # stop-loss distance   = ATR × ATR_SL_MULT
 FORWARD_BARS = 6      # how many H1 bars forward to scan for TP/SL hit
 
 # ── Chronological split boundaries ───────────────────────────────────────────
-# Edit ONLY here to change split dates — every downstream step reads from these.  TRAIN_START = "2023-06-30"(pr-auc:42); "2025-10-31 23:00:00"; "2025-11-01 00:00:00"
+# Edit ONLY here to change split dates — every downstream step reads from these.
 TRAIN_START = "2020-06-30 00:00:00"
 TRAIN_END   = "2025-06-30 23:00:00"
 VAL_START   = "2025-07-01 00:00:00"
@@ -38,59 +38,60 @@ print(f"Train      : {TRAIN_START}  →  {TRAIN_END}")
 print(f"Val        : {VAL_START}  →  {VAL_END}")
 print(f"Test       : {TEST_START}  →  present")
 
+
 ============================================================
 FEATURE SELECTION RESULTS
 ============================================================
 Real features tested : 76
-Selected             : 24
-Reduction            : 68%
-Best noise importance : 1156.81403
+Selected             : 19
+Reduction            : 75%
+Best noise importance : 1130.40602
 
 Top 15 selected features:
           feature     avg_imp  total_votes
-   rolling_std_50 1252.209832            3
-              obv 1144.814489            3
-           adx_14 1136.404789            2
-           d1_rsi 1125.609967            3
-  close_vs_ema200  984.637911            3
-       atr_regime  975.609563            3
-d1_close_vs_ema20  973.239727            3
-         minus_di  936.015422            3
-close_vs_day_open  889.832855            3
-   rolling_std_10  878.406164            2
-          plus_di  819.008363            3
-     volume_ratio  775.211478            3
-        atr_lag_5  773.407636            2
-     volume_lag_5  742.809359            3
-         macd_sig  739.809923            3
+           adx_14 1252.207015            3
+   rolling_std_50 1188.607890            3
+           d1_rsi 1142.405457            2
+       atr_regime 1128.029007            3
+d1_close_vs_ema20  940.815469            3
+              obv  937.206295            3
+  close_vs_ema200  923.415001            3
+   rolling_std_10  910.205102            2
+         minus_di  868.210390            3
+          plus_di  841.205661            3
+        atr_lag_5  796.806852            3
+     volume_lag_5  788.406914            2
+close_vs_day_open  750.011454            3
+         macd_sig  745.213883            3
+     volume_ratio  744.014188            3
 
 Noise feature positions (for reference):
           feature     avg_imp  total_votes
-noise_random_walk 1156.814029            3
- noise_sinusoidal  805.205662            2
- noise_gaussian_1  688.804022            2
- noise_gaussian_3  681.003533            2
- noise_gaussian_2  677.403441            2
-  noise_uniform_2  658.803578            2
-  noise_uniform_1  598.206016            2
-  noise_poisson_2  251.402294            0
-  noise_poisson_1  235.202370            0
+noise_random_walk 1130.406016            2
+  noise_uniform_2  781.204795            3
+ noise_sinusoidal  774.005147            3
+ noise_gaussian_2  764.403750            2
+ noise_gaussian_3  754.204540            2
+ noise_gaussian_1  735.602926            2
+  noise_uniform_1  716.404652            2
+  noise_poisson_2  270.001825            1
+  noise_poisson_1  201.002747            1
 
-✓ Auto-selected best model → RandomForest
+✓ Auto-selected best model → LogReg
 
-  CV PR-AUC : 0.389 ± 0.027
+  CV PR-AUC : 0.356 ± 0.025
 
 Model comparison for reference:
        model  pr_auc   std
-RandomForest   0.389 0.027
-    LightGBM   0.387 0.020
-      LogReg   0.387 0.037
-     XGBoost   0.381 0.020
+      LogReg   0.356 0.025
+RandomForest   0.353 0.027
+    LightGBM   0.337 0.028
+     XGBoost   0.332 0.023
 
 LogReg       params: (baseline)
-  RandomForest params: {'max_depth': 10, 'n_estimators': 200, 'max_features': 'sqrt', 'min_samples_leaf': 20}
-  XGBoost      params: {'n_estimators': 150, 'learning_rate': 0.05, 'max_depth': 5, 'subsample': 0.9, 'reg_lambda': 1.0, 'colsample_bytree': 0.9}
-  LightGBM     params: {'num_leaves': 15, 'n_estimators': 150, 'learning_rate': 0.05, 'min_child_samples': 50, 'max_depth': 10, 'subsample': 1.0, 'reg_lambda': 1.0, 'colsample_bytree': 0.9}
+  RandomForest params: {'max_features': 'sqrt', 'n_estimators': 600, 'max_depth': 10, 'min_samples_leaf': 50}
+  XGBoost      params: {'n_estimators': 150, 'colsample_bytree': 0.8, 'learning_rate': 0.05, 'subsample': 0.7, 'reg_lambda': 1.0, 'max_depth': 5}
+  LightGBM     params: {'n_estimators': 250, 'min_child_samples': 50, 'colsample_bytree': 0.9, 'num_leaves': 15, 'learning_rate': 0.05, 'subsample': 0.9, 'reg_lambda': 0.1, 'max_depth': 8}
 
 ✓ Final model = soft-vote ensemble of 4 calibrated models
 
@@ -98,30 +99,30 @@ LogReg       params: (baseline)
 Precision : 0.000   (breakeven ≈ 0.400)
 Recall    : 0.000
 F1        : 0.000
-ROC-AUC   : 0.597
-PR-AUC    : 0.395
+ROC-AUC   : 0.685
+PR-AUC    : 0.366
 
 Confusion matrix (rows=true, cols=pred):
-[[1615    0]
- [ 810    0]]
+[[2369    0]
+ [ 760    0]]
 
 Breakeven          : 0.400
 Min signals floor  : 50
-Optimal threshold  : 0.359
-Precision @ optimal: 0.440
-Recall    @ optimal: 0.054
-Signals            : 100 (0.99/day)
+Optimal threshold  : 0.367
+Precision @ optimal: 0.449
+Recall    @ optimal: 0.063
+Signals            : 107 (0.82/day)
 
 Top eligible thresholds:
  threshold  precision  recall  n_signals  signals_per_day
-     0.359      0.440   0.054        100             0.99
-     0.358      0.438   0.057        105             1.04
-     0.358      0.437   0.056        103             1.02
-     0.359      0.436   0.054        101             1.00
-     0.358      0.434   0.057        106             1.05
-     0.359      0.434   0.053         99             0.98
-     0.358      0.433   0.056        104             1.03
-     0.359      0.433   0.052         97             0.96
-     0.358      0.431   0.058        109             1.08
-     0.358      0.431   0.054        102             1.01
+     0.367      0.449   0.063        107             0.82
+     0.367      0.444   0.063        108             0.83
+     0.367      0.443   0.062        106             0.81
+     0.374      0.451   0.030         51             0.39
+     0.368      0.441   0.059        102             0.78
+     0.367      0.440   0.063        109             0.84
+     0.366      0.438   0.064        112             0.86
+     0.367      0.438   0.061        105             0.81
+     0.368      0.437   0.059        103             0.79
+     0.367      0.436   0.063        110             0.84
 

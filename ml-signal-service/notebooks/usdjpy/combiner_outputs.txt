@@ -1,0 +1,233 @@
+ROOT      = Path("../..").resolve()
+PAIR      = "USDJPY"
+TIMEFRAME = "H1"
+
+# ── Model bundles — auto-detect latest model (any algorithm) ──────────────────
+BUY_MODEL_PATH  = max(ROOT.glob(f"models_bin/{PAIR}_{TIMEFRAME}_buy_*.joblib"),  key=lambda p: p.stat().st_mtime, default=None)
+SELL_MODEL_PATH = max(ROOT.glob(f"models_bin/{PAIR}_{TIMEFRAME}_sell_*.joblib"), key=lambda p: p.stat().st_mtime, default=None)
+
+if BUY_MODEL_PATH is None or SELL_MODEL_PATH is None:
+    raise FileNotFoundError("No .joblib model found in models_bin/")
+
+# ── Raw data ──────────────────────────────────────────────────────────────────
+RAW_FILE = ROOT / "data" / "raw" / "mt5" / TIMEFRAME / f"{PAIR}_{TIMEFRAME}.csv"
+
+# ── Same split boundaries used when training both models ─────────────────────
+TRAIN_END   = "2025-06-30 23:00:00"
+VAL_START   = "2025-07-01 00:00:00"
+VAL_END     = "2025-12-31 23:00:00"
+TEST_START  = "2026-01-01 00:00:00"   # TEST_END = present (all remaining rows)
+
+# ── Conflict filter ───────────────────────────────────────────────────────────
+# Suppress a signal when the opposing model also exceeds this probability.
+# 0.60 = best balance for BUY-only + session filter (0.415 prec, 41 sig).
+CROSS_FILTER = 1.0
+
+# ── Cooldown ──────────────────────────────────────────────────────────────────
+# Minimum bars between two signals of the same direction.
+# Prevents multiple entries in the same market condition.
+# 4 bars = 4 hours on H1 (one half-session).  Set 0 to disable.
+COOLDOWN_BARS = 4
+
+BUY_ONLY = False         # drop SELL lane — non-viable on test set
+SESSION_FILTER = False   # gate signals to London+NY sessions only
+
+# Drop SELL lane entirely — test set shows SELL model is non-viable (3 signals, 0.333 prec).
+# BUY-only at cf=0.50 achieves 0.355 precision (31 signals, 0.28/day).
+
+print(f"Buy  bundle  : {BUY_MODEL_PATH.name}")
+print(f"Sell bundle  : {SELL_MODEL_PATH.name}")
+print(f"Raw data     : {RAW_FILE.exists()}")
+print(f"Cross-filter : {CROSS_FILTER}")
+print(f"Cooldown     : {COOLDOWN_BARS} bars between same-direction signals")
+print(f"BUY-only     : {BUY_ONLY}")
+print(f"Session filt : {SESSION_FILTER}  (London+NY only)")
+
+
+=== Validation set  (3,144 bars | 131 trading days) ===
+BUY  signals  (standalone candidates)   : 58
+SELL signals  (standalone candidates)   : 2230
+Conflicts suppressed                     : 51
+BUY  after filter + cooldown             : 6  (0.05/day)
+SELL after filter + cooldown             : 486  (3.71/day)
+Total actionable signals                 : 492
+
+Breakeven precision : 0.400
+
+Signal                          Precision    Signals   Per day
+-----------------------------------------------------------------
+BUY  standalone                     0.345         58     0.44
+BUY  + cross-filter                 0.429          7     0.05
+BUY  + filter + cooldown            0.333          6     0.05
+
+SELL standalone                     0.296       2230    17.02
+SELL + cross-filter                 0.297       2179    16.63
+SELL + filter + cooldown            0.307        486     3.71
+
+COMBINED final                      0.307        492     3.76
+
+Cross-filter   BUY prec    BUY n   BUY/day   SELL prec   SELL n   SELL/day
+--------------------------------------------------------------------------------
+        1.000      0.429        7      0.05       0.297     2179      16.63 ← current
+        0.284      0.429        7      0.05       0.190       84       0.64
+        0.700      0.429        7      0.05       0.297     2179      16.63
+        0.650      0.429        7      0.05       0.297     2179      16.63
+        0.600      0.429        7      0.05       0.297     2179      16.63
+        0.550      0.429        7      0.05       0.297     2179      16.63
+        0.500      0.429        7      0.05       0.297     2179      16.63
+        0.450      0.429        7      0.05       0.297     2179      16.63
+        0.400      0.429        7      0.05       0.297     2179      16.63
+
+Breakeven : 0.400
+Hint: choose the highest cross-filter where BUY precision ≥ 0.400
+
+=== Test Set (3,585 bars | 149 trading days) ===
+Breakeven precision: 0.400  (R:R = 1:1.5)
+
+Signal                          Precision    Signals   Per day
+-----------------------------------------------------------------
+BUY  final                            nan          0     0.00
+SELL final                          0.299        556     3.72
+
+COMBINED final                      0.299        556     3.72
+
+=== Overfit Check ===
+Val  COMBINED                       0.307        492     3.76
+Test COMBINED                       0.299        556     3.72
+Gap (val - test)                   +0.008
+Overfit?                       Acceptable
+
+Cross-filter sweep on test set (3,585 bars)
+
+    CF   BUY prec   BUY n    /day   SELL prec   SELL n    /day   COMB prec   COMB n    /day
+-----------------------------------------------------------------------------------------------
+ 0.80           nan *       0   0.00      0.299 *      556   3.72      0.299 *      556   3.72
+ 0.75           nan *       0   0.00      0.299 *      556   3.72      0.299 *      556   3.72
+ 0.70           nan *       0   0.00      0.299 *      556   3.72      0.299 *      556   3.72
+ 0.65           nan *       0   0.00      0.299 *      556   3.72      0.299 *      556   3.72
+ 0.60           nan *       0   0.00      0.299 *      556   3.72      0.299 *      556   3.72
+ 0.55           nan *       0   0.00      0.299 *      556   3.72      0.299 *      556   3.72
+ 0.50           nan *       0   0.00      0.299 *      556   3.72      0.299 *      556   3.72
+ 0.45           nan *       0   0.00      0.299 *      556   3.72      0.299 *      556   3.72
+ 0.40           nan *       0   0.00      0.299 *      556   3.72      0.299 *      556   3.72
+ 0.35           nan *       0   0.00      0.284 *      436   2.92      0.284 *      436   2.92
+ 0.30           nan *       0   0.00      0.350 *      100   0.67      0.350 *      100   0.67
+
+* = below breakeven (0.400)
+Selected CROSS_FILTER = 1.0 (from validation calibration)
+
+Strategy                                 Precision  Signals    /day
+----------------------------------------------------------------------
+BUY+SELL combined (cf=1.0)                   0.299      556    3.72
+BUY-only (no cross-filter)                   0.500        2    0.01
+
+ BUY-only cf  Precision  Signals    /day
+----------------------------------------
+       0.80      0.500        2    0.01 <-- best  ABOVE breakeven
+       0.75      0.500        2    0.01  ABOVE breakeven
+       0.70      0.500        2    0.01  ABOVE breakeven
+       0.65      0.500        2    0.01  ABOVE breakeven
+       0.60      0.500        2    0.01  ABOVE breakeven
+       0.55      0.500        2    0.01  ABOVE breakeven
+       0.50      0.500        2    0.01  ABOVE breakeven
+       0.45      0.500        2    0.01  ABOVE breakeven
+       0.40      0.500        2    0.01  ABOVE breakeven
+       0.35      0.500        2    0.01  ABOVE breakeven
+       0.30        nan        0    0.00
+
+Breakeven: 0.400
+BUY-only best: cf=0.80  prec=0.500
+
+# Cross-filter sweep on test set
+test_scores_with_labels = test_scores.merge(
+    df_features[["datetime", "buy_label", "sell_label"]],
+    on="datetime", how="left"
+)
+test_scores_with_labels.dropna(subset=["buy_label", "sell_label"], inplace=True)
+test_scores_with_labels.reset_index(drop=True, inplace=True)
+
+print(f"Cross-filter sweep on test set ({len(test_scores_with_labels):,} bars)")
+print()
+print(f"{'CF':>6}  {'BUY prec':>9}  {'BUY n':>6}  {'/day':>6}  {'SELL prec':>10}  {'SELL n':>7}  {'/day':>6}  {'COMB prec':>10}  {'COMB n':>7}  {'/day':>6}")
+print("-" * 95)
+
+for cf in [0.80, 0.75, 0.70, 0.65, 0.60, 0.55, 0.50, 0.45, 0.40, 0.35, 0.30]:
+    tmp = apply_conflict_filter(test_scores_with_labels, BUY_THRESHOLD, SELL_THRESHOLD, cf, buy_only=BUY_ONLY, session_filter=SESSION_FILTER)
+    tmp = apply_cooldown(tmp, COOLDOWN_BARS)
+
+    p_b, n_b = precision(tmp["buy_signal"], tmp["buy_label"])
+    p_s, n_s = precision(tmp["sell_signal"], tmp["sell_label"])
+    total_n = n_b + n_s
+    correct_n = int(
+        ((tmp["buy_signal"]  == 1) & (tmp["buy_label"]  == 1) |
+         (tmp["sell_signal"] == 1) & (tmp["sell_label"] == 1)).sum()
+    )
+    p_c = round(correct_n / total_n, 3) if total_n > 0 else float("nan")
+
+    b_mark = "" if (p_b or 0) >= breakeven else " *"
+    s_mark = "" if (p_s or 0) >= breakeven else " *"
+    c_mark = "" if (p_c or 0) >= breakeven else " *"
+    sel = " <--" if cf == CROSS_FILTER else ""
+
+    print(f"{cf:>5.2f}{sel:<4}  {p_b or 0:>8.3f}{b_mark:<2}  {n_b:>6}  {n_b/td_test:>5.2f}  {p_s or 0:>9.3f}{s_mark:<2}  {n_s:>7}  {n_s/td_test:>5.2f}  {p_c or 0:>9.3f}{c_mark:<2}  {total_n:>7}  {total_n/td_test:>5.2f}")
+
+print()
+print(f"* = below breakeven ({breakeven:.3f})")
+print(f"Selected CROSS_FILTER = {CROSS_FILTER} (from validation calibration)")
+
+
+=== Test set — expected value & 95% confidence intervals ===
+
+BUY : no signals in the main (gated) pipeline
+SELL: n=556  prec=0.299  CI95=(0.262, 0.338)  EV=-0.254R (-490.82 pips)  total=-141.2R (-272898 pips)
+
+Read: EV > 0 means the lane is profitable after spread.
+If the precision CI straddles breakeven, the sample is too small to conclude.
+
+=== SELL lane — sealed test, standalone (R2) ===
+Threshold 0.284 | breakeven 0.400 | spread 0.5 pips
+
+raw (no gates)      : n=2474  prec=0.294  CI95=(0.276, 0.312)  EV=-0.266R  total=-657.4R
+session + cooldown  : n=556  prec=0.299  CI95=(0.262, 0.338)  EV=-0.254R  total=-141.2R
+
+Decision: adopt the SELL lane only if EV > 0 with a CI that clears breakeven.
+
+=== BUY precision by month (raw threshold 0.381) ===
+month        n  hits   prec            CI95
+2025-07     12     6  0.500  [0.25, 0.75]
+2025-08      4     1  0.250  [0.05, 0.70]
+2025-09     17     4  0.235  [0.10, 0.47]
+2025-10     13     4  0.308  [0.13, 0.58]
+2025-11      6     2  0.333  [0.10, 0.70]
+2025-12      6     3  0.500  [0.19, 0.81]
+2026-01      2     1  0.500  [0.09, 0.91]
+
+POOLED BUY : n=60 hits=21 prec=0.350 CI95=[0.24, 0.48]
+Breakeven 0.400 — if the pooled CI includes breakeven, the edge is unproven.
+
+=== SELL vector backtest (test set, 1.5:1.0 R:R, 0.8 pip spread) ===
+Trades       : 556
+  TP hits    : 166
+  SL hits    : 268
+  No hit     : 122
+Win rate     : 0.299
+Avg R/trade  : -0.035R
+Total R      : -19.3R
+Max drawdown : -49.6R
+Sharpe       : -0.03
+
+Max drawdown : -49.6R
+Sharpe       : -0.03
+Total trades : 556
+
+=== Monthly breakdown ===
+         trades  total_R  avg_R     wr
+month                                 
+2026-01      76  -11.531 -0.152  0.250
+2026-02      83  -13.029 -0.157  0.265
+2026-03      89  -11.534 -0.130  0.258
+2026-04      86    2.956  0.034  0.349
+2026-05      82   15.950  0.195  0.366
+2026-06      61  -16.060 -0.263  0.197
+2026-07      79   13.943  0.176  0.380
+
