@@ -49,27 +49,20 @@ MODEL_FEATURES = [
     "rsi_lag_3",
 ]
 
-# ── GBPUSD SELL (19 features from noise-injection voting) ────────────────────
+# ── GBPUSD SELL (12 features with calendar v2, threshold 0.369) ───────────────
 GBPUSD_SELL_FEATURES = [
     "adx_14",
+    "deviation_sum_24h",
     "rolling_std_50",
-    "d1_rsi",
     "atr_regime",
-    "d1_close_vs_ema20",
+    "d1_rsi",
+    "hours_since_last_high",
     "obv",
     "close_vs_ema200",
     "rolling_std_10",
+    "high_events_next_24h",
+    "d1_close_vs_ema20",
     "minus_di",
-    "plus_di",
-    "atr_lag_5",
-    "volume_lag_5",
-    "close_vs_day_open",
-    "macd_sig",
-    "volume_ratio",
-    "macd_hist",
-    "rsi_lag_5",
-    "bb_width",
-    "upper_wick",
 ]
 
 # ── USDCHF BUY (24 features from noise-injection voting) ───────────────────────

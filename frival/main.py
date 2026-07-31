@@ -52,7 +52,7 @@ PAIR_CONFIG = {
         "fundamental_prompt": None,  # uses default fundamental.txt
     },
     "GBPUSD": {
-        "threshold": 0.367,
+        "threshold": 0.369,
         "model_file": MODELS_BIN / "GBPUSD_H1_sell_Ensemble.joblib",
         "direction": "SELL",
         "pip_multiplier": 10000,
