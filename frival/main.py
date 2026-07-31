@@ -43,7 +43,7 @@ PROMPTS_DIR = Path(__file__).resolve().parent / "agents" / "prompts"
 
 PAIR_CONFIG = {
     "EURUSD": {
-        "threshold": 0.306,
+        "threshold": 0.326,
         "model_file": MODELS_BIN / "EURUSD_H1_sell_Ensemble.joblib",
         "direction": "SELL",
         "pip_multiplier": 10000,
@@ -563,9 +563,9 @@ def _build_signal(latest_row, probability, threshold, ind_probs,
     return {
         "run_id": run_id,
         "signal_id": f"{pair}_H1_{direction}_{bar_dt.strftime('%Y-%m-%dT%H:%M:%SZ')}",
-"symbol": pair,
+            "symbol": pair,
             "direction": direction,
-"pip_multiplier": pip_mult,
+            "pip_multiplier": pip_multiplier,
             "timestamp_utc": bar_dt.isoformat(),
         "trade": {
             "entry": entry_price,

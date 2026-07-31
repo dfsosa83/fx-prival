@@ -23,27 +23,29 @@ VAL_START   = "2025-07-01 00:00:00"
 VAL_END     = "2025-12-31 23:00:00"
 TEST_START  = "2026-01-01 00:00:00"
 
-# ── The 20 features selected by noise-injection voting (exact order from .joblib)
+# ── EURUSD SELL (22 features with calendar — v2, threshold 0.326) ────────────
 MODEL_FEATURES = [
+    "deviation_sum_24h",
     "adx_14",
     "rolling_std_50",
+    "hours_since_last_high",
     "d1_rsi",
     "obv",
     "atr_regime",
+    "high_events_next_24h",
     "close_vs_ema200",
     "d1_close_vs_ema20",
-    "minus_di",
-    "plus_di",
     "rolling_std_10",
+    "minus_di",
     "rsi_lag_5",
-    "volume_lag_5",
+    "macd_sig",
+    "plus_di",
+    "atr_lag_5",
     "volume_ratio",
     "macd_hist",
-    "atr_lag_5",
-    "macd_sig",
-    "close_vs_day_open",
+    "volume_lag_5",
     "bb_width",
-    "macd_hist_slope",
+    "close_vs_day_open",
     "rsi_lag_3",
 ]
 
