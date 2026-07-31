@@ -1,0 +1,117 @@
+from pathlib import Path
+
+# ── Instrument & timeframe ────────────────────────────────────────────────────
+PAIR      = "EURUSD"
+TIMEFRAME = "H1"
+
+# ── Data paths ────────────────────────────────────────────────────────────────
+# Root of the ml-signal-service folder (two levels up from this notebook)
+ROOT = Path("../..").resolve()
+
+RAW_DATA_DIR  = ROOT / "data" / "raw" / "mt5" / TIMEFRAME
+RAW_FILE      = RAW_DATA_DIR / f"{PAIR}_{TIMEFRAME}.csv"
+
+MODELS_DIR    = ROOT / "models_bin"
+MODELS_DIR.mkdir(parents=True, exist_ok=True)
+
+# ── Label parameters ──────────────────────────────────────────────────────────
+# TP = 1.5 × ATR above entry, SL = 1.0 × ATR below entry → R:R = 1.5
+# Tune these in Section 5 before generating labels.
+ATR_PERIOD   = 14     # bars used to compute ATR(14)
+ATR_TP_MULT  = 1.5    # take-profit distance = ATR × ATR_TP_MULT
+ATR_SL_MULT  = 1.0    # stop-loss distance   = ATR × ATR_SL_MULT
+FORWARD_BARS = 6      # how many H1 bars forward to scan for TP/SL hit
+
+# ── Chronological split boundaries ───────────────────────────────────────────
+# Edit ONLY here to change split dates — every downstream step reads from these.
+TRAIN_START = "2020-06-30 00:00:00"
+TRAIN_END   = "2025-06-30 23:00:00"
+VAL_START   = "2025-07-01 00:00:00"
+VAL_END     = "2025-12-31 23:00:00"
+TEST_START  = "2026-01-01 00:00:00"   # TEST_END = present (all remaining rows)
+
+print(f"Pair       : {PAIR}")
+print(f"Timeframe  : {TIMEFRAME}")
+print(f"Raw file   : {RAW_FILE}")
+print(f"File exists: {RAW_FILE.exists()}")
+print(f"Train      : {TRAIN_START}  →  {TRAIN_END}")
+print(f"Val        : {VAL_START}  →  {VAL_END}")
+print(f"Test       : {TEST_START}  →  present")
+
+============================================================
+FEATURE SELECTION RESULTS
+============================================================
+Real features tested : 90
+Selected             : 22
+Reduction            : 76%
+Best noise importance : 934.20861
+
+Top 15 selected features:
+              feature     avg_imp  total_votes
+    deviation_sum_24h 1118.405440            3
+               adx_14 1086.604495            2
+       rolling_std_50 1051.207019            3
+hours_since_last_high 1034.404872            2
+               d1_rsi 1029.607091            3
+                  obv  991.808189            3
+           atr_regime  988.221370            3
+ high_events_next_24h  972.603568            2
+      close_vs_ema200  889.835660            3
+    d1_close_vs_ema20  869.413505            3
+       rolling_std_10  795.008805            3
+             minus_di  761.414024            3
+            rsi_lag_5  760.205039            3
+             macd_sig  743.417631            3
+              plus_di  728.408057            3
+
+Noise feature positions (for reference):
+          feature    avg_imp  total_votes
+noise_random_walk 934.208606            3
+ noise_gaussian_1 750.003306            2
+ noise_gaussian_2 746.403328            2
+  noise_uniform_2 745.803204            2
+ noise_gaussian_3 729.004081            3
+ noise_sinusoidal 707.407789            3
+  noise_uniform_1 679.203833            3
+  noise_poisson_2 273.001793            1
+  noise_poisson_1 186.002401            2
+
+LogReg       params: (baseline)
+  RandomForest params: {'n_estimators': 400, 'max_depth': 10, 'max_features': 'sqrt', 'min_samples_leaf': 20}
+  XGBoost      params: {'max_depth': 5, 'subsample': 0.9, 'learning_rate': 0.05, 'n_estimators': 150, 'reg_lambda': 1.0, 'colsample_bytree': 0.8}
+  LightGBM     params: {'max_depth': 8, 'subsample': 1.0, 'learning_rate': 0.05, 'n_estimators': 150, 'reg_lambda': 1.0, 'min_child_samples': 50, 'colsample_bytree': 0.9, 'num_leaves': 15}
+
+✓ Final model = soft-vote ensemble of 4 calibrated models
+
+=== Validation performance (@0.5 reference) — Ensemble ===
+Precision : 0.000   (breakeven ≈ 0.400)
+Recall    : 0.000
+F1        : 0.000
+ROC-AUC   : 0.674
+PR-AUC    : 0.394
+
+Confusion matrix (rows=true, cols=pred):
+[[2308    0]
+ [ 836    0]]
+
+Breakeven          : 0.400
+Min signals floor  : 50
+Optimal threshold  : 0.326
+Precision @ optimal: 0.495
+Recall    @ optimal: 0.060
+Signals            : 101 (0.77/day)
+
+Top eligible thresholds:
+ threshold  precision  recall  n_signals  signals_per_day
+     0.326      0.495   0.060        101             0.77
+     0.326      0.490   0.060        102             0.78
+     0.326      0.490   0.059        100             0.76
+     0.323      0.481   0.089        154             1.18
+     0.326      0.485   0.060        103             0.79
+     0.326      0.485   0.057         99             0.76
+     0.326      0.485   0.056         97             0.74
+     0.323      0.477   0.089        155             1.18
+     0.323      0.477   0.087        153             1.17
+     0.326      0.482   0.063        110             0.84
+     
+      
