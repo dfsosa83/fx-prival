@@ -1,7 +1,7 @@
 # Project Last State
 
-Last updated: 2026-07-30
-Status: 3-pair live paper trading (EURUSD SELL, GBPUSD SELL, USDCHF BUY). Iteration 3 (calendar integration) planned.
+Last updated: 2026-07-31
+Status: 3-pair live (EURUSD SELL, GBPUSD SELL, USDCHF SELL). Iteration 3 calendar integration deployed.
 Scope: consolidated handoff for the EURUSD H1 SELL-only agentic signal system (Iteration 2 — Frival Framework).
 
 ---
@@ -640,32 +640,53 @@ Running 2 pairs (EURUSD + GBPUSD) in live mode:
 
 ---
 
-## 11) Multi-Pair Pipeline Update (July 30, 2026)
+## 11) Multi-Pair Pipeline Update (July 31, 2026)
 
-### Portfolio Status
+### Live Portfolio (v2 with Calendar Features)
 
-| Pair | Direction | Threshold | ROC-AUC | Test Prec | Lot | Status |
-|---|---|---|---|---|---|---|
-| EURUSD | SELL | 0.306 | 0.674 | 0.411 | 0.08 | **Core** |
-| GBPUSD | SELL | 0.367 | 0.685 | 0.515 | 0.08 | **Core** |
-| USDCHF | BUY | 0.359 | 0.597 | 0.468 | 0.04 | **Experimental** |
-| USDJPY | — | — | 0.516/0.559 | 0.299 | — | **KILLED** ✗ |
+| Pair | Direction | Threshold | Features | ROC-AUC | Test Prec | EV | Total R | Lot | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| EURUSD | SELL | 0.326 | 22 | 0.674 | 0.500 | +0.155R | +3.7R | 0.08 | **Core** |
+| GBPUSD | SELL | 0.369 | 12 | 0.673 | 0.436 | −0.019R | −1.1R | 0.08 | **Monitoring** ⚠ |
+| USDCHF | SELL | 0.376 | 15 | 0.608 | 0.435 | −0.014R | +0.7R | 0.04 | **Experimental** |
+| USDJPY | — | — | — | 0.507/0.558 | 0.281–0.409 | −0.299R | −12.0R | — | **KILLED** ✗ |
 
-### Training Results Summary
+### Calendar Feature Impact (Iteration 3 Phase 1 — Deployed)
 
-| Pair | Lane | Features | Best Model | ROC-AUC | Val Prec | Test Prec | Test EV | Total R | Verdict |
-|---|---|---|---|---|---|---|---|---|---|---|
-| EURUSD | SELL | 20 | Ensemble | 0.674 | 0.400 | 0.411 | −0.114R | +1.2R | ✓ Core |
-| GBPUSD | SELL | 19 | Ensemble(LogReg) | 0.685 | 0.400 | 0.515 | +0.175R | +9.0R | ✓ Core |
-| GBPUSD | BUY | 11 | Ensemble(LogReg) | 0.528 | 0.400 | 0.372 | −0.162R | −7.0R | ✗ Dead |
-| USDCHF | BUY | 24 | Ensemble(RF) | 0.597 | 0.440 | 0.468 | +0.081R | +5.0R | ⚠ Exp |
-| USDCHF | SELL | 17 | Ensemble(LogReg) | 0.610 | 0.455 | 0.333 | −0.267R | −5.6R | ✗ Dead |
-| USDJPY | BUY | 21 | Ensemble(LogReg) | 0.516 | 0.490 | ~0 | — | — | ✗ Dead |
-| USDJPY | SELL | 16 | Ensemble(LogReg) | 0.559 | 0.297 | 0.299 | −0.254R | −19.3R | ✗ Dead |
+20-year economic calendar (2007–2026, 213K events) integrated into `compute_features()`. 14 calendar-derived features added. Noise-injection voting selects the survivors.
 
-### Calendar Data Available
+| Pair | Calendar Features in Top 10 | Effect |
+|---|---|---|
+| EURUSD | `deviation_sum_24h` (#1), `hours_since_last_high` (#4), `high_events_next_24h` (#8) | **+9pp precision**, EV flipped positive, April DD −94% |
+| GBPUSD | `deviation_sum_24h` (#2), `hours_since_last_high` (#6) | **−8pp precision** — lopsided event coverage (929 GBP vs 2,606 USD) |
+| USDCHF | `hours_since_last_high` (#1), `deviation_sum_24h` (#4) | **Flipped lane** — BUY (0.468→0.351) died, SELL (0.333→0.435) emerged |
+| USDJPY | `deviation_sum_24h` (#1), `hours_since_last_high` (#2) | Marginal improvement but still not viable — killed |
 
-20 economic calendar files (2007–2026) now available at `data/raw/macro/EconomicCalendarEvents-YYYY.csv`. Iteration 3 integration (features + RAG) ready to build. Plan: `docs/main/iteration_3_calendar_integration.md`.
+**Rule confirmed:** Calendar features help only when both currencies have ≥ 2,000 events/year (EURUSD: 3,441+2,606). For lopsided pairs, they add noise.
+
+### Key Changes (July 31)
+
+| Change | Detail |
+|---|---|
+| EURUSD v2 | 22 features (3 calendar), threshold 0.326. #1 feature is `deviation_sum_24h` |
+| GBPUSD v2 | 12 features (3 calendar), threshold 0.369. Precision dropped. Monitor in live. |
+| USDCHF switch | Direction BUY→**SELL**, 15 features, threshold 0.376. Data rejected USD-strength thesis. |
+| USDJPY | Calendar features didn't fix structural problems. ROC-AUC 0.507 still below 0.60. |
+| `pip_multiplier` | Per-pair pip scaling (10,000 for FX, 100 for USDJPY) in PAIR_CONFIG |
+| `entry_zone_size` | Per-pair entry zone (0.00020 for FX, 0.02 for USDJPY) |
+| Live command | 3 pairs sequentially: `run_live(borderline=True, pair='EURUSD'); ...pair='GBPUSD'); ...pair='USDCHF')` |
+| Calendar refresh | Monthly CSV update recommended (no retrain needed). `deviation_sum_24h` dead in live until refreshed. |
+
+### v1 vs v2 Training Results (All Pairs)
+
+| Pair | Lane | Feat v1 | v1 ROC | v1 Prec | Feat v2 | v2 ROC | v2 Prec | Deploy |
+|---|---|---|---|---|---|---|---|---|
+| EURUSD | SELL | 20 | 0.674 | 0.411 | **22** | 0.674 | **0.500** | ✓ v2 |
+| GBPUSD | SELL | 19 | 0.685 | 0.515 | 12 | 0.673 | 0.436 | ⚠ v2 |
+| USDCHF | BUY | 24 | 0.597 | 0.468 | 17 | 0.599 | 0.351 | ✗ killed |
+| USDCHF | SELL | 17 | 0.610 | 0.333 | **15** | 0.608 | **0.435** | ✓ v2 |
+| USDJPY | BUY | 21 | 0.516 | ~0 | 21 | 0.507 | 0.409 | ✗ marginal |
+| USDJPY | SELL | 16 | 0.559 | 0.299 | 21 | 0.558 | 0.281 | ✗ dead |
 
 **USDJPY killed** — both lanes fail every deployment gate (ROC-AUC < 0.60, precision 0.299, EV −0.254R, max DD −49.6R). The carry-trade proxy dynamics and BoJ intervention make ATR-barrier labels non-viable.
 
@@ -685,7 +706,7 @@ Running 2 pairs (EURUSD + GBPUSD) in live mode:
 
 ---
 
-## 12) Iteration 3 — Calendar Integration (Planned)
+## 12) Iteration 3 — Calendar Integration (Phase 1 Deployed, Phase 2 Planned)
 
 Economic calendar data (2007–2026, 20 years) will be integrated via two approaches:
 
