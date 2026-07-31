@@ -65,32 +65,23 @@ GBPUSD_SELL_FEATURES = [
     "minus_di",
 ]
 
-# ── USDCHF BUY (24 features from noise-injection voting) ───────────────────────
-USDCHF_BUY_FEATURES = [
-    "rolling_std_50",
-    "obv",
+# ── USDCHF SELL (15 features with calendar v2, threshold 0.376) ─────────────────
+USDCHF_SELL_FEATURES = [
+    "hours_since_last_high",
     "adx_14",
+    "obv",
+    "deviation_sum_24h",
+    "rolling_std_50",
     "d1_rsi",
     "close_vs_ema200",
     "atr_regime",
     "d1_close_vs_ema20",
     "minus_di",
-    "close_vs_day_open",
     "rolling_std_10",
-    "plus_di",
-    "volume_ratio",
+    "close_vs_day_open",
     "atr_lag_5",
     "volume_lag_5",
     "macd_sig",
-    "rsi_lag_5",
-    "volume_lag_1",
-    "macd_hist",
-    "bb_width",
-    "volume_lag_3",
-    "lower_wick",
-    "d1_ema50",
-    "upper_wick",
-    "macd_hist_slope",
 ]
 
 
@@ -102,7 +93,7 @@ def get_features_for_pair(pair: str, direction: str = "SELL") -> list:
     elif pair_upper == "GBPUSD":
         return GBPUSD_SELL_FEATURES
     elif pair_upper == "USDCHF":
-        return USDCHF_BUY_FEATURES
+        return USDCHF_SELL_FEATURES
     elif pair_upper == "USDJPY":
         # TODO: Replace with actual features after noise-injection voting completes
         raise NotImplementedError(

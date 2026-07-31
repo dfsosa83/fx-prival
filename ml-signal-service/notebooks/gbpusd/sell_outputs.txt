@@ -42,56 +42,42 @@ print(f"Test       : {TEST_START}  →  present")
 ============================================================
 FEATURE SELECTION RESULTS
 ============================================================
-Real features tested : 76
-Selected             : 19
-Reduction            : 75%
-Best noise importance : 1130.40602
+Real features tested : 90
+Selected             : 12
+Reduction            : 87%
+Best noise importance : 1032.00576
 
 Top 15 selected features:
-          feature     avg_imp  total_votes
-           adx_14 1252.207015            3
-   rolling_std_50 1188.607890            3
-           d1_rsi 1142.405457            2
-       atr_regime 1128.029007            3
-d1_close_vs_ema20  940.815469            3
-              obv  937.206295            3
-  close_vs_ema200  923.415001            3
-   rolling_std_10  910.205102            2
-         minus_di  868.210390            3
-          plus_di  841.205661            3
-        atr_lag_5  796.806852            3
-     volume_lag_5  788.406914            2
-close_vs_day_open  750.011454            3
-         macd_sig  745.213883            3
-     volume_ratio  744.014188            3
+              feature     avg_imp  total_votes
+               adx_14 1153.806731            2
+    deviation_sum_24h 1123.204864            2
+       rolling_std_50 1119.608418            2
+           atr_regime 1062.027944            3
+               d1_rsi 1056.005106            2
+hours_since_last_high 1013.405958            2
+                  obv  879.606590            2
+      close_vs_ema200  870.010770            3
+       rolling_std_10  835.204160            2
+ high_events_next_24h  797.406611            1
+    d1_close_vs_ema20  793.810995            3
+             minus_di  779.410377            3
 
 Noise feature positions (for reference):
           feature     avg_imp  total_votes
-noise_random_walk 1130.406016            2
-  noise_uniform_2  781.204795            3
- noise_sinusoidal  774.005147            3
- noise_gaussian_2  764.403750            2
- noise_gaussian_3  754.204540            2
- noise_gaussian_1  735.602926            2
-  noise_uniform_1  716.404652            2
-  noise_poisson_2  270.001825            1
-  noise_poisson_1  201.002747            1
-
-✓ Auto-selected best model → LogReg
-
-  CV PR-AUC : 0.356 ± 0.025
-
-Model comparison for reference:
-       model  pr_auc   std
-      LogReg   0.356 0.025
-RandomForest   0.353 0.027
-    LightGBM   0.337 0.028
-     XGBoost   0.332 0.023
+noise_random_walk 1032.005757            2
+ noise_gaussian_3  777.604163            1
+  noise_uniform_2  739.804437            1
+ noise_gaussian_2  720.603551            1
+ noise_sinusoidal  701.405120            2
+  noise_uniform_1  684.004430            1
+ noise_gaussian_1  682.202894            1
+  noise_poisson_2  237.601808            0
+  noise_poisson_1  206.402625            0
 
 LogReg       params: (baseline)
-  RandomForest params: {'max_features': 'sqrt', 'n_estimators': 600, 'max_depth': 10, 'min_samples_leaf': 50}
-  XGBoost      params: {'n_estimators': 150, 'colsample_bytree': 0.8, 'learning_rate': 0.05, 'subsample': 0.7, 'reg_lambda': 1.0, 'max_depth': 5}
-  LightGBM     params: {'n_estimators': 250, 'min_child_samples': 50, 'colsample_bytree': 0.9, 'num_leaves': 15, 'learning_rate': 0.05, 'subsample': 0.9, 'reg_lambda': 0.1, 'max_depth': 8}
+  RandomForest params: {'n_estimators': 200, 'min_samples_leaf': 10, 'max_depth': None, 'max_features': 'sqrt'}
+  XGBoost      params: {'colsample_bytree': 0.8, 'max_depth': 5, 'subsample': 0.7, 'learning_rate': 0.05, 'reg_lambda': 1.0, 'n_estimators': 150}
+  LightGBM     params: {'colsample_bytree': 0.8, 'max_depth': 10, 'num_leaves': 63, 'subsample': 0.9, 'learning_rate': 0.05, 'min_child_samples': 20, 'reg_lambda': 0.1, 'n_estimators': 250}
 
 ✓ Final model = soft-vote ensemble of 4 calibrated models
 
@@ -99,30 +85,30 @@ LogReg       params: (baseline)
 Precision : 0.000   (breakeven ≈ 0.400)
 Recall    : 0.000
 F1        : 0.000
-ROC-AUC   : 0.685
-PR-AUC    : 0.366
+ROC-AUC   : 0.662
+PR-AUC    : 0.373
 
 Confusion matrix (rows=true, cols=pred):
 [[2369    0]
  [ 760    0]]
 
-Breakeven          : 0.400
+ Breakeven          : 0.400
 Min signals floor  : 50
-Optimal threshold  : 0.367
-Precision @ optimal: 0.449
-Recall    @ optimal: 0.063
-Signals            : 107 (0.82/day)
+Optimal threshold  : 0.369
+Precision @ optimal: 0.560
+Recall    @ optimal: 0.092
+Signals            : 125 (0.96/day)
 
 Top eligible thresholds:
  threshold  precision  recall  n_signals  signals_per_day
-     0.367      0.449   0.063        107             0.82
-     0.367      0.444   0.063        108             0.83
-     0.367      0.443   0.062        106             0.81
-     0.374      0.451   0.030         51             0.39
-     0.368      0.441   0.059        102             0.78
-     0.367      0.440   0.063        109             0.84
-     0.366      0.438   0.064        112             0.86
-     0.367      0.438   0.061        105             0.81
-     0.368      0.437   0.059        103             0.79
-     0.367      0.436   0.063        110             0.84
+     0.369      0.560   0.092        125             0.96
+     0.369      0.559   0.093        127             0.97
+     0.369      0.558   0.095        129             0.99
+     0.368      0.557   0.096        131             1.00
+     0.370      0.558   0.088        120             0.92
+     0.369      0.556   0.092        126             0.97
+     0.369      0.555   0.093        128             0.98
+     0.368      0.554   0.095        130             1.00
+     0.368      0.553   0.096        132             1.01
+     0.370      0.555   0.087        119             0.91
 
