@@ -31,14 +31,12 @@ def build_context(
     probability: float,
     threshold: float,
     individual_probs: Dict[str, float],
+    mode: str = "standard",
 ) -> Dict[str, Any]:
     """
     Build evaluation context for the technical agent from a single feature row.
 
-    Returns dict with:
-    - current_price
-    - d1_context (dict of D1 feature values)
-    - top_features (dict of model input feature values)
+    mode: "standard" (p >= threshold) or "borderline" (p < threshold)
     """
     row = df_features_row
 
@@ -58,14 +56,12 @@ def build_context(
             val = row[col]
             extra[col] = float(val) if pd.notna(val) else 0.0
 
-    # Merge: top_features = model features with per-model probs for agent awareness
-    top_features = {**extra}
-
     return {
         "current_price": current_price,
         "d1_context": d1,
-        "top_features": top_features,
+        "top_features": extra,
         "probability": probability,
         "threshold": threshold,
         "individual_probs": individual_probs,
+        "mode": mode,
     }

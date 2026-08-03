@@ -30,6 +30,7 @@ def _build_user_message(
     individual_probs: Dict[str, float],
     d1_context: Dict[str, Any],
     top_features: Dict[str, float],
+    mode: str = "standard",
 ) -> str:
     """Build structured context for the technical agent."""
 
@@ -38,6 +39,7 @@ def _build_user_message(
     )
 
     lines = [
+        f"Signal mode: {mode.upper()}",
         f"Current price: {current_price:.5f}",
         f"Ensemble probability (SELL): {probability:.4f}",
         f"Operating threshold: {threshold}",
@@ -92,6 +94,7 @@ def evaluate(
     *,
     model: str = "openai/gpt-4o",
     prompt_file: Optional[str] = None,
+    mode: str = "standard",
 ) -> Dict[str, Any]:
     """
     Evaluate whether the technical picture supports a SELL signal.
@@ -120,7 +123,7 @@ def evaluate(
     system_prompt = _load_prompt(prompt_file)
     user_message = _build_user_message(
         current_price, probability, threshold,
-        individual_probs, d1_context, top_features,
+        individual_probs, d1_context, top_features, mode=mode,
     )
 
     print(f"\n[Agent A - Technical] Evaluating signal (p={probability:.4f})...")

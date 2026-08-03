@@ -57,6 +57,7 @@ PAIR_CONFIG = {
         "direction": "SELL",
         "pip_multiplier": 10000,
         "entry_zone_size": 0.00020,
+        "shadow": True,  # EV -0.019R, CI straddles breakeven
         "technical_prompt": str(PROMPTS_DIR / "technical_gbpusd.txt"),
         "fundamental_prompt": str(PROMPTS_DIR / "fundamental_gbpusd.txt"),
     },
@@ -66,6 +67,7 @@ PAIR_CONFIG = {
         "direction": "SELL",
         "pip_multiplier": 10000,
         "entry_zone_size": 0.00020,
+        "shadow": True,  # EV -0.014R, CI straddles breakeven
         "technical_prompt": str(PROMPTS_DIR / "technical_usdchf.txt"),
         "fundamental_prompt": str(PROMPTS_DIR / "fundamental_usdchf.txt"),
     },
@@ -79,6 +81,23 @@ PAIR_CONFIG = {
         "fundamental_prompt": str(PROMPTS_DIR / "fundamental_usdjpy.txt"),
     },
 }
+
+
+def _check_prompt_direction(pair: str, pcfg: dict):
+    """Startup check: verify pair direction matches prompt file headers."""
+    direction = pcfg.get("direction", "SELL")
+    for key in ["technical_prompt", "fundamental_prompt"]:
+        path = pcfg.get(key)
+        if path is None:
+            continue
+        with open(path, encoding="utf-8") as f:
+            first_lines = f.read(200)
+        expected = f"# DIRECTION: {direction}"
+        if expected not in first_lines:
+            raise RuntimeError(
+                f"PROMPT MISMATCH: {pair} direction is {direction} but "
+                f"{path} header does not contain '{expected}'"
+            )
 
 
 def run_backtest(
@@ -182,11 +201,13 @@ def run_backtest(
                 if col in df_range.columns:
                     ind_probs[mname] = float(df_range.at[idx, col])
 
+            agent_mode = "borderline" if is_borderline else "standard"
             ctx = build_context(
                 df_range.loc[idx],
                 probability=float(row["probability"]),
                 threshold=model_threshold,
                 individual_probs=ind_probs or {"ensemble": float(row["probability"])},
+                mode=agent_mode,
             )
 
             # Agent A — Technical
@@ -199,6 +220,7 @@ def run_backtest(
                     d1_context=ctx["d1_context"],
                     top_features=ctx["top_features"],
                     prompt_file=pcfg["technical_prompt"],
+                    mode=agent_mode,
                 )
                 t_dec = tech_result.get("decision", "NEUTRAL")
                 if t_dec == "CONFIRM": agent_tech_confirmed += 1
@@ -293,6 +315,8 @@ def run_backtest(
         log_signal(signal)
 
         if final_decision == "FIRED":
+            if pcfg.get("shadow", False):
+                signal["final_decision"] = "SHADOW_FIRED"
             fired_count += 1
             if is_borderline:
                 borderline_fired += 1
@@ -471,7 +495,8 @@ def _run_live_inner(threshold, agent_enabled, borderline, log_path, pair):
 
     # Build context
     from agents.context import build_context
-    ctx = build_context(latest, probability, threshold, ind_probs)
+    live_mode = "borderline" if gate_type == "borderline" else "standard"
+    ctx = build_context(latest, probability, threshold, ind_probs, mode=live_mode)
 
     tech_result = {}
     fund_result = {}
@@ -486,6 +511,7 @@ def _run_live_inner(threshold, agent_enabled, borderline, log_path, pair):
             d1_context=ctx["d1_context"],
             top_features=ctx["top_features"],
             prompt_file=pcfg["technical_prompt"],
+            mode=live_mode,
         )
     except Exception as e:
         errors += 1
@@ -521,8 +547,15 @@ def _run_live_inner(threshold, agent_enabled, borderline, log_path, pair):
                            pip_multiplier=pcfg.get("pip_multiplier", 10000))
     log_signal(signal)
 
+    is_shadow = pcfg.get("shadow", False)
+
     if final_decision == "FIRED":
-        _print_signal(signal)
+        if is_shadow:
+            signal["final_decision"] = "SHADOW_FIRED"
+            final_decision = "SHADOW_FIRED"
+            print(f"\n[SHADOW] Signal would have fired ({pair}) — EV unproven, suppressing.")
+        else:
+            _print_signal(signal)
         _update_cooldown()
     else:
         print(f"\nSignal SHELVED: {veto_reason}")

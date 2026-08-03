@@ -60,12 +60,21 @@ def _parse_response(raw: str) -> Dict[str, Any]:
     cleaned = re.sub(r"```(?:json)?\s*", "", raw)
     cleaned = cleaned.replace("```", "").strip()
     try:
-        return json.loads(cleaned)
+        result = json.loads(cleaned)
     except json.JSONDecodeError:
         match = re.search(r"\{.*\}", cleaned, re.DOTALL)
         if match:
-            return json.loads(match.group(0))
-        raise ValueError(f"Could not parse JSON from: {raw[:200]}...")
+            result = json.loads(match.group(0))
+        else:
+            raise ValueError(f"Could not parse JSON from: {raw[:200]}...")
+
+    # Strip citation markers [1][2][7] from all string fields
+    for key in list(result.keys()):
+        val = result[key]
+        if isinstance(val, str):
+            result[key] = re.sub(r"\[\d+\]", "", val).strip()
+
+    return result
 
 
 def evaluate(
