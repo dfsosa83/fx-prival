@@ -61,6 +61,23 @@ def _build_user_message(
     for name, value in top_features.items():
         lines.append(f"  {name}: {value:.4f}")
 
+    # Calendar features — the model's top-ranked signals
+    cal_keys = ["deviation_sum_24h", "hours_since_last_high",
+                "high_events_next_1h", "high_events_next_4h", "high_events_next_24h",
+                "is_fomc_day", "is_ecb_day", "is_boe_day", "is_snb_day", "is_nfp_day"]
+    cal_lines = []
+    for k in cal_keys:
+        v = top_features.get(k)
+        if v is not None:
+            if isinstance(v, bool):
+                if v:
+                    cal_lines.append(f"  {k}: YES")
+            elif isinstance(v, float):
+                cal_lines.append(f"  {k}: {v:.2f}")
+    if cal_lines:
+        lines.append("\nCalendar context (dates and events):")
+        lines.extend(cal_lines)
+
     lines.append("\nEvaluate the SELL signal using the rules provided.")
     lines.append("Return JSON only.")
 

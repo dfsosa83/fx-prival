@@ -23,6 +23,17 @@ ADDITIONAL_CONTEXT = [
     "atr_regime", "atr_14",
     "close_vs_ema50", "close_vs_day_open",
     "rolling_std_10", "rolling_std_50",
+    # Calendar features (Phase 1.1 — Agent A now sees model's top drivers)
+    "deviation_sum_24h",
+    "hours_since_last_high",
+    "high_events_next_1h",
+    "high_events_next_4h",
+    "high_events_next_24h",
+    "is_fomc_day",
+    "is_ecb_day",
+    "is_boe_day",
+    "is_snb_day",
+    "is_nfp_day",
 ]
 
 
