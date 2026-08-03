@@ -9,9 +9,9 @@
 All 5 P0 fixes and 2 P1 fixes have been deployed. The system is now capable of producing signals in borderline mode, Agent A sees calendar features, and Agent B receives structured macro context instead of relying solely on web search.
 
 | Category | Tasks | Completed | Remaining |
-|---|---|---|---|
+|---|---|---|---|---|
 | P0 — Blocking | 5 | 5 | 0 |
-| P1 — Reasoning | 2 of 4 | 2 | 2 (1.5, 1.2/1.3) |
+| P1 — Reasoning | 4 | 3 | 1 (1.2/1.3) |
 | P2 — Data Hygiene | 0 of 3 | 0 | 3 (2.2, 2.3, 1.6) |
 | P3 — Dead Code | 0 of 3 | 0 | 3 (2.5, 2.4, 2.1) |
 
@@ -114,9 +114,9 @@ Also added `mode` (STANDARD/BORDERLINE) to Agent A's user message so it knows wh
 
 ---
 
-## 3. P1 — Reasoning Blindspots (Partial Complete)
+## 3. P1 — Reasoning Blindspots (3 of 4 Complete)
 
-### Issue #4 — Agent A is blind to calendar features despite them being top-3 signal drivers
+### Issue #4 — Agent A blind to calendar features ✅ COMPLETE
 
 **Problem:** `deviation_sum_24h`, `hours_since_last_high`, and `high_events_next_24h` are in the top-10 features for all three pairs. Yet Agent A's CONFIRM checklist only enumerated EMAs, RSI, MACD, ADX, and ATR — the calendar features were absent. Agent A could not corroborate or contradict the model's dominant drivers.
 
@@ -142,11 +142,22 @@ Also added `mode` (STANDARD/BORDERLINE) to Agent A's user message so it knows wh
 
 ---
 
-### Issue #7 — Agent B is an unconditional single point of failure
+### Issue #7 — Agent B single point of failure ✅ COMPLETE (Task 1.5)
 
-**Problem:** `senior.py` treats fundamental REJECT as an unconditional veto. With 5 consecutive days of 0 FIRED signals, Agent B alone can shut down the entire pipeline regardless of Agent A's confidence.
+**Problem:** `senior.py` treats fundamental REJECT as an unconditional veto. After 5 consecutive days of 0 FIRED signals, Agent B alone could shut down the entire pipeline regardless of Agent A's confidence.
 
-**Status: NOT yet implemented.** Planned as task 1.5 in the roadmap. Will implement 3-strike soft-veto: after N consecutive fundamental REJECTs against same-direction signals, downgrade veto to warning and require Agent A HIGH confidence to override.
+**Solution:** Implemented 3-strike soft-veto logic:
+1. Track `fundamental_reject_streak` per pair in `last_signal.json` (persisted across live sessions)
+2. When streak < 3: fundamental REJECT = unconditional veto (unchanged behavior)
+3. When streak ≥ 3 AND Agent A is HIGH-CONFIRM: veto is downgraded to warning, signal fires with LOW confidence
+4. When streak ≥ 3 AND Agent A is NOT HIGH-CONFIRM: veto still active
+5. Streak resets to 0 when Agent B returns CONFIRM/NEUTRAL or when a signal FIRES
+
+**Files modified:**
+- `frival/agents/senior.py` — `synthesize()` and `synthesize_borderline()` accept `fundamental_reject_streak`, soft-veto clause added
+- `frival/main.py` — streak tracking via `_get_reject_streak()`, `_update_reject_streak()`, `_update_cooldown()` now resets streak
+
+**Commit:** `abcebaf`
 
 ---
 
@@ -183,7 +194,6 @@ Also added `mode` (STANDARD/BORDERLINE) to Agent A's user message so it knows wh
 
 | # | Task | Priority | Effort | Dependencies |
 |---|---|---|---|---|
-| 1.5 | 3-strike soft-veto for Agent B | High | S | None |
 | 1.6 | Delta-fetch MT5 | High | M | None |
 | 1.2 | Combiner notebook headers | Medium | S | None |
 | 1.3 | Replace @0.5 reference in notebooks | Low | S | None |
@@ -206,6 +216,8 @@ Also added `mode` (STANDARD/BORDERLINE) to Agent A's user message so it knows wh
 | `frival/agents/prompts/fundamental_gbpusd.txt` | Modified | P0 | #0.5 direction header |
 | `frival/agents/prompts/fundamental_usdchf.txt` | Modified | P0 | #2 SELL rewrite, #0.5 direction |
 | `frival/agents/technical.py` | Modified | P0, P1 | #1 mode, #4 calendar display |
+| `frival/agents/senior.py` | Modified | P1 | #7 soft-veto in synthesize/synthesize_borderline |
+| `frival/main.py` | Modified | P1 | #7 streak tracking, cooldown file schema expanded |
 | `frival/agents/context.py` | Modified | P0, P1 | #1 mode, #4 calendar features |
 | `frival/agents/fundamental.py` | Modified | P0, P1 | #11 citations, #1.4 calendar RAG |
 | `frival/agents/calendar_context.py` | **Created** | P1 | #1.4 calendar RAG |
@@ -213,4 +225,4 @@ Also added `mode` (STANDARD/BORDERLINE) to Agent A's user message so it knows wh
 
 ---
 
-*Review date: 2026-08-03. Next review: after tasks 1.5 and 1.6 are deployed.*
+*Review date: 2026-08-03. Next review: after tasks 1.6 is deployed.*
