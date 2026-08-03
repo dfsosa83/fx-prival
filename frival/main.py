@@ -174,6 +174,7 @@ def run_backtest(
     agent_fund_rejected = 0
     agent_fund_neutral = 0
     agent_errors = 0
+    fund_reject_streak = 0
 
     for idx, row in df_gated.iterrows():
 
@@ -252,12 +253,19 @@ def run_backtest(
 
             # Senior — coordinate both agents
             if is_borderline:
-                senior = synthesize_borderline(tech_result, fund_result)
+                senior = synthesize_borderline(tech_result, fund_result, fund_reject_streak)
             else:
-                senior = synthesize(tech_result, fund_result)
+                senior = synthesize(tech_result, fund_result, fund_reject_streak)
             final_decision = senior["final_decision"]
             final_confidence = senior.get("final_confidence")
             veto_reason = senior.get("veto_reason", "")
+
+            # Track fundamental reject streak
+            f_dec = fund_result.get("decision", "NEUTRAL")
+            if f_dec == "REJECT":
+                fund_reject_streak += 1
+            else:
+                fund_reject_streak = 0
 
         # ── Compute trade levels ─────────────────────────────────────
         entry_price = float(row["close"])
@@ -536,13 +544,21 @@ def _run_live_inner(threshold, agent_enabled, borderline, log_path, pair):
         fund_result = {"error": str(e)}
 
     # Senior
+    reject_streak = _get_reject_streak()
     if gate_type == "borderline":
-        senior = synthesize_borderline(tech_result, fund_result)
+        senior = synthesize_borderline(tech_result, fund_result, reject_streak)
     else:
-        senior = synthesize(tech_result, fund_result)
+        senior = synthesize(tech_result, fund_result, reject_streak)
     final_decision = senior["final_decision"]
     final_confidence = senior.get("final_confidence")
     veto_reason = senior.get("veto_reason", "")
+
+    # Track fundamental reject streak for future sessions
+    f_dec = fund_result.get("decision", "NEUTRAL")
+    if f_dec == "REJECT":
+        _update_reject_streak(increment=True)
+    else:
+        _update_reject_streak(increment=False)
 
     # ── Save and print ──────────────────────────────────────────────────
     signal = _build_signal(latest, probability, model_threshold, ind_probs,
@@ -653,10 +669,43 @@ def _check_cooldown() -> bool:
 
 
 def _update_cooldown():
-    """Record the current time as the last FIRED signal."""
+    """Record the current time as the last FIRED signal, reset reject streak."""
     os.makedirs(COOLDOWN_FILE.parent, exist_ok=True)
     with open(COOLDOWN_FILE, "w") as f:
-        json.dump({"timestamp_utc": datetime.utcnow().isoformat()}, f)
+        json.dump({
+            "timestamp_utc": datetime.utcnow().isoformat(),
+            "fundamental_reject_streak": 0,
+        }, f)
+
+
+def _get_reject_streak() -> int:
+    """Read the current fundamental_reject_streak from last_signal.json."""
+    if not COOLDOWN_FILE.exists():
+        return 0
+    try:
+        with open(COOLDOWN_FILE) as f:
+            data = json.loads(f.read())
+        return data.get("fundamental_reject_streak", 0)
+    except Exception:
+        return 0
+
+
+def _update_reject_streak(increment: bool):
+    """Update the fundamental_reject_streak in last_signal.json."""
+    os.makedirs(COOLDOWN_FILE.parent, exist_ok=True)
+    data = {}
+    if COOLDOWN_FILE.exists():
+        try:
+            with open(COOLDOWN_FILE) as f:
+                data = json.loads(f.read())
+        except Exception:
+            pass
+    streak = data.get("fundamental_reject_streak", 0)
+    data["fundamental_reject_streak"] = streak + 1 if increment else 0
+    if "timestamp_utc" not in data:
+        data["timestamp_utc"] = datetime.utcnow().isoformat()
+    with open(COOLDOWN_FILE, "w") as f:
+        json.dump(data, f)
 
 
 def main():

@@ -11,6 +11,7 @@ from typing import Dict, Any
 def synthesize(
     technical: Dict[str, Any],
     fundamental: Dict[str, Any],
+    fundamental_reject_streak: int = 0,
 ) -> Dict[str, Any]:
     """
     Combine technical and fundamental agent verdicts into a final decision.
@@ -21,30 +22,32 @@ def synthesize(
         CONFIRM   | NEUTRAL     | FIRED (MODERATE confidence)
         NEUTRAL   | CONFIRM     | FIRED (MODERATE confidence)
         REJECT    | *           | SHELVED (technical rejection)
-        *         | REJECT      | SHELVED (fundamental veto — unconditional)
+        *         | REJECT      | SHELVED (fundamental veto — soft after 3 streaks)
         NEUTRAL   | NEUTRAL     | SHELVED (ambiguous)
 
-    Fundamental rejection always vetoes — this targets April-type macro shocks.
-
-    Parameters
-    ----------
-    technical : dict from agents/technical.py
-    fundamental : dict from agents/fundamental.py
-
-    Returns
-    -------
-    dict with: final_decision, final_confidence, veto_reason, agents_summary
+    Soft-veto: after `fundamental_reject_streak` >= 3 consecutive fund-REJECTs
+    on this pair, a HIGH-CONFIRM from Agent A can override the veto (FIRED, LOW confidence).
     """
     t_dec = technical.get("decision", "NEUTRAL")
     f_dec = fundamental.get("decision", "NEUTRAL")
 
-    # Rule: Fundamental rejection is an unconditional veto
+    # Rule: Fundamental rejection — with soft-veto after 3 strikes
     if f_dec == "REJECT":
+        if fundamental_reject_streak >= 3 and t_dec == "CONFIRM" and technical.get("confidence") == "HIGH":
+            return {
+                "final_decision": "FIRED",
+                "final_confidence": "LOW",
+                "veto_reason": "",
+                "agents_summary": (
+                    f"Technical={t_dec}(HIGH), Fundamental={f_dec} → FIRED "
+                    f"(soft-veto active: Agent B rejected {fundamental_reject_streak}x consecutively)"
+                ),
+            }
         return {
             "final_decision": "SHELVED",
             "final_confidence": None,
             "veto_reason": f"fundamental: {fundamental.get('justification', 'macro rejection')}",
-            "agents_summary": f"Technical={t_dec}, Fundamental={f_dec} → vetoed by fundamental",
+            "agents_summary": f"Technical={t_dec}, Fundamental={f_dec} → vetoed by fundamental (streak={fundamental_reject_streak})",
         }
 
     # Rule: Technical rejection
@@ -87,39 +90,31 @@ def synthesize(
 def synthesize_borderline(
     technical: Dict[str, Any],
     fundamental: Dict[str, Any],
+    fundamental_reject_streak: int = 0,
 ) -> Dict[str, Any]:
     """
-    Stricter synthesis for borderline-range signals (0.20 <= p < 0.306).
-
-    The model is less confident, so agents must BOTH actively CONFIRM.
-    A single neutral agent is not enough — both must see the opportunity.
-
-    Decision table:
-        Technical | Fundamental | Result
-        CONFIRM   | CONFIRM     | FIRED (MODERATE confidence)
-        REJECT    | *           | SHELVED
-        *         | REJECT      | SHELVED
-        Anything else            | SHELVED (insufficient conviction)
-
-    Parameters
-    ----------
-    technical : dict from agents/technical.py
-    fundamental : dict from agents/fundamental.py
-
-    Returns
-    -------
-    dict with: final_decision, final_confidence, veto_reason, agents_summary
+    Stricter synthesis for borderline-range signals. Same soft-veto rules apply.
     """
     t_dec = technical.get("decision", "NEUTRAL")
     f_dec = fundamental.get("decision", "NEUTRAL")
 
-    # Rule: Fundamental rejection is unconditional veto
+    # Rule: Fundamental rejection — with soft-veto after 3 strikes
     if f_dec == "REJECT":
+        if fundamental_reject_streak >= 3 and t_dec == "CONFIRM" and technical.get("confidence") == "HIGH":
+            return {
+                "final_decision": "FIRED",
+                "final_confidence": "LOW",
+                "veto_reason": "",
+                "agents_summary": (
+                    f"[Borderline] Technical={t_dec}(HIGH), Fundamental={f_dec} → FIRED "
+                    f"(soft-veto active: Agent B rejected {fundamental_reject_streak}x consecutively)"
+                ),
+            }
         return {
             "final_decision": "SHELVED",
             "final_confidence": None,
             "veto_reason": f"fundamental: {fundamental.get('justification', 'macro rejection')}",
-            "agents_summary": f"[Borderline] Technical={t_dec}, Fundamental={f_dec} → vetoed by fundamental",
+            "agents_summary": f"[Borderline] Technical={t_dec}, Fundamental={f_dec} → vetoed by fundamental (streak={fundamental_reject_streak})",
         }
 
     # Rule: Technical rejection
