@@ -46,14 +46,27 @@ def _build_user_message(
     currency_pair: str,
     current_price: float,
     probability: float,
+    calendar_context: Optional[str] = None,
 ) -> str:
-    return (
+    base = (
         f"Evaluate the macro environment for a SELL signal on {currency_pair}.\n"
         f"Current price: {current_price:.5f}\n"
         f"Model probability (SELL): {probability:.4f}\n\n"
-        f"Search the web for recent ECB/Fed news, DXY direction, event risk, and "
-        f"risk sentiment. Return your evaluation as JSON."
     )
+    if calendar_context:
+        base += (
+            f"{calendar_context}\n\n"
+            f"Use the calendar context above for event-specific data (Actual vs Consensus). "
+            f"Supplement with web search ONLY for broader context: risk sentiment, "
+            f"central bank policy stance, geopolitics, and DXY trends.\n"
+            f"Return your evaluation as JSON."
+        )
+    else:
+        base += (
+            f"Search the web for recent ECB/Fed news, DXY direction, event risk, and "
+            f"risk sentiment. Return your evaluation as JSON."
+        )
+    return base
 
 
 def _parse_response(raw: str) -> Dict[str, Any]:
@@ -84,6 +97,7 @@ def evaluate(
     *,
     max_retries: int = 2,
     prompt_file: Optional[str] = None,
+    calendar_context: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Evaluate the macro environment for a EURUSD SELL signal via Perplexity.
@@ -101,7 +115,7 @@ def evaluate(
     """
     api_key = _load_api_key()
     system_prompt = _load_prompt(prompt_file)
-    user_message = _build_user_message(currency_pair, current_price, probability)
+    user_message = _build_user_message(currency_pair, current_price, probability, calendar_context)
 
     headers = {
         "Authorization": f"Bearer {api_key}",

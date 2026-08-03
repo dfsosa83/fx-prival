@@ -31,6 +31,7 @@ from data import fetch_ohlcv
 from live_logger import LiveLogger
 from agents import evaluate_technical, evaluate_fundamental, synthesize, synthesize_borderline
 from agents.context import build_context
+from agents.calendar_context import build_macro_context
 
 
 # ── Pair configurations ──────────────────────────────────────────────────────
@@ -230,14 +231,16 @@ def run_backtest(
                 agent_errors += 1
                 tech_result = {"error": str(e)}
 
-            # Agent B — Fundamental (rate-limited)
-            time.sleep(2.5)  # Perplexity rate limit: ~25 req/min
+# Agent B — Fundamental (rate-limited)
+            time.sleep(2.5)
             try:
+                macro_ctx = build_macro_context(bar_dt, pair)
                 fund_result = evaluate_fundamental(
                     current_price=ctx["current_price"],
                     probability=ctx["probability"],
                     currency_pair=pair,
                     prompt_file=pcfg["fundamental_prompt"],
+                    calendar_context=macro_ctx,
                 )
                 f_dec = fund_result.get("decision", "NEUTRAL")
                 if f_dec == "CONFIRM": agent_fund_confirmed += 1
@@ -520,11 +523,13 @@ def _run_live_inner(threshold, agent_enabled, borderline, log_path, pair):
     # Agent B
     time.sleep(2.5)
     try:
+        macro_ctx = build_macro_context(latest["datetime"], pair)
         fund_result = evaluate_fundamental(
             current_price=ctx["current_price"],
             probability=probability,
             currency_pair=pair,
             prompt_file=pcfg["fundamental_prompt"],
+            calendar_context=macro_ctx,
         )
     except Exception as e:
         errors += 1
