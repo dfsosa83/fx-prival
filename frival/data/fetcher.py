@@ -171,10 +171,26 @@ def _fetch_mt5(
     import pytz
     utc = pytz.timezone("Etc/UTC")
 
-    if start_date:
-        from_time = pd.Timestamp(start_date).tz_localize(utc).to_pydatetime()
+    # Delta-fetch: check cache first, only fetch new bars since last cached bar
+    cache_file = CACHE_DIR / f"{symbol}_{timeframe}_live_cache.csv"
+    cached_df = None
+
+    if cache_file.exists():
+        try:
+            cached_df = pd.read_csv(cache_file, parse_dates=["datetime"])
+            if len(cached_df) > 0:
+                last_dt = cached_df["datetime"].max()
+                from_time = last_dt.tz_localize(utc).to_pydatetime()
+                print(f"[mt5] Cache found: {len(cached_df):,} bars up to {last_dt}")
+            else:
+                from_time = pd.Timestamp("2019-01-02").tz_localize(utc).to_pydatetime()
+        except Exception:
+            from_time = pd.Timestamp("2019-01-02").tz_localize(utc).to_pydatetime()
     else:
         from_time = pd.Timestamp("2019-01-02").tz_localize(utc).to_pydatetime()
+
+    if start_date:
+        from_time = pd.Timestamp(start_date).tz_localize(utc).to_pydatetime()
 
     if end_date:
         to_time = pd.Timestamp(end_date).tz_localize(utc).to_pydatetime()
@@ -195,13 +211,19 @@ def _fetch_mt5(
     df.drop(columns=["time", "spread", "real_volume"], inplace=True, errors="ignore")
     df.rename(columns={"tick_volume": "volume"}, inplace=True)
 
-    print(f"[mt5] Fetched {len(df):,} bars")
+    print(f"[mt5] Fetched {len(df):,} new bars (delta)")
 
-    # ── Cache to CSV for offline backtesting ──────────────────────────────
+    # ── Append to cache (deduplicate) ────────────────────────────────────
     os.makedirs(CACHE_DIR, exist_ok=True)
-    cache_file = CACHE_DIR / f"{symbol}_{timeframe}_live_cache.csv"
+    if cached_df is not None and len(cached_df) > 0:
+        df = pd.concat([cached_df, df], ignore_index=True)
+        df.drop_duplicates(subset=["datetime"], keep="last", inplace=True)
+        df.sort_values("datetime", inplace=True)
+        df.reset_index(drop=True, inplace=True)
+        print(f"[mt5] Cache updated: {len(df):,} total bars")
+    else:
+        print(f"[mt5] First fetch: {len(df):,} bars")
     df.to_csv(cache_file, index=False)
-    print(f"[mt5] Cached to {cache_file.name}")
 
     mt5.shutdown()
     return df
