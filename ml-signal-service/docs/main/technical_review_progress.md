@@ -12,7 +12,7 @@ All 5 P0 fixes and 2 P1 fixes have been deployed. The system is now capable of p
 |---|---|---|---|---|
 | P0 — Blocking | 5 | 5 | 0 |
 | P1 — Reasoning | 4 | 3 | 1 (1.2/1.3) |
-| P2 — Data Hygiene | 0 of 3 | 0 | 3 (2.2, 2.3, 1.6) |
+| P2 — Data Hygiene | 1 of 3 | 1 | 2 (2.2, 2.3) |
 | P3 — Dead Code | 0 of 3 | 0 | 3 (2.5, 2.4, 2.1) |
 
 ---
@@ -194,7 +194,7 @@ Also added `mode` (STANDARD/BORDERLINE) to Agent A's user message so it knows wh
 
 | # | Task | Priority | Effort | Dependencies |
 |---|---|---|---|---|
-| 1.6 | Delta-fetch MT5 | High | M | None |
+| 1.6 | Delta-fetch MT5 | **High** | **M** | ✅ **DONE** `aba4eb1` |
 | 1.2 | Combiner notebook headers | Medium | S | None |
 | 1.3 | Replace @0.5 reference in notebooks | Low | S | None |
 | 2.1 | Retrain ensembles (2020-2026) | Medium | M | Phase 0/1 stable |
@@ -225,4 +225,4 @@ Also added `mode` (STANDARD/BORDERLINE) to Agent A's user message so it knows wh
 
 ---
 
-*Review date: 2026-08-03. Next review: after tasks 1.6 is deployed.*
+*Review date: 2026-08-04. P0/P1 fully deployed. Next: P2 retraining and model robustness.*
