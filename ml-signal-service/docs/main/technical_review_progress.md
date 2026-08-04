@@ -205,7 +205,70 @@ Also added `mode` (STANDARD/BORDERLINE) to Agent A's user message so it knows wh
 
 ---
 
-## 6. File Change Log
+## 6. Model Robustness & Retraining Assessment (2026-08-04)
+
+*The models are NOT broken — they produce signals and agents evaluate correctly. But 5 issues need attention, ranked by urgency.*
+
+### Issue A — `deviation_sum_24h` dead in live mode (Critical, P0 urgency)
+
+The #1 feature in EURUSD and GBPUSD is zero for all recent bars because the 2026 calendar CSV has no August Actual/Deviation data. The model was trained on 2019-2025 where this feature carried real signal. In live mode, zero deviation pushes all probabilities down, routing everything to borderline.
+
+**Fix:** Monthly calendar CSV update. Replace `EconomicCalendarEvents-2026.csv` with a version that has filled Actual/Deviation values for past months. **No retrain needed** — the model weights already understand what ±2.5 deviation means for EURUSD direction.
+
+**Impact if not fixed:** Model operates at ~80% of trained capability. Most signals pushed to borderline tier.
+
+---
+
+### Issue B — 13 months of stale training data (Medium, P2)
+
+All `.joblib` bundles were trained through 2025-06-30. Today is 2026-08-04. The model has never seen 13 months of the most recent market data. This is not a crisis — the feature relationships are still valid — but the training window should be extended.
+
+**Fix (Task 2.1):** Retrain all 3 pairs with training end shifted to 2026-06-30. Re-run the `*_sell_improved.ipynb` notebooks. Expected: ROC-AUC not worse than v2; EURUSD retains EV > 0; GBPUSD/USDCHF may stabilize.
+
+---
+
+### Issue C — OBV non-stationary `obv` appears in every model (Medium, P2)
+
+`obv` (On-Balance Volume) is a cumulative sum starting at 0 on the data series start date. Each year of added data shifts the entire OBV distribution upward. The model was trained on OBV values from 2019-2025, but live data has OBV from 2019-2026. The feature is subtly out-of-distribution and will get worse with each retrain.
+
+**Fix (Task 2.3):** Replace `obv` with:
+- `obv_slope_20` — linear-fit slope over 20 bars (measures rate of OBV change)
+- `obv_zscore_100` — z-score over 100 bars (measures abnormal OBV movement)
+Both are stationary — they measure rate of change, not absolute level. Must be done alongside retrain (2.1).
+
+---
+
+### Issue D — Noise selection fragile (Medium, P2)
+
+`noise_random_walk` scored 1,056 vs the top real feature at 1,106 — a 4.5% margin. One different random seed in the noise-injection voting could swap which feature is selected. The selected feature set is not reproducible across runs.
+
+**Fix (Task 2.2):** Run the selection with N=5 random seeds. Only keep features that survive ≥ 3/5 runs. Reject any feature within 5% of the best noise score. This is a small notebook change — no Frival code changes needed.
+
+---
+
+### Issue E — GBPUSD overfit gap (Low, monitoring in shadow mode)
+
+The val→test gap is +0.115, flagged as overfit. The model memorized validation-period patterns (Jul-Dec 2025) that don't transfer to the test set (Jan-Jul 2026). Partly caused by GBP's limited calendar events (929/year vs EUR's 3,441) making calendar features less stable for this pair.
+
+**Fix (Task 3.3):** Walk-forward CV with 2-day purge gap (`TimeSeriesSplit(n_splits=6, gap=48)`). This is a methodological change for the next retrain cycle. For now, GBPUSD is in shadow mode — monitoring only.
+
+---
+
+### Retraining Priority Summary
+
+| # | Issue | Blocks trading? | Action | When |
+|---|---|---|---|---|
+| A | `deviation_sum_24h` dead | No (→ borderline) | Monthly CSV update | **This week** |
+| B | Stale training endpoint | No | Retrain to 2026-06-30 | This month |
+| C | OBV non-stationary | No (subtle shift) | Replace with slope/zscore | With retrain (B) |
+| D | Noise selection fragile | No (current features work) | Multi-seed validation | With retrain (B) |
+| E | GBPUSD overfit | No (shadow mode) | Walk-forward CV | Next quarter |
+
+**Key point:** Do A first (no retrain). Do B+C+D together (one retrain pass for all 3 pairs). E is monitoring — no action until live data confirms or denies the overfit.
+
+---
+
+## 7. File Change Log
 
 | File | Type | Phase | Issue |
 |---|---|---|---|
