@@ -222,6 +222,14 @@ def compute_features(data: pd.DataFrame, pair: Optional[str] = None) -> pd.DataF
     vol_ma20           = df["volume"].rolling(20).mean()
     df["volume_ratio"] = df["volume"] / vol_ma20.replace(0, np.nan)
 
+    # OBV slope over 20 bars — stationary replacement for raw OBV (Issue #9)
+    obv_vals = df["obv"].values
+    df["obv_slope_20"] = np.nan
+    for i in range(20, len(obv_vals)):
+        slope, _ = np.polyfit(range(20), obv_vals[i-20:i], 1)
+        df.iloc[i, df.columns.get_loc("obv_slope_20")] = slope
+    df["obv_zscore_100"] = (df["obv"] - df["obv"].rolling(100).mean()) / df["obv"].rolling(100).std()
+
     # ── 8. Lagged features ────────────────────────────────────────────────
     for lag in [1, 2, 3, 5]:
         df[f"close_lag_{lag}"]  = df["close"].shift(lag)
