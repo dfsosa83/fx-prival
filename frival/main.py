@@ -44,7 +44,7 @@ PROMPTS_DIR = Path(__file__).resolve().parent / "agents" / "prompts"
 
 PAIR_CONFIG = {
     "EURUSD": {
-        "threshold": 0.326,
+        "threshold": 0.333,
         "model_file": MODELS_BIN / "EURUSD_H1_sell_Ensemble.joblib",
         "direction": "SELL",
         "pip_multiplier": 10000,
@@ -53,7 +53,7 @@ PAIR_CONFIG = {
         "fundamental_prompt": None,  # uses default fundamental.txt
     },
     "GBPUSD": {
-        "threshold": 0.369,
+        "threshold": 0.381,
         "model_file": MODELS_BIN / "GBPUSD_H1_sell_Ensemble.joblib",
         "direction": "SELL",
         "pip_multiplier": 10000,
@@ -63,7 +63,7 @@ PAIR_CONFIG = {
         "fundamental_prompt": str(PROMPTS_DIR / "fundamental_gbpusd.txt"),
     },
     "USDCHF": {
-        "threshold": 0.376,
+        "threshold": 0.365,
         "model_file": MODELS_BIN / "USDCHF_H1_sell_Ensemble.joblib",
         "direction": "SELL",
         "pip_multiplier": 10000,
