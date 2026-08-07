@@ -12,6 +12,7 @@ __pycache__/
 frival/output/
 frival/data/cache/
 frival/data/last_signal.json
+frival/execution_bot/data/
 
 # Kilo local config
 .kilo/

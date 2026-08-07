@@ -14,10 +14,11 @@ data/processed/
 .env
 
 # ── models ────────────────────────────────────────────────────────────────────
-models_bin/
+# models_bin/ tracked — needed for pipeline execution
+# Git LFS recommended for files >100MB (e.g. USDCHF_H1_sell_Ensemble.joblib ~122MB)
 *.sav
 *.pkl
-*.joblib
+#*.joblib  (tracked — needed by Frival pipeline)
 
 # ── python ────────────────────────────────────────────────────────────────────
 __pycache__/

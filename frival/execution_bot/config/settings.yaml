@@ -24,11 +24,11 @@ pairs:
   GBPUSD:
     direction: SELL
     lot_size: 0.08
-    shadow: true                # shadow — EV negative, monitoring only
+    shadow: false                # shadow — EV negative, monitoring only
   USDCHF:
     direction: SELL
     lot_size: 0.04
-    shadow: true                # shadow — EV negative, monitoring only
+    shadow: false                # shadow — EV negative, monitoring only
 
 # ── Risk Controls ───────────────────────────────────────────────────
 risk:

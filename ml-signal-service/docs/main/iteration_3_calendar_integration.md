@@ -287,4 +287,144 @@ frival/
 
 ---
 
-*This document defines the two-phase economic calendar integration plan. Implementation begins when all 2007–2026 yearly CSV files are available.*
+## 8. Cross-System Technical Review — 2026-08-03 (Findings + Next-Step Roadmap)
+
+*This section supersedes items 8+ of prior planning and consolidates the findings from a full-stack review conducted on 2026-08-03 covering: `project_last_state.md`, EURUSD/GBPUSD/USDCHF `{buy|sell|combiner}_outputs.txt`, `frival/agents/prompts/*`, and `frival/output/logs/2026-08-03_live.log`. It defines the corrective work that must precede any further calendar-integration effort.*
+
+### 8.1 State Snapshot (as of 2026-08-03)
+
+| Item | Value | Source |
+|---|---|---|
+| Live pairs | EURUSD SELL, GBPUSD SELL, USDCHF SELL | `project_last_state.md` §11 |
+| Live signals fired since 2026-07-29 | **0** across 3 pairs / 5 trading days | `frival/output/logs/*.log` |
+| EURUSD SELL sealed test | n=24, prec 0.500, EV +0.155R, +3.7R | [eurusd/sell_outputs.txt](../../notebooks/eurusd/sell_outputs.txt) |
+| GBPUSD SELL sealed test | n=26, prec 0.423, EV **−0.052R**, −1.4R, val→test gap **+0.115** (overfit) | [gbpusd/sell_outputs.txt](../../notebooks/gbpusd/sell_outputs.txt) / combiner |
+| USDCHF SELL sealed test | n=23, prec 0.435, EV **−0.014R**, −0.3R | [usdchf/sell_outputs.txt](../../notebooks/usdchf/sell_outputs.txt) |
+| EURUSD BUY combined test | n=596, prec 0.221, **−307.2R** | [eurusd/combiner_outputs.txt](../../notebooks/eurusd/combiner_outputs.txt) |
+
+### 8.2 Bugs and Logical Errors (Ranked by Severity)
+
+#### P0 — Blocking Signal Production or Producing Wrong Reasoning
+
+1. **Borderline lane structurally cannot fire (Agent A Rule 2 auto-trigger).**
+   The technical prompts state:
+   > *"REJECT only if the ensemble is clearly conflicted: 0 or 1 of the 4 sub-models have probability ≥ threshold."*
+   In borderline mode the gate admits bars where `ensemble_p < threshold`. When the ensemble average is below the threshold, it is mechanically likely that 0 sub-models exceed the threshold, so Rule 2 fires automatically. The 2026-08-03 log confirms this: **6/6 sessions** report *"0 out of 4 sub-models above the threshold"* and Agent A returns REJECT. The borderline lane, as instrumented today, is dead-on-arrival — it can only produce SHELVED outcomes.
+   - Fix: split Rule 2 into (a) *standard mode*: 0/4 or 1/4 → REJECT, and (b) *borderline mode*: REJECT only if the ensemble is fully collapsed (e.g., 0/4 above `threshold − 0.05`, or max per-model p < `threshold − 0.10`).
+
+2. **USDCHF prompts encode BUY reasoning while the deployed model is SELL.**
+   Files `agents/prompts/technical_usdchf.txt` and `fundamental_usdchf.txt` are written for BUY USDCHF (Rule 1 rejects on D1 downtrend, Rule 4 confirms on `price above EMA50 / RSI > 55 / +DI > −DI / risk-on / gold falling`). Per `project_last_state.md` §11 the production direction has been SELL since 2026-07-30. Agents receive the direction in the user message and manage to invert case-by-case, but the *system* prompt still trains the model on the wrong ruleset. Reasoning quality is degraded and the veto logic is inconsistent.
+   - Fix: rewrite both USDCHF prompts for SELL direction, mirroring the EURUSD SELL prompt structure with CHF-specific overlays (SNB dovishness, gold weakness → *confirm* SELL USDCHF only when CHF gains, not weakens).
+
+3. **Deployment gate not enforced for GBPUSD and USDCHF.**
+   The project's own gating criteria (`project_last_state.md` §12.3) require *"EV > 0 with a CI that clears breakeven (0.400 with Wilson CI low > 0.350)"*. Neither pair meets this:
+   - GBPUSD SELL: EV −0.052R, CI95 [0.255, 0.611] — CI straddles breakeven.
+   - USDCHF SELL: EV −0.014R, CI95 [0.256, 0.632] — CI straddles breakeven.
+   - GBPUSD combiner also flags **overfit** (val→test gap +0.115).
+   Both are running live nonetheless. This violates the gate.
+   - Fix: downgrade GBPUSD and USDCHF to shadow-only (write JSONL, suppress FIRED status and prints) until either (a) retrain lifts EV positive with CI clearing breakeven, or (b) 60-day live sample confirms edge.
+
+#### P1 — Reasoning Blindspots and Configuration Drift
+
+4. **Agent A is blind to calendar features despite them being top-3 signal drivers.**
+   Feature-selection outputs show `deviation_sum_24h`, `hours_since_last_high`, and `high_events_next_24h` in the top-10 for all three pairs. Yet the technical prompt only enumerates EMAs, RSI, MACD, ADX, ATR — the calendar features are absent from the CONFIRM checklist and never influence Agent A. Agent A cannot corroborate or contradict the model's dominant driver.
+   - Fix: extend Rule 4 confirm-conditions with calendar checks (e.g., *"`hours_since_last_high` between 2 and 24"* → confirm post-event trend continuation; *"`high_events_next_1h ≥ 1`"* → REJECT for pre-event fade risk).
+
+5. **Combiner notebook config is stale for all 3 pairs.**
+   The header comments in `{eurusd,gbpusd,usdchf}/combiner_outputs.txt` still read:
+   > *"BUY_ONLY = False # drop SELL lane — non-viable on test set"*
+   > *"Drop SELL lane entirely — test set shows SELL model is non-viable (3 signals, 0.333 prec)."*
+   These comments predate the SELL pivot (EURUSD) and the Iteration-3 BUY→SELL flip (USDCHF). The combiner still evaluates BUY+SELL uniformly and reports EURUSD BUY-only precision 0.218 (−307.2R) as its default. Reviewers reading these files will draw the wrong conclusions.
+   - Fix: rewrite each combiner header block to reflect per-pair production direction (EURUSD SELL-only, USDCHF SELL-only, GBPUSD dual with EV audit). Remove obsolete comments. Add an explicit `PRODUCTION_LANE` variable.
+
+6. **`Precision: 0.000` at `@0.5` reference in all SELL notebooks.**
+   Every SELL notebook prints `Precision : 0.000  Recall : 0.000` at the 0.5 reference and a confusion matrix with zero predicted-positive column. This is mechanically correct (isotonic-calibrated ensembles push mass below 0.5, and the operating threshold is 0.306–0.376), but it obscures the model quality readout. A misreading suggests the model is broken.
+   - Fix: change the reference-threshold print in the notebook to `@ operating_threshold` (already computed lower down) and remove the misleading `@0.5` block, or wrap it with a note.
+
+7. **Agent B (Perplexity) is an unconditional single point of failure.**
+   `senior.py` treats fundamental REJECT as a hard veto that cannot be overridden. On 2026-08-03 Perplexity uniformly returned USD-negative macro context and vetoed 4/6 sessions. Whether the read was correct or not, the current architecture cannot recover from an Agent B misread. Combined with issue #1 (borderline auto-reject), the system had zero-degrees-of-freedom for 5 straight days.
+   - Fix: introduce a 3-strike softening — after N consecutive fundamental REJECTs against a same-direction signal that would otherwise pass every other gate, downgrade the veto to a *warning* and require Agent A HIGH confidence to override.
+
+#### P2 — Data Hygiene and Efficiency
+
+8. **`noise_random_walk` importance is nearly at parity with the top real feature (EURUSD BUY: 1056 vs 1106).**
+   The noise-injection cut is fragile — one bad seed could exclude a real feature or admit a noise feature. Feature selection stability is not measured.
+   - Fix: run the selection with `N=5` random seeds and require features to survive `≥ 3/5` runs. Reject any feature whose margin over the best noise is under 5%.
+
+9. **`obv` is a non-stationary cumulative sum and appears in every model's top features.**
+   Its absolute level depends on the starting date of the series. Adding a year of data will shift the whole feature distribution and silently degrade the fit at retrain time.
+   - Fix: replace `obv` with `obv_slope_20` (linear-fit slope over 20 bars) or `obv_zscore_100`. Retrain and re-select.
+
+10. **MT5 fetch inefficiency: full 47,200-bar download per hourly run.**
+    The 2026-08-03 log shows every session refetches ~47k bars (20–25s per pair) despite `EURUSD_H1_live_cache.csv` existing. Three pairs × 4 sessions/day = 12 full downloads/day.
+    - Fix: implement delta-fetch — read cache, request only `(cache_max_dt → now)`, append, dedupe on datetime.
+
+11. **Perplexity citation markers (`[1][2][7]`) leak into JSON `justification` field.**
+    Cosmetic but pollutes downstream reports and any dashboard rendering.
+    - Fix: strip `[\d+]` runs from the JSON `justification` string during parse in `agents/fundamental.py`.
+
+#### P3 — Dead Code, Cost, and Model Freshness
+
+12. **USDJPY prompts and pair config still exist** (`technical_usdjpy.txt`, `fundamental_usdjpy.txt`, `PAIR_CONFIG['USDJPY']`) despite the pair being decommissioned. Risk of accidental re-enablement.
+13. **Zero-signal cost accounting.** Five days × 3 pairs × ~4 sessions × 2 agents ≈ 120 Perplexity + 120 OpenRouter calls with **zero FIRED signals**. Cost-per-signal is currently undefined (division by zero). No dashboard or log line tracks $/signal.
+14. **Model freshness clock**: bundles trained through 2025-06-30; today is 2026-08-03 (~13 months stale). Iteration-3 v2 retrain shifted the training endpoint but not by much. Regime dynamics evolve; a rolling monthly retrain cadence is unspecified.
+
+---
+
+### 8.3 Prioritized Roadmap — Immediate Next Actions
+
+**Legend:** effort **S** = under a day, **M** = 1–3 days, **L** = > 3 days.
+
+#### Phase 0 — Unblock Live Signal Production (P0, this week)
+
+| # | Action | File(s) | Effort | Exit criterion |
+|---|---|---|---|---|
+| 0.1 | Split Agent A Rule 2 into standard vs borderline variants (see §8.2 #1). Regenerate `technical.txt`, `technical_gbpusd.txt`, `technical_usdchf.txt` with a conditional block driven by `mode` in the user message. | `frival/agents/prompts/technical*.txt`, `frival/agents/technical.py`, `frival/agents/context.py` | S | Borderline session with a valid ensemble spread (e.g., 2/4 sub-models within 0.05 of threshold) does not auto-REJECT on Rule 2. |
+| 0.2 | Rewrite USDCHF prompts for SELL direction with SNB/gold/safe-haven overlays. Add a `direction` marker at the top of every prompt so future audits catch mismatches. | `frival/agents/prompts/technical_usdchf.txt`, `fundamental_usdchf.txt` | S | USDCHF live session reasoning references SELL and CHF-supportive events as REJECT triggers, not the inverse. |
+| 0.3 | Downgrade GBPUSD and USDCHF to shadow-live: continue evaluating and writing JSONL/logs but tag `final_decision = "SHADOW_FIRED"` and suppress console fire prints. Re-promote only when EV > 0 and Wilson CI lower ≥ 0.35 on either sealed retest or 60-day live sample. | `frival/main.py`, `frival/signal_gate.py`, `frival/agents/senior.py` | S | Live command still runs 3 pairs but only EURUSD can print/store a real FIRED. Report shows shadow status distinctly. |
+| 0.4 | Strip Perplexity citation markers `[\d+]` from `justification` and `veto_reason` before JSON parse and log write. | `frival/agents/fundamental.py`, `frival/output_writer.py` | S | New JSONL entries contain no `[N]` markers in reason fields. |
+| 0.5 | Enforce a startup "prompt-vs-config coherence" check: at `main.py` startup verify each pair's `PAIR_CONFIG['direction']` matches a `# DIRECTION: BUY|SELL` header in its two prompt files; fail fast on mismatch. | `frival/main.py`, prompts | S | Removing the DIRECTION header or flipping direction causes `main.py` to exit with a clear error. |
+
+#### Phase 1 — Reasoning Quality and Config Hygiene (P1, next 2 weeks)
+
+| # | Action | File(s) | Effort | Exit criterion |
+|---|---|---|---|---|
+| 1.1 | Extend Agent A CONFIRM/REJECT rules to reference `deviation_sum_24h`, `hours_since_last_high`, `high_events_next_1h`. Add pre-event fade REJECT and post-event trend CONFIRM branches. | prompts, `agents/context.py` (surface these features) | M | Sample 20 recent borderline bars → ≥ 8 change decision vs the pre-fix agent. Reasoning cites calendar values. |
+| 1.2 | Rewrite combiner notebook headers for each pair with correct `PRODUCTION_LANE`, remove stale "SELL non-viable" comments, and add a top-of-notebook cell that asserts `production_lane == direction_used_downstream`. | `notebooks/{eurusd,gbpusd,usdchf}/*_signal_combiner_improved.ipynb` | S | Running any combiner prints the current production direction and precisely the metrics for that lane; the wrong-lane path is skipped. |
+| 1.3 | Replace `@0.5` reference readout in SELL notebooks with `@operating_threshold`; keep the ROC-AUC/PR-AUC printout unchanged. | 3 SELL notebooks | S | Notebook no longer prints `Precision: 0.000` alongside a valid ensemble. |
+| 1.4 | Ship Iteration-3 Phase 2 (calendar RAG for Agent B) per §3 of this document. This unlocks historical Agent B backtesting and removes the Perplexity SPOF for backtests. | `frival/agents/calendar_context.py` (new), `agents/fundamental.py`, `main.py`, `data/calendar.py` | M | Sealed 2026-01-01 → 2026-07-03 backtest with calendar-fed Agent B shows non-NEUTRAL decisions on ≥ 30% of gated bars and Wilson CI computed. |
+| 1.5 | Implement 3-strike soft-veto for Agent B (see §8.2 #7). Track consecutive fundamental REJECTs per direction in `frival/data/last_signal.json`. | `agents/senior.py`, `data/last_signal.json` schema | S | After 3 consecutive Agent-B REJECTs on same-direction gated signals, next signal is allowed to fire if Agent A HIGH-CONFIRM and no macro-event flag active. |
+| 1.6 | Delta-fetch MT5 data (see §8.2 #10). | `frival/data/fetcher.py` | M | Second+ hourly runs fetch ≤ 100 bars and complete in < 5 s per pair. |
+
+#### Phase 2 — Model Robustness and Retrain (P2, next month)
+
+| # | Action | File(s) | Effort | Exit criterion |
+|---|---|---|---|---|
+| 2.1 | Retrain all three ensembles with training end shifted to 2026-06-30 (recovering 12 months of data). Keep val 2026-07-01 → 2026-12-31 conceptually, but use walk-forward validation. | 3 `*_sell_improved.ipynb`, `models_bin/*_v3.joblib` | M | New bundles saved; per-pair ROC-AUC not worse than v2; EURUSD retains EV > 0 on the freshest 60-day slice. |
+| 2.2 | Multi-seed feature selection (`N=5`, keep features surviving ≥ 3/5, require ≥ 5% margin over best noise). | notebooks feature-selection cells | M | Selected feature set reproducible across seeds; `noise_random_walk` never enters selection. |
+| 2.3 | Replace `obv` with `obv_slope_20` and `obv_zscore_100`; re-run selection. | `frival/model/features.py`, notebooks | S | Retrained ensembles no longer depend on absolute `obv` level; feature set changes minimally otherwise. |
+| 2.4 | Add cost-and-outcome accounting: log `api_calls`, `usd_cost_estimate`, `signals_fired`, `signals_shelved` per session; write daily rollup to `output/reports/cost_YYYY-MM-DD.json`. | `agents/base.py`, `agents/fundamental.py`, `output_writer.py` | S | Daily report shows $/signal or "no signals fired — Nc calls at ~$X". |
+| 2.5 | Remove USDJPY prompts and `PAIR_CONFIG['USDJPY']` (or gate behind an `experimental=True` flag). | prompts, `main.py` | S | `python main.py --mode live` cannot select USDJPY without an explicit flag. |
+
+#### Phase 3 — Statistical Validation and Automation (P3, next quarter)
+
+| # | Action | Effort | Exit criterion |
+|---|---|---|---|
+| 3.1 | Monthly retrain cron: freeze training window at `today − 1 month`, run notebook, validate ROC-AUC ≥ v2, promote to `models_bin/` behind a canary flag. | L | New bundle deployed automatically once per month; canary compares first 20 signals against previous bundle. |
+| 3.2 | Regime detector as a fourth gate: pre-classify bar into {trend-with, trend-against, range} using D1 EMA slope + ADX + realized-vol regime; block trend-against signals by default. | M | Sealed retest shows April-style drawdown months lose ≥ 60% of counter-trend signals. |
+| 3.3 | Walk-forward CV with `TimeSeriesSplit(n_splits=6, gap=48)` (2-day purge) as the acceptance test for every retrain. | M | Val→test overfit gap < 0.05 for every pair before deployment; GBPUSD's current +0.115 gap becomes a hard fail. |
+| 3.4 | Consolidated live dashboard: `output/reports/daily_YYYY-MM-DD.md` summarising per-pair signals, agent decisions, cost, and 30-day rolling precision/EV. | S | Dashboard generated automatically by end-of-day cron; human review takes < 5 minutes. |
+
+### 8.4 Success Criteria (updates to §7)
+
+| Gate | Metric | Threshold |
+|---|---|---|
+| **G6** | Borderline lane fires at least one signal per pair per week (given ≥ 1 borderline bar/day) | Non-zero FIRED count in a 5-day live window |
+| **G7** | Prompt/config coherence | 0 pair-direction mismatches at `main.py` startup |
+| **G8** | Shadow → live promotion | GBPUSD/USDCHF only promoted after EV > 0 with Wilson CI low ≥ 0.35 on ≥ 60-day live sample |
+| **G9** | Agent B single-point-of-failure removed | Soft-veto logic engages ≥ once in backtest without lowering precision below 0.40 |
+| **G10** | Cost transparency | Every day produces a `cost_YYYY-MM-DD.json` with call counts and $/signal (or "no signals") |
+
+---
+
+*Review date: 2026-08-03. Next review: after Phase 0 tasks land. This section is the authoritative work order for the next iteration cycle — do not start Iteration-3 Phase 2 (calendar RAG) until Phase 0.1–0.4 are merged, because Phase 2 depends on a working borderline lane to demonstrate calendar-context lift.*
