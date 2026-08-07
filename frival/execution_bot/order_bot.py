@@ -71,8 +71,9 @@ class OrderBot:
         # Initialize MT5
         creds = self.config.get_mt5_credentials()
         terminal_path = creds.get("terminal_path")
-        timeout = self.config.get_config("mt5", {}).get("timeout", 30)
-        max_retries = self.config.get_config("mt5", {}).get("retries", 3)
+        mt5_cfg = self.config.get_config("mt5") or {}
+        timeout = mt5_cfg.get("timeout", 30)
+        max_retries = mt5_cfg.get("retries", 3)
 
         try:
             self.connector = MT5Connector(self.config)
