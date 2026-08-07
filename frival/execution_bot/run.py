@@ -58,6 +58,13 @@ def main():
         _os.environ.setdefault("MAX_DAILY_TRADES", "5")
         _os.environ.setdefault("MAX_DAILY_LOSS", "50.0")
 
+        # Also write a proper credentials.env so ConfigManager internals get real values
+        env_file = config_dir / "credentials.env"
+        with open(frival_env, encoding="utf-8") as src, open(env_file, "w", encoding="utf-8") as dst:
+            dst.write(src.read())
+            dst.write("\nMT5_TERMINAL_PATH=auto\nDEMO_MODE=true\nEMERGENCY_STOP=false\n")
+            dst.write("LOG_LEVEL=INFO\nMAX_DAILY_TRADES=5\nMAX_DAILY_LOSS=50.0\n")
+
     if not config_dir.exists():
         print(f"Config directory not found: {config_dir}")
         sys.exit(1)
@@ -72,13 +79,30 @@ def main():
         print("EMERGENCY STOP active in config — exiting.")
         sys.exit(0)
 
-    # ── Validate MT5 credentials ────────────────────────────────
-    creds = config.get_mt5_credentials()
-    if not creds.get("login") or not creds.get("password"):
-        print("MT5 credentials not configured in credentials.env")
+    # Read credentials directly from Frival .env (beyond ConfigManager's load_dotenv)
+    def _read_env(path):
+        env = {}
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, _, v = line.partition("=")
+                    env[k.strip()] = v.strip()
+        return env
+
+    if frival_env.exists():
+        frival_creds = _read_env(frival_env)
+        login = frival_creds.get("MT5_LOGIN", "")
+        password = frival_creds.get("MT5_PASSWORD", "")
+        server = frival_creds.get("MT5_SERVER", "")
+    else:
+        login = password = server = ""
+
+    if not login or not password:
+        print("MT5 credentials not configured in frival/config/.env")
         sys.exit(1)
 
-    print(f"Account: {creds['login']} | Server: {creds['server']}")
+    print(f"Account: {login} | Server: {server}")
     print(f"Demo mode: {config.is_demo_mode()}")
     print(f"Pairs: {list(config.get_config('pairs', {}).keys())}")
     print(f"Max daily loss: ${config.get_risk_config().get('max_daily_loss', 50):.2f}")
