@@ -18,17 +18,18 @@ EURUSD AND GBPUSD must be visible in Market Watch.
 
 ---
 
-## Step 2 — Run both pairs at each hour (:01)
+## Step 2 — Run all pairs + auto-execute at each hour (:01)
 
 Open Git Bash in `frival/` directory:
 
 ```bash
 cd "/c/Users/david/OneDrive/Documents/fx-prival/frival"
 /c/Users/david/anaconda3/Library/envs/deaf_agent/python.exe -u -c \
-  "import sys; sys.path.insert(0, '.'); from main import run_live; run_live(borderline=True, pair='EURUSD'); run_live(borderline=True, pair='GBPUSD'); run_live(borderline=True, pair='USDCHF')"
+  "import sys; sys.path.insert(0, '.'); from main import run_live, execute_pending; run_live(borderline=True, pair='EURUSD'); run_live(borderline=True, pair='GBPUSD'); run_live(borderline=True, pair='USDCHF'); execute_pending()"
 ```
 
-Wait 90–120 seconds for all three pairs. Read the output for each.
+This generates signals for all 3 pairs, then auto-executes any FIRED orders through MT5.
+Wait 90–120 seconds for completion.
 
 ---
 
@@ -42,28 +43,28 @@ Wait 90–120 seconds for all three pairs. Read the output for each.
 
 ---
 
-## Step 4 — Interpret the result
+## Step 3 — Auto-execution
 
-### If signal FIRES:
+If `execute_pending()` finds any FIRED signals, it places the order automatically:
 
 ```
-============================================================
-  SIGNAL FIRED: EURUSD SELL (or GBPUSD SELL)
-  Entry zone:   1.15352 - 1.15312
-  Stop Loss:    1.15406  (7.4 pips)
-  Take Profit:  1.15221  (11.1 pips)
-  R:R:          1.5
-  Expires:      2026-07-29T23:00:00
-  Confidence:   HIGH
-  Probability:  0.3109
-============================================================
+[OrderBot] EXECUTING: EURUSD SELL 0.08 lots
+  Entry: 1.15722  SL: 1.15809  TP: 1.15592
+[OrderBot] Order placed — ticket: XXXX
 ```
 
-**Action:** Place 0.08 lots SELL using the trade levels shown. Standard=HIGH/MODERATE confidence, Borderline=MODERATE only.
+If BLOCKED or SHELVED: nothing to do. Wait for next hour.
 
-### If BLOCKED or SHELVED:
+---
+## Step 4 — Execution bot as background service (optional)
 
-Nothing to do. Wait for next hour.
+If you want the execution bot to run continuously between hours (picks up signals instantly):
+```bash
+cd /c/Users/david/OneDrive/Documents/fx-prival/frival/execution_bot
+/c/Users/david/anaconda3/Library/envs/deaf_agent/python.exe run.py
+```
+
+Leave this terminal open. The signal pipeline in Step 2 will still work — the bot just picks up signals as they land.
 
 ---
 
