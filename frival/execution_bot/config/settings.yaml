@@ -1,0 +1,50 @@
+# Frival Order Execution Bot — Trading Configuration
+# Copy DeafAgent config/credentials.env contents if you want to reuse existing setup.
+
+trading:
+  mode: demo                     # demo or live
+  default_risk_profile: MODERATE # VERY_CONSERVATIVE through VERY_AGGRESSIVE
+  default_lot_size: 0.08
+
+mt5:
+  timeout: 30                    # connection timeout seconds
+  retries: 3                     # connection retry attempts
+  timezone: America/Panama       # your local timezone
+
+# ── Per-Pair Execution Rules ────────────────────────────────────────
+# signal_watcher reads Frival JSONL. order_bot checks these rules.
+# Set shadow: true to monitor only (no real orders placed).
+# EURUSD is the only live pair per deployment gate criteria.
+
+pairs:
+  EURUSD:
+    direction: SELL
+    lot_size: 0.08
+    shadow: false               # LIVE — EV positive, deployed gate passed
+  GBPUSD:
+    direction: SELL
+    lot_size: 0.08
+    shadow: true                # shadow — EV negative, monitoring only
+  USDCHF:
+    direction: SELL
+    lot_size: 0.04
+    shadow: true                # shadow — EV negative, monitoring only
+
+# ── Risk Controls ───────────────────────────────────────────────────
+risk:
+  max_daily_loss: 50.0           # $ max loss per day (~5% of $1,021)
+  max_positions_per_pair: 1      # never pyramid on the same symbol
+  max_total_positions: 3         # across all pairs
+
+# ── Order Settings ──────────────────────────────────────────────────
+orders:
+  deviation_points: 5            # max price deviation for market orders
+  dynamic_sizing: false          # use fixed lot sizes from pair config
+  pending_order_timeout: 600     # seconds before pending orders expire
+
+# ── Security ────────────────────────────────────────────────────────
+security:
+  confirm_live_orders: true      # require confirmation before live orders
+  emergency_controls:
+    enabled: true
+    stop_file: ../frival/data/emergency_stop.txt
