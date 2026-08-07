@@ -39,13 +39,13 @@ def main():
     # ── Load configuration ──────────────────────────────────────
     config_dir = Path(__file__).resolve().parent / args.config
 
-    # Fallback: if credentials.env is missing or empty, pull from Frival's .env
-    if not (config_dir / "credentials.env").exists():
-        frival_env = Path(__file__).resolve().parents[1] / "config" / ".env"
-        if frival_env.exists():
-            import shutil
-            shutil.copy(frival_env, config_dir / "credentials.env")
-            print(f"Copied credentials from {frival_env}")
+    # Pull credentials from Frival's .env if available (always overwrite placeholders)
+    frival_env = Path(__file__).resolve().parents[1] / "config" / ".env"
+    env_file = config_dir / "credentials.env"
+    if frival_env.exists():
+        import shutil
+        shutil.copy(frival_env, env_file)
+        print(f"Credentials synced from {frival_env}")
 
     if not config_dir.exists():
         print(f"Config directory not found: {config_dir}")
