@@ -64,10 +64,6 @@ def read_new_signals(last_signal_id: Optional[str] = None) -> List[Dict[str, Any
                 if sig.get("final_decision") != "FIRED":
                     continue
 
-                # Skip SHADOW_FIRED (GBPUSD/USDCHF monitoring only)
-                if sig.get("final_decision") == "SHADOW_FIRED":
-                    continue
-
                 # Skip already-processed signals
                 signal_id = sig.get("signal_id", "")
                 if last_signal_id and signal_id == last_signal_id:
@@ -77,16 +73,21 @@ def read_new_signals(last_signal_id: Optional[str] = None) -> List[Dict[str, Any
                 if last_signal_id and signal_id <= last_signal_id:
                     continue
 
-                # Skip signals older than 24 hours
+                # Skip signals older than 24 hours or with unparseable timestamps
                 ts = sig.get("timestamp_utc", "")
-                if ts:
-                    try:
-                        sig_dt = datetime.fromisoformat(ts)
-                        age = (datetime.now(timezone.utc) - sig_dt).total_seconds()
-                        if age > 86400:  # 24 hours
-                            continue
-                    except (ValueError, TypeError):
-                        pass
+                try:
+                    sig_dt = datetime.fromisoformat(ts)
+                    age = (datetime.now(timezone.utc) - sig_dt).total_seconds()
+                    if age > 86400:  # 24 hours
+                        continue
+                except (ValueError, TypeError):
+                    if ts:  # has timestamp but couldn't parse → skip
+                        continue
+
+                # Skip signals with zero trade levels (old format)
+                trade = sig.get("trade", {})
+                if trade.get("entry", 0) == 0 or trade.get("stop_loss", 0) == 0:
+                    continue
 
                 signals.append(sig)
 
