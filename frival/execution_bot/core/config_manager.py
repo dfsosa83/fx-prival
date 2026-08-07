@@ -53,7 +53,7 @@ class ConfigManager:
             'mt5_login': self._get_env_var('MT5_LOGIN', required=True),
             'mt5_password': self._get_env_var('MT5_PASSWORD', required=True),
             'mt5_server': self._get_env_var('MT5_SERVER', required=True),
-            'mt5_terminal_path': self._get_env_var('MT5_TERMINAL_PATH', required=True),
+            'mt5_terminal_path': self._get_env_var('MT5_TERMINAL_PATH', required=False, default=""),
             'demo_mode': self._get_env_bool('DEMO_MODE', default=True),
             'emergency_stop': self._get_env_bool('EMERGENCY_STOP', default=False),
             'log_level': self._get_env_var('LOG_LEVEL', default='INFO'),
