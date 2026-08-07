@@ -77,6 +77,17 @@ def read_new_signals(last_signal_id: Optional[str] = None) -> List[Dict[str, Any
                 if last_signal_id and signal_id <= last_signal_id:
                     continue
 
+                # Skip signals older than 24 hours
+                ts = sig.get("timestamp_utc", "")
+                if ts:
+                    try:
+                        sig_dt = datetime.fromisoformat(ts)
+                        age = (datetime.now(timezone.utc) - sig_dt).total_seconds()
+                        if age > 86400:  # 24 hours
+                            continue
+                    except (ValueError, TypeError):
+                        pass
+
                 signals.append(sig)
 
     return signals
@@ -93,8 +104,9 @@ def validate_signal(sig: Dict[str, Any]) -> Optional[str]:
 
     required = ["entry", "stop_loss", "take_profit"]
     for field in required:
-        if field not in trade or trade[field] is None:
-            return f"missing trade.{field}"
+        val = trade.get(field)
+        if val is None or val == 0:
+            return f"missing or zero trade.{field}"
 
     if "symbol" not in sig or not sig["symbol"]:
         return "missing symbol"
