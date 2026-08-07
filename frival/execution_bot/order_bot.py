@@ -206,8 +206,9 @@ class OrderBot:
 
         if result and result.get("success"):
             self.signals_executed += 1
-            print(f"[OrderBot] Order placed — ticket: {result.get('order_id', '?')}")
-            self._log(signal, "EXECUTED", f"ticket={result.get('order_id', '?')}")
+            ticket = result.get("order", "?")
+            print(f"[OrderBot] Order placed — ticket: {ticket}")
+            self._log(signal, "EXECUTED", f"ticket={ticket}")
             return True
         else:
             error_msg = result.get("error", "unknown") if result else "no result"
