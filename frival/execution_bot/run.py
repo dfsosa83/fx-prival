@@ -36,24 +36,30 @@ def main():
                        help="Path to config directory")
     args = parser.parse_args()
 
-    # ── Load configuration ──────────────────────────────────────
+# ── Load configuration ──────────────────────────────────────
     config_dir = Path(__file__).resolve().parent / args.config
 
-    # Pull credentials from Frival's .env if available (always overwrite placeholders)
+    # Read credentials directly from Frival's .env (bypasses ConfigManager issues)
     frival_env = Path(__file__).resolve().parents[1] / "config" / ".env"
-    env_file = config_dir / "credentials.env"
     if frival_env.exists():
-        import shutil
-        shutil.copy(frival_env, env_file)
-        # Inject required fields not in Frival .env
-        with open(env_file, "a", encoding="utf-8") as f:
-            f.write("\nMT5_TERMINAL_PATH=\nDEMO_MODE=true\nEMERGENCY_STOP=false\n")
-            f.write("LOG_LEVEL=INFO\nMAX_DAILY_TRADES=5\nMAX_DAILY_LOSS=50.0\n")
-        print(f"Credentials synced from {frival_env}")
+        import os as _os
+        with open(frival_env, encoding="utf-8") as _f:
+            for _line in _f:
+                _line = _line.strip()
+                if _line and not _line.startswith("#") and "=" in _line:
+                    _key, _, _val = _line.partition("=")
+                    _os.environ[_key.strip()] = _val.strip()
+        print(f"Loaded credentials from {frival_env}")
+        # Inject defaults ConfigManager requires but Frival .env doesn't have
+        _os.environ.setdefault("MT5_TERMINAL_PATH", "auto")
+        _os.environ.setdefault("DEMO_MODE", "true")
+        _os.environ.setdefault("EMERGENCY_STOP", "false")
+        _os.environ.setdefault("LOG_LEVEL", "INFO")
+        _os.environ.setdefault("MAX_DAILY_TRADES", "5")
+        _os.environ.setdefault("MAX_DAILY_LOSS", "50.0")
 
     if not config_dir.exists():
         print(f"Config directory not found: {config_dir}")
-        print("Create execution_bot/config/ with settings.yaml and credentials.env")
         sys.exit(1)
 
     try:
@@ -68,7 +74,6 @@ def main():
 
     # ── Validate MT5 credentials ────────────────────────────────
     creds = config.get_mt5_credentials()
-    print(f"Login: '{creds.get('login')}'  Pwd: {'***' if creds.get('password') else 'EMPTY'}")
     if not creds.get("login") or not creds.get("password"):
         print("MT5 credentials not configured in credentials.env")
         sys.exit(1)
