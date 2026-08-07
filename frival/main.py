@@ -726,6 +726,8 @@ def execute_pending():
 
 
 # ── CLI ──────────────────────────────────────────────────────────────────────
+
+def main():
     parser = argparse.ArgumentParser(description="Frival EURUSD H1 SELL signal pipeline")
     parser.add_argument(
         "--mode", choices=["backtest", "live"], default="backtest",
@@ -758,3 +760,7 @@ def execute_pending():
                      borderline=args.borderline, pair=args.symbol)
         if args.execute:
             execute_pending()
+
+
+if __name__ == "__main__":
+    main()
