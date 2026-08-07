@@ -68,6 +68,7 @@ def main():
 
     # ── Validate MT5 credentials ────────────────────────────────
     creds = config.get_mt5_credentials()
+    print(f"Login: '{creds.get('login')}'  Pwd: {'***' if creds.get('password') else 'EMPTY'}")
     if not creds.get("login") or not creds.get("password"):
         print("MT5 credentials not configured in credentials.env")
         sys.exit(1)
