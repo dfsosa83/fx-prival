@@ -45,6 +45,10 @@ def main():
     if frival_env.exists():
         import shutil
         shutil.copy(frival_env, env_file)
+        # Inject required fields not in Frival .env
+        with open(env_file, "a", encoding="utf-8") as f:
+            f.write("\nMT5_TERMINAL_PATH=\nDEMO_MODE=true\nEMERGENCY_STOP=false\n")
+            f.write("LOG_LEVEL=INFO\nMAX_DAILY_TRADES=5\nMAX_DAILY_LOSS=50.0\n")
         print(f"Credentials synced from {frival_env}")
 
     if not config_dir.exists():
