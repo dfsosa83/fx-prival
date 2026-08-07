@@ -104,7 +104,8 @@ def main():
 
     print(f"Account: {login} | Server: {server}")
     print(f"Demo mode: {config.is_demo_mode()}")
-    print(f"Pairs: {list(config.get_config('pairs', {}).keys())}")
+    pairs = config.get_config('pairs')
+    print(f"Pairs: {list(pairs.keys() if pairs else [])}")
     print(f"Max daily loss: ${config.get_risk_config().get('max_daily_loss', 50):.2f}")
     print(f"Emergency stop file: {EMERGENCY_STOP}")
     print()
