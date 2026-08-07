@@ -122,6 +122,10 @@ class OrderBot:
         symbol = signal.get("symbol", "").upper()
         direction = signal.get("direction", "SELL")
         trade = signal.get("trade", {})
+        # Accept both old (flat) and new (nested) signal formats
+        entry = trade.get("entry") or signal.get("entry_price") or signal.get("entry", 0)
+        stop_loss = trade.get("stop_loss") or signal.get("stop_loss", 0)
+        take_profit = trade.get("take_profit") or signal.get("take_profit", 0)
         sig_id = signal.get("signal_id", "?")
 
         # ── Gate 1: Pair config ──────────────────────────────────────
@@ -167,7 +171,7 @@ class OrderBot:
         try:
             margin_required = mt5.order_calc_margin(
                 mt5.ORDER_TYPE_SELL if action == "sell" else mt5.ORDER_TYPE_BUY,
-                symbol, lot_size, trade["entry"]
+                symbol, lot_size, entry
             )
             if margin_required and margin_required > margin_free * 0.5:
                 print(f"[OrderBot] Insufficient margin: need ${margin_required:.2f}, "
@@ -182,16 +186,16 @@ class OrderBot:
             "symbol": symbol,
             "action": action,
             "lot_size": lot_size,
-            "entry_price": trade["entry"],
-            "stop_loss": trade["stop_loss"],
-            "take_profit": trade["take_profit"],
+            "entry_price": entry,
+            "stop_loss": stop_loss,
+            "take_profit": take_profit,
             "comment": f"frival_{sig_id[-20:]}",
             "order_type": "MARKET",
             "risk_profile": self.config.get_trading_config().get("default_risk_profile", "MODERATE"),
         }
 
         print(f"[OrderBot] EXECUTING: {symbol} {action.upper()} {lot_size} lots")
-        print(f"  Entry: {trade['entry']:.5f}  SL: {trade['stop_loss']:.5f}  TP: {trade['take_profit']:.5f}")
+        print(f"  Entry: {entry:.5f}  SL: {stop_loss:.5f}  TP: {take_profit:.5f}")
 
         try:
             result = self.order_manager.execute_order(order_params)
