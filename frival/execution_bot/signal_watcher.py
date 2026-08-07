@@ -77,6 +77,8 @@ def read_new_signals(last_signal_id: Optional[str] = None) -> List[Dict[str, Any
                 ts = sig.get("timestamp_utc", "")
                 try:
                     sig_dt = datetime.fromisoformat(ts)
+                    if sig_dt.tzinfo is None:
+                        sig_dt = sig_dt.replace(tzinfo=timezone.utc)
                     age = (datetime.now(timezone.utc) - sig_dt).total_seconds()
                     if age > 86400:  # 24 hours
                         continue
@@ -120,6 +122,8 @@ def validate_signal(sig: Dict[str, Any]) -> Optional[str]:
     if expires:
         try:
             expiry_dt = datetime.fromisoformat(expires)
+            if expiry_dt.tzinfo is None:
+                expiry_dt = expiry_dt.replace(tzinfo=timezone.utc)
             if datetime.now(timezone.utc) > expiry_dt:
                 return f"expired at {expires}"
         except (ValueError, TypeError):
