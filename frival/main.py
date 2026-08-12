@@ -84,6 +84,136 @@ PAIR_CONFIG = {
 }
 
 
+# ── MERG gate configuration ──────────────────────────────────────────────────
+# Set MERG_ENABLED=true in environment. MERG_SHADOW_ONLY=true logs without blocking.
+MERG_ENABLED = os.getenv("MERG_ENABLED", "false").lower() == "true"
+MERG_SHADOW_ONLY = os.getenv("MERG_SHADOW_ONLY", "true").lower() == "true"
+MERG_SHADOW_LOG = Path(__file__).resolve().parent / "output" / "merg_shadow.log"
+MERG_EVENT_WINDOW_MIN = int(os.getenv("MERG_EVENT_WINDOW_MIN", "60"))
+_merg_inference = None  # lazy-loaded MergInference instance
+
+
+def _merg_event_risk_gate(bar_dt, pair: str, probability: float) -> str:
+    """
+    MERG gate: check if a HIGH-impact event is approaching and run event-response model.
+
+    Returns:
+        "PASS"  — no event, MERG disabled, or MERG predicts aligned direction
+        "BLOCK" — MERG predicts contradictory direction (only if not shadow_only)
+
+    Only activates when MERG_ENABLED=true. Logs decisions to MERG_SHADOW_LOG.
+    """
+    global _merg_inference
+
+    if not MERG_ENABLED:
+        return "PASS"
+
+    # Load MERG lazily (only when first needed — avoids import cost on startup)
+    if _merg_inference is None:
+        try:
+            from agents.macro_event_responder import MergInference
+            model_dir = MODELS_BIN
+            _merg_inference = MergInference(model_dir)
+            if _merg_inference.ready:
+                print("[MERG] Loaded — shadow_only=" + str(MERG_SHADOW_ONLY))
+            else:
+                print("[MERG] Failed to load: " + str(_merg_inference._error))
+        except Exception as e:
+            print("[MERG] Import failed: " + str(e))
+            return "PASS"
+
+    if not _merg_inference or not _merg_inference.ready:
+        return "PASS"
+
+    # Check calendar for upcoming HIGH-impact event within window
+    try:
+        from agents.calendar_context import get_next_high_event
+        event_name, minutes_to = get_next_high_event(bar_dt, pair, MERG_EVENT_WINDOW_MIN)
+    except Exception:
+        return "PASS"
+
+    if not event_name:
+        return "PASS"  # no HIGH event in window — MERG silent
+
+    # Fetch last 15 M1 bars via MT5
+    try:
+        import MetaTrader5 as mt5
+        bars = mt5.copy_rates_from_pos(pair, mt5.TIMEFRAME_M1, 0, 15)
+        if bars is None or len(bars) < 15:
+            print(f"[MERG] Insufficient M1 data — pass through")
+            return "PASS"
+
+        # Convert to candlestick anatomy: [tWick, body, bWick] × 15
+        anatomy = []
+        for b in bars:
+            o, h, l, c = b[1], b[2], b[3], b[4]
+            anatomy.extend([h - max(o, c), c - o, min(o, c) - l])
+        import numpy as np
+        m1_anatomy = np.array(anatomy, dtype=np.float32).reshape(1, -1)
+    except Exception as e:
+        print(f"[MERG] M1 fetch failed: {e} — pass through")
+        return "PASS"
+
+    # Run prediction
+    try:
+        pred = _merg_inference.predict(m1_anatomy, event_name)
+    except Exception as e:
+        print(f"[MERG] Inference failed: {e} — pass through")
+        return "PASS"
+
+    if not pred.features_extracted:
+        return "PASS"
+
+    direction = PAIR_CONFIG.get(pair, {}).get("direction", "SELL")
+    p_sell = pred.p_D if direction == "SELL" else pred.p_U
+    p_opposite = pred.p_U if direction == "SELL" else pred.p_D
+
+    blocked = (
+        pred.predicted_class != "N"
+        and pred.is_confident
+        and p_opposite > p_sell
+    )
+
+    # Log to shadow file
+    import json as _json  # avoid shadowing global json
+    os.makedirs(MERG_SHADOW_LOG.parent, exist_ok=True)
+    entry = {
+        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        "bar_dt": str(bar_dt),
+        "pair": pair,
+        "event": event_name,
+        "minutes_to_event": minutes_to,
+        "p_U": round(pred.p_U, 4),
+        "p_D": round(pred.p_D, 4),
+        "p_N": round(pred.p_N, 4),
+        "predicted_class": pred.predicted_class,
+        "confidence": round(pred.confidence, 4),
+        "p_reaction": round(pred.p_reaction, 4),
+        "direction": direction,
+        "blocked": blocked,
+        "shadow_only": MERG_SHADOW_ONLY,
+        "effective_action": "BLOCK" if (blocked and not MERG_SHADOW_ONLY) else "PASS",
+    }
+    with open(MERG_SHADOW_LOG, "a", encoding="utf-8") as f:
+        f.write(_json.dumps(entry, default=str) + "\n")
+
+    if blocked:
+        print(f"\n[MERG Gate] {pred.predicted_class} reaction predicted "
+              f"(p={pred.confidence:.2f}) — contradicts {direction}")
+        print(f"  Event: {event_name} in {minutes_to} min")
+        if MERG_SHADOW_ONLY:
+            print(f"  [shadow_only — would have blocked, but letting through]")
+            return "PASS"
+        else:
+            print(f"  [BLOCKED — signal skipped]")
+            return "BLOCK"
+    else:
+        print(f"\n[MERG Gate] {pred.predicted_class} prediction "
+              f"(p={pred.confidence:.2f}) — aligned with {direction}")
+
+    return "PASS"
+
+
 def _check_prompt_direction(pair: str, pcfg: dict):
     """Startup check: verify pair direction matches prompt file headers."""
     direction = pcfg.get("direction", "SELL")
@@ -494,6 +624,11 @@ def _run_live_inner(threshold, agent_enabled, borderline, log_path, pair):
     if not gate_result and not gate_borderline:
         return
 
+    # ── MERG Gate (Macro Event Response) ─────────────────────────────────
+    if MERG_ENABLED and gate_type:
+        merg_result = _merg_event_risk_gate(latest["datetime"], pair, probability)
+        if merg_result == "BLOCK":
+            return
     # ── Agent evaluation ────────────────────────────────────────────────
     if not agent_enabled:
         signal = _build_signal(latest, probability, threshold, ind_probs, {},

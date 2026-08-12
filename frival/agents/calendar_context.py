@@ -136,3 +136,36 @@ def build_macro_context(
     lines.append(f"Event density: {len(past_events)} recent / {len(future_events)} upcoming")
 
     return "\n".join(lines)
+
+
+def get_next_high_event(
+    bar_dt: pd.Timestamp,
+    pair: str,
+    window_minutes: int = 60,
+) -> tuple:
+    """
+    Check if a HIGH-impact economic event is scheduled within window_minutes
+    of bar_dt for currencies relevant to the given pair.
+
+    Returns (event_name, minutes_to_event) or (None, None) if no HIGH event.
+    """
+    try:
+        calendar = load_calendar(pair)
+    except Exception:
+        return None, None
+
+    if calendar is None or len(calendar) == 0:
+        return None, None
+
+    window_end = bar_dt + pd.Timedelta(minutes=window_minutes)
+    future = calendar[
+        (calendar["date_time"] >= bar_dt) & (calendar["date_time"] <= window_end)
+    ]
+    high = future[future["impact"] == "HIGH"]
+    if len(high) == 0:
+        return None, None
+
+    nearest = high.iloc[0]
+    event_name = str(nearest.get("name", nearest.get("event", "unknown")))
+    minutes_to = int((nearest["date_time"] - bar_dt).total_seconds() / 60)
+    return event_name, minutes_to
