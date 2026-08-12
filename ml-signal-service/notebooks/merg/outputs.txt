@@ -1,0 +1,68 @@
+Selected: 41 / 110 features
+Dropped: 69 (below noise threshold)
+
+Top 10 by importance:
+   1. cum_body_1_15             imp=450.6109  votes=1
+   2. body10                    imp=237.0057  votes=2
+   3. cum_body_1_5              imp=222.0070  votes=1
+   4. range_10                  imp=196.2125  votes=2
+   5. body8                     imp=196.2026  votes=2
+   6. body9                     imp=196.2021  votes=2
+   7. range_5                   imp=159.6156  votes=2
+   8. body11                    imp=154.2015  votes=2
+   9. body7                     imp=153.6023  votes=2
+  10. range_8                   imp=153.0128  votes=2
+
+=== Stage 1 — Reaction Detector ===
+  LogReg          PR-AUC: 0.8901
+  RandomForest    PR-AUC: 0.9075
+  XGBoost         PR-AUC: 0.9217
+  LightGBM        PR-AUC: 0.9280
+  Best: LightGBM (PR-AUC=0.9280)
+
+  Stage 1 optimal threshold: 0.8392 (score=4.7033)
+Signals at threshold: 114 / 337
+
+Stage 2 train: 1404 samples (UP=714, DOWN=690)
+Stage 2 val:   159 samples
+
+=== Stage 2 — Direction Classifier ===
+  LogReg          PR-AUC: 0.9474
+  RandomForest    PR-AUC: 0.9656
+  XGBoost         PR-AUC: 0.9596
+  LightGBM        PR-AUC: 0.9639
+  Best: RandomForest (PR-AUC=0.9656)
+
+  # Stage 1 — reaction detector
+X_train = df_train[selected_features].values.astype(np.float32)
+y_train_s1 = df_train['y_reaction'].values
+dates_train = df_train['time_utc']
+
+X_val = df_val[selected_features].values.astype(np.float32)
+y_val_s1 = df_val['y_reaction'].values
+
+print('=== Stage 1 — Reaction Detector ===')
+ensemble_s1, pr_s1 = fit_stage(X_train, y_train_s1, dates_train, 'Stage1')
+print()
+
+=== Stage 1 — Reaction Detector (Test) ===
+  ROC-AUC:  0.9678
+  PR-AUC:   0.9407
+  Brier:    0.0676
+  Signals:  170 / 841 (20.2%)
+
+=== Stage 2 — Direction Classifier (Test) ===
+  ROC-AUC:  0.9927
+  PR-AUC:   0.9938
+  Brier:    0.0356
+  Samples:  278
+
+  Combined accuracy: 0.8823
+Majority baseline (always N): 66.9%
+
+Confusion matrix (predicted → actual):
+  pred_N:  533    28    29
+  pred_U:    0   111     5
+  pred_D:   30     7    98
+
+  
