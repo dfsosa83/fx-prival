@@ -120,16 +120,23 @@ def main():
     if args.once:
         # Single pass: process any pending signals and exit
         print("Single-pass mode — processing pending signals...")
-        from signal_watcher import read_new_signals, load_state, save_state
+        from signal_watcher import read_new_signals, load_state, save_state, validate_signal
 
         state = load_state()
         last_id = state.get("last_signal_id")
 
         signals = read_new_signals(last_id)
         for sig in signals:
+            err = validate_signal(sig)
+            if err:
+                sig_id = sig.get("signal_id", "?")
+                print(f"[--once] SKIP {sig_id}: {err}")
+                bot._log(sig, "SKIPPED", f"validation: {err}")
+                state["last_signal_id"] = sig.get("signal_id", "")
+                continue
             bot.handle_signal(sig)
             state["last_signal_id"] = sig.get("signal_id", "")
-        state["signals_processed"] = state.get("signals_processed", 0)
+            state["signals_processed"] = state.get("signals_processed", 0) + 1
 
         save_state(state)
         bot.stop()

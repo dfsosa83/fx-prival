@@ -93,7 +93,14 @@ def read_new_signals(last_signal_id: Optional[str] = None) -> List[Dict[str, Any
 
                 signals.append(sig)
 
-    return signals
+    # Deduplicate: same signal_id may appear across different file runs
+    seen, deduped = set(), []
+    for s in signals:
+        sid = s.get("signal_id")
+        if sid and sid not in seen:
+            seen.add(sid)
+            deduped.append(s)
+    return deduped
 
 
 def validate_signal(sig: Dict[str, Any]) -> Optional[str]:

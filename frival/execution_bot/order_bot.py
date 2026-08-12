@@ -128,6 +128,12 @@ class OrderBot:
         take_profit = trade.get("take_profit") or signal.get("take_profit", 0)
         sig_id = signal.get("signal_id", "?")
 
+        # Defense-in-depth: reject zero-level signals even if watcher missed them
+        if not entry or not stop_loss or not take_profit:
+            self.signals_rejected += 1
+            self._log(signal, "SKIPPED", f"zero levels e={entry} sl={stop_loss} tp={take_profit}")
+            return True
+
         # ── Gate 1: Pair config ──────────────────────────────────────
         pair_cfg = self.pair_config.get(symbol, {})
         if not pair_cfg.get("allowed", True):
@@ -205,8 +211,12 @@ class OrderBot:
             return False
 
         if result and result.get("success"):
+            ticket = result.get("order")
+            if ticket is None:
+                self._log(signal, "FAILED", "success=True but no order id returned")
+                self.signals_rejected += 1
+                return True
             self.signals_executed += 1
-            ticket = result.get("order", "?")
             print(f"[OrderBot] Order placed — ticket: {ticket}")
             self._log(signal, "EXECUTED", f"ticket={ticket}")
             return True
