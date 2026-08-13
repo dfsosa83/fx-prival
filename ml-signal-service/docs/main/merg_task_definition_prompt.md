@@ -105,3 +105,167 @@ The task list should cover the full pipeline from data ingestion to serialized m
 - Report goes under `ml-signal-service/docs/experiments/`
 - Training data artifact goes under `ml-signal-service/data/features/merg_v1.parquet`
 - No new API keys, no new services, no new infrastructure — this is a pure Python training pipeline
+
+---
+
+## Next Steps and Exploration Plan
+
+### 1. Overall Target
+
+**Goal:** Build a MERG model that predicts the post-event directional move **before** it happens — using only information available *at the moment of the release* — and validate that the signal survives without peeking at post-event data.
+
+The current `MERG_v1` (ROC-AUC 0.97/0.98) is inflated: it consumes **all 15 windows** of candlestick anatomy, which include the 10 post-event bars (windows 9 → 1). A model that sees the first several minutes of the post-release move is not *predicting* the move — it is *observing* it. The exploration plan below defines how to build an honest, leak-free model and how to measure the true predictive power that remains.
+
+The **target model** (call it `MERG_v2`):
+
+- Uses **only pre-event + event-bar windows** (windows 15 → 10), i.e. the last 5 pre-release minutes plus the release bar itself.
+- Is evaluated against the **sealed 2026 test set** exactly once, after all feature/model decisions are frozen.
+- Produces a defensible ROC-AUC / PR-AUC number that we can trust when deciding whether to promote MERG beyond shadow mode.
+
+### 2. Understanding "Incompleto" Models
+
+The dataset's 15 windows are not a single homogeneous series. They are anchored to the event release and split into three segments:
+
+```
+Window:  15  14  13  12  11  |  10  |  9  8  7  6  5  4  3  2  1
+Meaning: ──── pre-event ────  | event | ──── post-event ─────────
+          5 minutes before    | bar   | 10 minutes after release
+```
+
+The **event bar (window 10)** is the M1 bar during which the economic release actually prints. Everything before it (windows 15 → 11) is information available *before* the news. Everything after it (windows 9 → 1) is information only available *after* the market has begun reacting.
+
+#### 2.1 What "Incompleto" means
+
+An **"Incompleto" model** is a model variant trained with a *prefix* of the 15-window sequence — it deliberately withholds the later (post-event) windows. The name comes from the dataset owner's own terminology: the model only has an *incomplete* view of the full 15-window candle sequence at training/prediction time.
+
+The key insight is that **"incomplete" refers to time, not to quality.** An Incompleto model is *less informed*, not *worse*: it is trained to make the prediction at a point in time when the future windows genuinely have not happened yet. This is what makes it deployable in production — you can actually run it at T−5 min or T+0 min, because those are real moments that exist before the outcome is known.
+
+#### 2.2 The Incompleto variants
+
+The dataset owner defined progressive variants by how many windows each model is allowed to see:
+
+| Variant | Windows used | What it knows | Production feasibility |
+|---|---|---|---|
+| `incompleto5` | 15 → 11 | Only the 5 pre-event bars. **True blind prediction.** No reaction data at all. | Run at T−5 min to T−1 min, *before* the release |
+| `incompleto6` | 15 → 10 | 5 pre-event bars + the event bar itself. Sees the first volatile reaction. | Run at T+1 min, right after the release bar closes |
+| `incompleto7` | 15 → 9 | + the 1st post-event bar. Sees initial follow-through. | Run at T+2 min |
+| `incompleto10` | 15 → 6 | + 5 post-event bars. The move is mostly realized by now. | Run at T+6 min |
+| `incompleto15` | 15 → 1 | All 15 bars. Sees the full post-event sequence. | Not a prediction — retrospective classification |
+
+#### 2.3 Why they are "incomplete" and how they differ from "complete" models
+
+- **Incomplete models** see a **prefix** of the 15-window sequence. Their input ends at the window corresponding to the moment the prediction is being made. They answer: *"given what I can see right now, where is price going next?"*
+
+- **Complete models** (`incompleto15`, and by extension our current `MERG_v1`) see the **entire** 15-window sequence, including post-event bars. They answer: *"given everything that already happened, what was the net outcome?"* This is a classification/labeling task, not a forward prediction.
+
+The critical distinction is **information availability at decision time**:
+
+- An `incompleto5` prediction can be acted upon **before** the release — it generates alpha.
+- An `incompleto15` prediction is only available **after** the move has already occurred — it cannot be traded.
+
+Our current `MERG_v1` sits at the wrong end of this spectrum. It reports 0.97 ROC-AUC because it is essentially an `incompleto15` model: it looks at the post-event bars and "predicts" the direction they already show. To be deployable as a gate, MERG must be re-framed as an **`incompleto5` or `incompleto6`** model.
+
+#### 2.4 The expected performance curve
+
+As the model sees more windows, accuracy should monotonically improve — but the *value* of each prediction decreases:
+
+```
+                 predictability ▲
+                                │              ● incompleto15 (0.97)
+                                │          ● incompleto10
+                                │      ● incompleto7
+                                │   ● incompleto6
+                                │● incompleto5  ← true forward prediction
+                                └───────────────────────────► tradability
+                    (not tradable)                      (tradable)
+```
+
+The exploration plan below is designed to measure this curve — specifically, to find out what ROC-AUC survives at the tradable end (`incompleto5` / `incompleto6`). If the tradable variants fall below the gate thresholds (Stage 1 ≥ 0.58, Stage 2 ≥ 0.55), then MERG has no live value and should stay in shadow/disabled mode.
+
+### 3. Specific Tasks and Step-by-Step Actions
+
+#### Task 1 — Rebuild the dataset with window masks
+
+**Objective:** Refactor `build_dataset` so that each model variant can select a window prefix without touching the raw data.
+
+**Steps:**
+1. Add a `window_prefix` parameter to the feature-selection logic (values: `5`, `6`, `7`, `10`, `15`).
+2. Implement a column selector that keeps only `{tWick_i, body_i, bWick_i}` for windows `i ∈ {15, ..., 16 − prefix}`.
+3. Verify the mapping is correct by asserting:
+   - `prefix=5` → 15 columns (5 windows × 3 components)
+   - `prefix=6` → 18 columns
+   - `prefix=15` → 45 columns
+4. Write unit-level sanity checks: the `prefix=15` output must exactly match the current `MERG_v1` input.
+
+**Acceptance:** Each prefix produces the exact expected column set; a quick spot-check of window 10 vs window 9 confirms the event bar is correctly included/excluded.
+
+#### Task 2 — Train the "Incompleto ladder"
+
+**Objective:** Produce one trained model per prefix (`5`, `6`, `7`, `10`, `15`) using the *identical* two-stage pipeline, so the only variable is the number of windows.
+
+**Steps:**
+1. For each prefix, run Stage 1 (reaction detector) and Stage 2 (direction classifier).
+2. Keep every hyperparameter identical to `MERG_v1` (nested purged CV, recency weights, soft-vote ensemble, isotonic calibration, threshold on validation).
+3. Record, for each prefix: ROC-AUC, PR-AUC, Brier, precision, and signal count on the **sealed 2026 test set**.
+4. Serialize each prefix's bundles as `MERG_v2_inc5_*.joblib`, `MERG_v2_inc6_*.joblib`, etc.
+
+**Acceptance:** A table plotting prefix (5→15) against test ROC-AUC. The curve should be monotonic (more windows → higher ROC). The `incompleto15` row should reproduce `MERG_v1` numbers.
+
+#### Task 3 — Answer the leakage question (P0)
+
+**Objective:** Determine whether the tradable variants (`5`, `6`) retain enough signal to be useful.
+
+**Steps:**
+1. Read the `incompleto5` and `incompleto6` ROC-AUC from Task 2.
+2. Compare against the gate thresholds (Stage 1 ≥ 0.58, Stage 2 ≥ 0.55).
+3. If `incompleto5` clears both thresholds → MERG is genuinely predictive *before* the event. Proceed to Task 4.
+4. If only `incompleto6` clears → MERG is usable as a *post-release-bar* filter (still valid, but the entry is at T+1 min, not before).
+5. If neither clears → MERG has no forward signal; the 0.97 was leakage. Disable the gate and document the finding.
+
+**Acceptance:** A written verdict — "MERG predicts before the event (inc5)", "MERG predicts at the release bar (inc6)", or "MERG does not predict (both below threshold)" — with the numbers that support it.
+
+#### Task 4 — Test event granularity
+
+**Objective:** Determine whether the event name carries predictive signal beyond the candlestick anatomy.
+
+**Steps:**
+1. Train three variants on the best tradable prefix (from Task 3):
+   - **Variant A:** no event feature (current baseline).
+   - **Variant B:** target-encoded `event` (mean `targetSimple` per event, out-of-fold to prevent leakage).
+   - **Variant C:** one-hot for top-20 events + `OTHER` bucket.
+2. Evaluate all three on the sealed 2026 test set.
+3. Report the delta. If B or C beats A by a meaningful margin (≥ +0.02 ROC-AUC), event granularity carries signal.
+
+**Acceptance:** A comparison table with the three variants' ROC-AUC, plus a recommendation on whether to adopt event-aware features.
+
+#### Task 5 — Rebuild the report and update the integration plan
+
+**Objective:** Fold the exploration findings back into the official documentation.
+
+**Steps:**
+1. Update `merg_v1_report.md` (or create `merg_v2_report.md`) with the "Incompleto ladder" table and the leakage verdict.
+2. Update `macro_event_responder.py` to load the correct tradable-prefix bundles and to expose which prefix is active.
+3. Update `project_last_state.md` with the corrected MERG status.
+4. Re-run the live smoke test with `MERG_ENABLED=false` to confirm no regression.
+
+**Acceptance:** Docs are consistent; runtime module loads the correct model; the live pipeline runs unchanged with MERG disabled.
+
+### 4. Tests to Run
+
+| # | Test | Question it answers | Pass condition |
+|---|---|---|---|
+| T1 | Window-mask assertion | Is the prefix selection mapping correct? | Each prefix yields the exact expected column count |
+| T2 | Incompleto ladder | Does ROC-AUC degrade smoothly as windows are removed? | Monotonic curve; inc15 reproduces v1 |
+| T3 | Leakage verdict | Does MERG predict *forward* at all? | inc5 or inc6 clears gate thresholds |
+| T4 | Event granularity A/B/C | Does event identity add signal? | B or C ≥ +0.02 ROC-AUC over A |
+| T5 | Sealed-test discipline | Was the 2026 test set touched only once? | No model decision used test data |
+| T6 | Live smoke test | Does the gate still run with MERG disabled? | `run_live` completes identically to pre-MERG |
+
+### 5. Decision Matrix After Exploration
+
+| Outcome | Action |
+|---|---|
+| inc5 clears thresholds, event-aware improves | Adopt `incompleto5` + event feature. Promote MERG to shadow, then hard gate. |
+| inc6 clears, inc5 does not | Adopt `incompleto6`. Document T+1 entry timing. Keep in shadow until validated. |
+| Only inc10/inc15 clear | MERG is retrospective — no live value. Disable gate permanently. |
+| Event feature adds signal but inc5/6 do not | Event granularity is real but microstructure timing is not — do not deploy MERG. |
