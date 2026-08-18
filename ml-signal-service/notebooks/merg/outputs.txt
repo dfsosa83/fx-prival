@@ -1,68 +1,126 @@
-Selected: 41 / 110 features
-Dropped: 69 (below noise threshold)
+============================================================
+FEATURE SELECTION RESULTS
+============================================================
+Real features tested : 59
+Selected             : 17
+Reduction            : 75%
+Best noise importance: 0.15947
 
-Top 10 by importance:
-   1. cum_body_1_15             imp=450.6109  votes=1
-   2. body10                    imp=237.0057  votes=2
-   3. cum_body_1_5              imp=222.0070  votes=1
-   4. range_10                  imp=196.2125  votes=2
-   5. body8                     imp=196.2026  votes=2
-   6. body9                     imp=196.2021  votes=2
-   7. range_5                   imp=159.6156  votes=2
-   8. body11                    imp=154.2015  votes=2
-   9. body7                     imp=153.6023  votes=2
-  10. range_8                   imp=153.0128  votes=2
+Top 15 selected features:
+                                     feature  avg_imp  total_votes
+                                    range_11 0.886818            3
+                                     tWick11 0.608256            3
+                                   range_sum 0.407685            3
+                                  range_mean 0.308584            3
+                                     bWick11 0.185629            3
+                                body_abs_sum 0.169044            2
+           evt_ECB's President Draghi speech 0.166650            3
+evt_Core Harmonized Index of Consumer Prices 0.158449            3
+             evt_Gross Domestic Product s.a. 0.157037            3
+                               body_ratio_11 0.144345            2
+                                     bWick12 0.136370            3
+     evt_Harmonized Index of Consumer Prices 0.132174            2
+                                wick_asym_11 0.131768            2
+                    evt_ECB Press Conference 0.130989            3
+                            evt_Retail Sales 0.128673            1
 
-=== Stage 1 — Reaction Detector ===
-  LogReg          PR-AUC: 0.8901
-  RandomForest    PR-AUC: 0.9075
-  XGBoost         PR-AUC: 0.9217
-  LightGBM        PR-AUC: 0.9280
-  Best: LightGBM (PR-AUC=0.9280)
+Event features that survived selection: 6
+["evt_ECB's President Draghi speech", 'evt_Core Harmonized Index of Consumer Prices', 'evt_Gross Domestic Product s.a.', 'evt_Harmonized Index of Consumer Prices', 'evt_ECB Press Conference', 'evt_Retail Sales']
 
-  Stage 1 optimal threshold: 0.8392 (score=4.7033)
-Signals at threshold: 114 / 337
+LogReg       params: (baseline)
+  RandomForest params: {'min_samples_leaf': 50, 'max_features': 'sqrt', 'n_estimators': 200, 'max_depth': None}
+  XGBoost      params: {'subsample': 0.7, 'reg_lambda': 5.0, 'max_depth': 11, 'learning_rate': 0.05, 'colsample_bytree': 0.8, 'n_estimators': 150}
+  LightGBM     params: {'subsample': 0.9, 'reg_lambda': 5.0, 'max_depth': 8, 'learning_rate': 0.05, 'min_child_samples': 10, 'colsample_bytree': 0.7, 'n_estimators': 150, 'num_leaves': 63}
 
-Stage 2 train: 1404 samples (UP=714, DOWN=690)
-Stage 2 val:   159 samples
+✓ Final model = soft-vote ensemble of 4 calibrated models
 
-=== Stage 2 — Direction Classifier ===
-  LogReg          PR-AUC: 0.9474
-  RandomForest    PR-AUC: 0.9656
-  XGBoost         PR-AUC: 0.9596
-  LightGBM        PR-AUC: 0.9639
-  Best: RandomForest (PR-AUC=0.9656)
+=== Validation performance (@0.5 reference) — Ensemble ===
+Precision : 0.804
+Recall    : 0.300
+F1        : 0.437
+ROC-AUC   : 0.757
+PR-AUC    : 0.727
 
-  # Stage 1 — reaction detector
-X_train = df_train[selected_features].values.astype(np.float32)
-y_train_s1 = df_train['y_reaction'].values
-dates_train = df_train['time_utc']
+Confusion matrix (rows=true, cols=pred):
+[[160  11]
+ [105  45]]
 
-X_val = df_val[selected_features].values.astype(np.float32)
-y_val_s1 = df_val['y_reaction'].values
+ Min signals floor : 50
+Optimal threshold : 0.2809
+Precision @ opt   : 0.6335
+Recall    @ opt   : 0.8067
+F1        @ opt   : 0.7097
+Signals           : 191
 
-print('=== Stage 1 — Reaction Detector ===')
-ensemble_s1, pr_s1 = fit_stage(X_train, y_train_s1, dates_train, 'Stage1')
-print()
+Top eligible thresholds (by F1):
+ threshold  precision  recall  n_signals
+    0.2809     0.6335  0.8067        191
+    0.2803     0.6302  0.8067        192
+    0.2812     0.6316  0.8000        190
+    0.2775     0.6269  0.8067        193
+    0.2916     0.6534  0.7667        176
+    0.2770     0.6237  0.8067        194
+    0.2916     0.6497  0.7667        177
+    0.2843     0.6296  0.7933        189
+    0.2563     0.6029  0.8400        209
+    0.2934     0.6514  0.7600        175
 
-=== Stage 1 — Reaction Detector (Test) ===
-  ROC-AUC:  0.9678
-  PR-AUC:   0.9407
-  Brier:    0.0676
-  Signals:  170 / 841 (20.2%)
+ ============================================================
+SEALED TEST — Ensemble  (threshold=0.2809)
+============================================================
+ROC-AUC : 0.721
+PR-AUC  : 0.523
+Precision @ threshold : 0.485
+Recall    @ threshold : 0.669
+F1        @ threshold : 0.562
+Signals               : 334 / 769
+Base rate             : 0.315
 
-=== Stage 2 — Direction Classifier (Test) ===
-  ROC-AUC:  0.9927
-  PR-AUC:   0.9938
-  Brier:    0.0356
-  Samples:  278
+Confusion matrix (rows=true, cols=pred):
+[[355 172]
+ [ 80 162]]
 
-  Combined accuracy: 0.8823
-Majority baseline (always N): 66.9%
+Per-event precision among *signals* (pred=1), top 20 by count:
+                                                       n  correct  precision
+event                                                                       
+Retail Sales                                          38       13      0.342
+Consumer Price Index                                  30       17      0.567
+ECB's President Lagarde speech                        24        3      0.125
+Average Hourly Earnings                               23       16      0.696
+HCOB Composite PMI                                    21       10      0.476
+ECB Press Conference                                  20        7      0.350
+ISM Services PMI                                      19       13      0.684
+Core Personal Consumption Expenditures - Price Index  19       12      0.632
+FOMC Press Conference                                 17       12      0.706
+ISM Manufacturing PMI                                 16        9      0.562
+Michigan Consumer Sentiment Index                     16        7      0.438
+Gross Domestic Product Annualized                     13        9      0.692
+ECB Main Refinancing Operations Rate                  13        7      0.538
+ADP Employment Change                                 12        4      0.333
+President Trump speech                                 9        0      0.000
+Fed Interest Rate Decision                             9        7      0.778
+Fed's Chair Powell speech                              9        6      0.667
+FOMC Economic Projections                              5        5      1.000
+ECB Bank Lending Survey                                5        1      0.200
+Fed's Chair Powell testifies                           5        2      0.400
 
-Confusion matrix (predicted → actual):
-  pred_N:  533    28    29
-  pred_U:    0   111     5
-  pred_D:   30     7    98
+=== Test-set operating points (confidence sweep) ===
+ threshold  precision   recall      F1  signals
+--------------------------------------------------
+      0.40      0.529    0.339   0.413      155
+      0.45      0.583    0.248   0.348      103
+      0.50      0.600    0.198   0.298       80
+      0.55      0.667    0.165   0.265       60
+      0.60      0.703    0.107   0.186       37
+      0.65      0.739    0.070   0.128       23
+      0.70      0.684    0.054   0.100       19
+
+=== Speech vs non-speech (threshold=0.2809 — F1-optimal) ===
+  NON-SPEECH   n= 641  base_rate=0.351  ROC-AUC=0.718  signals= 287  precision=0.526  recall=0.671
+  SPEECH       n= 128  base_rate=0.133  ROC-AUC=0.739  signals=  47  precision=0.234  recall=0.647
+
+=== Speech vs non-speech (threshold=0.6000 — gate 0.60) ===
+  NON-SPEECH   n= 641  base_rate=0.351  ROC-AUC=0.718  signals=  32  precision=0.750  recall=0.107
+  SPEECH       n= 128  base_rate=0.133  ROC-AUC=0.739  signals=   5  precision=0.400  recall=0.118
 
   

@@ -6,6 +6,7 @@ Pure function: takes raw H1 OHLCV, returns feature DataFrame.
 """
 
 from typing import List, Optional, Dict, Any
+from pathlib import Path
 import numpy as np
 import pandas as pd
 
@@ -22,6 +23,44 @@ TRAIN_END   = "2025-06-30 23:00:00"
 VAL_START   = "2025-07-01 00:00:00"
 VAL_END     = "2025-12-31 23:00:00"
 TEST_START  = "2026-01-01 00:00:00"
+
+# ── Auxiliary macro symbols (WTI / USDX) daily context ──────────────────────
+AUX_DATA_DIR = Path(__file__).resolve().parents[2] / "ml-signal-service" / "data" / "raw" / "mt5" / "H1"
+AUX_PAIR_MAP = {
+    "XAUUSD": ["USDX"],
+    "USDCAD": ["WTI", "USDX"],
+}
+
+
+def _merge_aux_symbols(df: pd.DataFrame, pair: Optional[str]) -> pd.DataFrame:
+    """Merge daily context from WTI/USDX H1 data (no lookahead). Mirrors notebooks."""
+    symbols = AUX_PAIR_MAP.get(pair or "", [])
+    if not symbols:
+        return df
+    df = df.copy()
+    for sym in symbols:
+        alias = "dxy" if sym == "USDX" else "wti"
+        aux_path = AUX_DATA_DIR / f"{sym}_H1.csv"
+        if not aux_path.exists():
+            continue
+        a = pd.read_csv(aux_path, parse_dates=["datetime"]).sort_values("datetime")
+        daily = a.set_index("datetime")[["close"]].resample("1D").last().dropna()
+        daily[f"{alias}_ema20"] = daily["close"].ewm(span=20, adjust=False).mean()
+        daily[f"{alias}_ema50"] = daily["close"].ewm(span=50, adjust=False).mean()
+        daily[f"{alias}_ret_1d"] = daily["close"].pct_change(1)
+        daily[f"{alias}_ret_5d"] = daily["close"].pct_change(5)
+        daily[f"{alias}_vs_ema20"] = (daily["close"] - daily[f"{alias}_ema20"]) / daily["close"]
+        daily[f"{alias}_trend"] = (daily[f"{alias}_ema20"] > daily[f"{alias}_ema50"]).astype(int)
+        feat_cols = [f"{alias}_ret_1d", f"{alias}_ret_5d", f"{alias}_vs_ema20", f"{alias}_trend"]
+        shifted = daily[feat_cols].shift(1).reset_index().rename(columns={"datetime": "_aux_date"})
+        df["_aux_date"] = df["datetime"].dt.normalize()
+        df = df.merge(shifted, on="_aux_date", how="left")
+        df.drop(columns=["_aux_date"], inplace=True)
+        df[feat_cols] = df[feat_cols].ffill()
+    aux_cols = [c for c in df.columns if c.startswith(("dxy_", "wti_"))]
+    df.dropna(subset=aux_cols, inplace=True)
+    df.reset_index(drop=True, inplace=True)
+    return df
 
 # ── EURUSD SELL (22 features with calendar — v2, threshold 0.326) ────────────
 MODEL_FEATURES = [
@@ -97,6 +136,52 @@ USDCHF_SELL_FEATURES = [
     "upper_wick",
 ]
 
+# ── USDCAD SELL (42 features with WTI/USDX aux, threshold 0.341) ─────────────────
+USDCAD_SELL_FEATURES = [
+    "wti_ret_1d",
+    "wti_vs_ema20",
+    "atr_regime",
+    "wti_ret_5d",
+    "deviation_sum_24h",
+    "hours_since_last_high",
+    "rolling_std_50",
+    "close_vs_ema200",
+    "adx_14",
+    "dxy_ret_1d",
+    "dxy_ret_5d",
+    "obv_zscore_100",
+    "d1_rsi",
+    "obv",
+    "obv_slope_20",
+    "close_vs_day_open",
+    "dxy_vs_ema20",
+    "high_events_next_24h",
+    "d1_close_vs_ema20",
+    "atr_lag_5",
+    "macd_sig",
+    "macd_hist",
+    "minus_di",
+    "macd_hist_slope",
+    "plus_di",
+    "rolling_std_10",
+    "bb_width",
+    "stoch_d",
+    "rolling_std_20",
+    "rsi_lag_5",
+    "volume_ratio",
+    "volume_lag_5",
+    "return_5b",
+    "atr_14",
+    "d1_ema50",
+    "hour_cos",
+    "close_vs_ema50",
+    "macd",
+    "upper_wick",
+    "month",
+    "rsi_lag_3",
+    "price_range",
+]
+
 
 def get_features_for_pair(pair: str, direction: str = "SELL") -> list:
     """Return the model feature list for a given pair."""
@@ -107,6 +192,8 @@ def get_features_for_pair(pair: str, direction: str = "SELL") -> list:
         return GBPUSD_SELL_FEATURES
     elif pair_upper == "USDCHF":
         return USDCHF_SELL_FEATURES
+    elif pair_upper == "USDCAD":
+        return USDCAD_SELL_FEATURES
     elif pair_upper == "USDJPY":
         # TODO: Replace with actual features after noise-injection voting completes
         raise NotImplementedError(
@@ -288,6 +375,9 @@ def compute_features(data: pd.DataFrame, pair: Optional[str] = None) -> pd.DataF
 
     df = df.merge(_d1_shifted, left_on="_date", right_on="_d1_date", how="left")
     df.drop(columns=["_date", "_d1_date", "_day_open"], inplace=True)
+
+    # ── 11b. Auxiliary macro symbols (WTI/USDX) daily context — no leakage ──
+    df = _merge_aux_symbols(df, pair)
 
     # ── Drop NaN rows ─────────────────────────────────────────────────────
     n_before = len(df)

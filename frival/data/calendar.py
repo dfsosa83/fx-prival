@@ -24,6 +24,8 @@ PAIR_CURRENCIES = {
     "GBPUSD": ["GBP", "USD"],
     "USDCHF": ["USD", "CHF"],
     "USDJPY": ["USD", "JPY"],
+    "XAUUSD": ["USD"],         # gold is USD-denominated → USD events only
+    "USDCAD": ["USD", "CAD"],
 }
 
 DEV_WINDOW_HOURS = 24

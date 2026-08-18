@@ -1,0 +1,169 @@
+Production lane: SELL
+Buy  bundle  : XAUUSD_H1_buy_Ensemble.joblib
+Sell bundle  : XAUUSD_H1_sell_Ensemble.joblib
+Raw data     : True
+Cross-filter : 1.0  (1.0 = disabled)
+Cooldown     : 4 bars
+BUY-only     : False  (False = both lanes compared)
+Session filt : False
+
+BUY  model threshold : 0.35
+SELL model threshold : 0.341
+BUY  features        : 31
+SELL features        : 20
+Both use ATR_TP_MULT : 1.5  FW: 6 bars
+
+=== Validation set  (2,999 bars | 125 trading days) ===
+BUY  signals  (standalone candidates)   : 2972
+SELL signals  (standalone candidates)   : 52
+Conflicts suppressed                     : 52
+BUY  after filter + cooldown             : 592  (4.74/day)
+SELL after filter + cooldown             : 0  (0.00/day)
+Total actionable signals                 : 592
+
+Breakeven precision : 0.400
+
+Signal                          Precision    Signals   Per day
+-----------------------------------------------------------------
+BUY  standalone                     0.309       2972    23.78
+BUY  + cross-filter                 0.309       2920    23.37
+BUY  + filter + cooldown            0.306        592     4.74
+
+SELL standalone                     0.481         52     0.42
+SELL + cross-filter                   nan          0     0.00
+SELL + filter + cooldown              nan          0     0.00
+
+COMBINED final                      0.306        592     4.74
+
+Cross-filter   BUY prec    BUY n   BUY/day   SELL prec   SELL n   SELL/day
+--------------------------------------------------------------------------------
+        1.000      0.309     2920     23.37         nan        0       0.00 ← current
+        0.341      0.309     2920     23.37         nan        0       0.00
+        0.700      0.309     2920     23.37         nan        0       0.00
+        0.650      0.309     2920     23.37         nan        0       0.00
+        0.600      0.309     2920     23.37         nan        0       0.00
+        0.550      0.309     2920     23.37         nan        0       0.00
+        0.500      0.309     2920     23.37         nan        0       0.00
+        0.450      0.309     2920     23.37         nan        0       0.00
+        0.400      0.309     2920     23.37         nan        0       0.00
+
+Breakeven : 0.400
+Hint: choose the highest cross-filter where BUY precision ≥ 0.400
+
+=== Test Set (3,671 bars | 153 trading days) ===
+Breakeven precision: 0.400  (R:R = 1:1.5)
+
+Signal                          Precision    Signals   Per day
+-----------------------------------------------------------------
+BUY  final                          0.258        713     4.66
+SELL final                            nan          0     0.00
+
+COMBINED final                      0.258        713     4.66
+
+=== Overfit Check ===
+Val  COMBINED                       0.306        592     4.74
+Test COMBINED                       0.258        713     4.66
+Gap (val - test)                   +0.048
+Overfit?                       Acceptable
+
+Cross-filter sweep on test set (3,671 bars)
+
+    CF   BUY prec   BUY n    /day   SELL prec   SELL n    /day   COMB prec   COMB n    /day
+-----------------------------------------------------------------------------------------------
+ 0.80         0.258 *     713   4.66        nan *        0   0.00      0.258 *      713   4.66
+ 0.75         0.258 *     713   4.66        nan *        0   0.00      0.258 *      713   4.66
+ 0.70         0.258 *     713   4.66        nan *        0   0.00      0.258 *      713   4.66
+ 0.65         0.258 *     713   4.66        nan *        0   0.00      0.258 *      713   4.66
+ 0.60         0.258 *     713   4.66        nan *        0   0.00      0.258 *      713   4.66
+ 0.55         0.258 *     713   4.66        nan *        0   0.00      0.258 *      713   4.66
+ 0.50         0.258 *     713   4.66        nan *        0   0.00      0.258 *      713   4.66
+ 0.45         0.258 *     713   4.66        nan *        0   0.00      0.258 *      713   4.66
+ 0.40         0.258 *     713   4.66        nan *        0   0.00      0.258 *      713   4.66
+ 0.35         0.258 *     713   4.66        nan *        0   0.00      0.258 *      713   4.66
+ 0.30         0.269 *     561   3.67        nan *        0   0.00      0.269 *      561   3.67
+
+* = below breakeven (0.400)
+Selected CROSS_FILTER = 1.0 (from validation calibration)
+
+Strategy                                 Precision  Signals    /day
+----------------------------------------------------------------------
+BUY+SELL combined (cf=1.0)                   0.258      713    4.66
+BUY-only (no cross-filter)                   0.259      723    4.73
+
+ BUY-only cf  Precision  Signals    /day
+----------------------------------------
+       0.80      0.259      723    4.73 <-- best
+       0.75      0.259      723    4.73
+       0.70      0.259      723    4.73
+       0.65      0.259      723    4.73
+       0.60      0.259      723    4.73
+       0.55      0.259      723    4.73
+       0.50      0.259      723    4.73
+       0.45      0.259      723    4.73
+       0.40      0.259      723    4.73
+       0.35      0.257      720    4.71
+       0.30      0.269      561    3.67 <-- best
+
+Breakeven: 0.400
+BUY-only best: cf=0.30  prec=0.269
+
+=== Test set — expected value & 95% confidence intervals ===
+
+BUY : n=713  prec=0.258  CI95=(0.227, 0.291)  EV=-0.367R (-869.18 pips)  total=-261.9R (-619727 pips)
+SELL: no signals in the main (gated) pipeline
+
+Read: EV > 0 means the lane is profitable after spread.
+If the precision CI straddles breakeven, the sample is too small to conclude.
+
+=== SELL lane — sealed test, standalone (R2) ===
+Threshold 0.341 | breakeven 0.400 | spread 25 pips
+
+raw (no gates)      : n= 75  prec=0.240  CI95=(0.158, 0.348)  EV=-0.413R  total=-31.0R
+session + cooldown  : n= 25  prec=0.200  CI95=(0.089, 0.391)  EV=-0.512R  total=-12.8R
+
+Decision: adopt the SELL lane only if EV > 0 with a CI that clears breakeven.
+
+=== BUY precision by month (raw threshold 0.350) ===
+month        n  hits   prec            CI95
+2025-07    525   145  0.276  [0.24, 0.32]
+2025-08    483   133  0.275  [0.24, 0.32]
+2025-09    503   169  0.336  [0.30, 0.38]
+2025-10    511   168  0.329  [0.29, 0.37]
+2025-11    454   162  0.357  [0.31, 0.40]
+2025-12    496   142  0.286  [0.25, 0.33]
+2026-01    453   145  0.320  [0.28, 0.36]
+2026-02    432   119  0.275  [0.24, 0.32]
+2026-03    474   100  0.211  [0.18, 0.25]
+2026-04    483   120  0.248  [0.21, 0.29]
+2026-05    476   110  0.231  [0.20, 0.27]
+2026-06    502   125  0.249  [0.21, 0.29]
+2026-07    525   145  0.276  [0.24, 0.32]
+2026-08    240    90  0.375  [0.32, 0.44]
+
+POOLED BUY : n=6557 hits=1873 prec=0.286 CI95=[0.27, 0.30]
+Breakeven 0.400 — if the pooled CI includes breakeven, the edge is unproven.
+
+=== SELL vector backtest (test set, 1.5:1.0 R:R, 25 pip spread) ===
+Trades       : 25
+  TP hits    : 5
+  SL hits    : 16
+  No hit     : 4
+Win rate     : 0.200
+Avg R/trade  : -0.352R
+Total R      : -8.8R
+Max drawdown : -8.7R
+Sharpe       : -0.35
+
+Max drawdown : -8.7R
+Sharpe       : -0.35
+Total trades : 25
+
+=== Monthly breakdown ===
+         trades  total_R  avg_R    wr
+month                                
+2026-01       8   -8.141 -1.018  0.00
+2026-02      10    2.911  0.291  0.40
+2026-03       4   -1.538 -0.385  0.25
+2026-04       2   -1.028 -0.514  0.00
+2026-05       1   -1.014 -1.014  0.00
+

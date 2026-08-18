@@ -16,7 +16,7 @@ import json
 import os
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -58,7 +58,6 @@ PAIR_CONFIG = {
         "direction": "SELL",
         "pip_multiplier": 10000,
         "entry_zone_size": 0.00020,
-        "shadow": True,  # EV -0.019R, CI straddles breakeven
         "technical_prompt": str(PROMPTS_DIR / "technical_gbpusd.txt"),
         "fundamental_prompt": str(PROMPTS_DIR / "fundamental_gbpusd.txt"),
     },
@@ -68,9 +67,17 @@ PAIR_CONFIG = {
         "direction": "SELL",
         "pip_multiplier": 10000,
         "entry_zone_size": 0.00020,
-        "shadow": True,  # EV -0.014R, CI straddles breakeven
         "technical_prompt": str(PROMPTS_DIR / "technical_usdchf.txt"),
         "fundamental_prompt": str(PROMPTS_DIR / "fundamental_usdchf.txt"),
+    },
+    "USDCAD": {
+        "threshold": 0.341,
+        "model_file": MODELS_BIN / "USDCAD_H1_sell_Ensemble.joblib",
+        "direction": "SELL",
+        "pip_multiplier": 10000,
+        "entry_zone_size": 0.00020,
+        "technical_prompt": None,
+        "fundamental_prompt": None,
     },
     "USDJPY": {
         "threshold": 0.367,  # placeholder — update after training
@@ -92,14 +99,22 @@ MERG_SHADOW_LOG = Path(__file__).resolve().parent / "output" / "merg_shadow.log"
 MERG_EVENT_WINDOW_MIN = int(os.getenv("MERG_EVENT_WINDOW_MIN", "60"))
 _merg_inference = None  # lazy-loaded MergInference instance
 
+# Stage-1 reaction threshold (validated on sealed test: ~0.70 precision at 0.60).
+# MERG is a direction-agnostic volatility veto — direction was proven to be noise.
+from agents.macro_event_responder import REACTION_THRESHOLD as MERG_REACTION_THRESHOLD
+
 
 def _merg_event_risk_gate(bar_dt, pair: str, probability: float) -> str:
     """
-    MERG gate: check if a HIGH-impact event is approaching and run event-response model.
+    MERG gate: check if a HIGH-impact event is approaching and, if Stage 1 is confident
+    a reaction is coming (P(reaction) >= MERG_REACTION_THRESHOLD), veto the trade.
+
+    This is a DIRECTION-AGNOSTIC volatility veto. Direction (Stage 2 M1 and H1-direction)
+    was tested and found to be noise, so we block on reaction confidence alone.
 
     Returns:
-        "PASS"  — no event, MERG disabled, or MERG predicts aligned direction
-        "BLOCK" — MERG predicts contradictory direction (only if not shadow_only)
+        "PASS"  — no event, MERG disabled, or P(reaction) < threshold
+        "BLOCK" — confident reaction predicted (only if not shadow_only)
 
     Only activates when MERG_ENABLED=true. Logs decisions to MERG_SHADOW_LOG.
     """
@@ -115,7 +130,8 @@ def _merg_event_risk_gate(bar_dt, pair: str, probability: float) -> str:
             model_dir = MODELS_BIN
             _merg_inference = MergInference(model_dir)
             if _merg_inference.ready:
-                print("[MERG] Loaded — shadow_only=" + str(MERG_SHADOW_ONLY))
+                print(f"[MERG] Loaded — shadow_only={MERG_SHADOW_ONLY} "
+                      f"threshold={MERG_REACTION_THRESHOLD}")
             else:
                 print("[MERG] Failed to load: " + str(_merg_inference._error))
         except Exception as e:
@@ -135,28 +151,24 @@ def _merg_event_risk_gate(bar_dt, pair: str, probability: float) -> str:
     if not event_name:
         return "PASS"  # no HIGH event in window — MERG silent
 
-    # Fetch last 15 M1 bars via MT5
+    # Fetch the last 5 COMPLETED M1 bars (skip the forming bar), oldest-first.
+    # Window mapping: row 0 = window 15 (t-5 min) ... row 4 = window 11 (t-1 min).
     try:
         import MetaTrader5 as mt5
-        bars = mt5.copy_rates_from_pos(pair, mt5.TIMEFRAME_M1, 0, 15)
-        if bars is None or len(bars) < 15:
-            print(f"[MERG] Insufficient M1 data — pass through")
+        raw = mt5.copy_rates_from_pos(pair, mt5.TIMEFRAME_M1, 1, 5)
+        if raw is None or len(raw) < 5:
+            print("[MERG] Insufficient M1 data — pass through")
             return "PASS"
-
-        # Convert to candlestick anatomy: [tWick, body, bWick] × 15
-        anatomy = []
-        for b in bars:
-            o, h, l, c = b[1], b[2], b[3], b[4]
-            anatomy.extend([h - max(o, c), c - o, min(o, c) - l])
         import numpy as np
-        m1_anatomy = np.array(anatomy, dtype=np.float32).reshape(1, -1)
+        # MT5 returns newest-first → reverse to oldest-first; columns [open, high, low, close]
+        bars = np.array([[b[1], b[2], b[3], b[4]] for b in raw[::-1]], dtype=float)
     except Exception as e:
         print(f"[MERG] M1 fetch failed: {e} — pass through")
         return "PASS"
 
-    # Run prediction
+    # Run Stage-1 reaction prediction
     try:
-        pred = _merg_inference.predict(m1_anatomy, event_name)
+        pred = _merg_inference.predict(bars, event_name)
     except Exception as e:
         print(f"[MERG] Inference failed: {e} — pass through")
         return "PASS"
@@ -164,15 +176,7 @@ def _merg_event_risk_gate(bar_dt, pair: str, probability: float) -> str:
     if not pred.features_extracted:
         return "PASS"
 
-    direction = PAIR_CONFIG.get(pair, {}).get("direction", "SELL")
-    p_sell = pred.p_D if direction == "SELL" else pred.p_U
-    p_opposite = pred.p_U if direction == "SELL" else pred.p_D
-
-    blocked = (
-        pred.predicted_class != "N"
-        and pred.is_confident
-        and p_opposite > p_sell
-    )
+    blocked = pred.is_reaction   # P(reaction) >= MERG_REACTION_THRESHOLD
 
     # Log to shadow file
     import json as _json  # avoid shadowing global json
@@ -183,13 +187,9 @@ def _merg_event_risk_gate(bar_dt, pair: str, probability: float) -> str:
         "pair": pair,
         "event": event_name,
         "minutes_to_event": minutes_to,
-        "p_U": round(pred.p_U, 4),
-        "p_D": round(pred.p_D, 4),
-        "p_N": round(pred.p_N, 4),
-        "predicted_class": pred.predicted_class,
-        "confidence": round(pred.confidence, 4),
         "p_reaction": round(pred.p_reaction, 4),
-        "direction": direction,
+        "confidence": round(pred.confidence, 4),
+        "threshold": MERG_REACTION_THRESHOLD,
         "blocked": blocked,
         "shadow_only": MERG_SHADOW_ONLY,
         "effective_action": "BLOCK" if (blocked and not MERG_SHADOW_ONLY) else "PASS",
@@ -198,8 +198,8 @@ def _merg_event_risk_gate(bar_dt, pair: str, probability: float) -> str:
         f.write(_json.dumps(entry, default=str) + "\n")
 
     if blocked:
-        print(f"\n[MERG Gate] {pred.predicted_class} reaction predicted "
-              f"(p={pred.confidence:.2f}) — contradicts {direction}")
+        print(f"\n[MERG Gate] reaction predicted "
+              f"(p={pred.p_reaction:.2f} >= {MERG_REACTION_THRESHOLD}) — volatility expected")
         print(f"  Event: {event_name} in {minutes_to} min")
         if MERG_SHADOW_ONLY:
             print(f"  [shadow_only — would have blocked, but letting through]")
@@ -208,8 +208,8 @@ def _merg_event_risk_gate(bar_dt, pair: str, probability: float) -> str:
             print(f"  [BLOCKED — signal skipped]")
             return "BLOCK"
     else:
-        print(f"\n[MERG Gate] {pred.predicted_class} prediction "
-              f"(p={pred.confidence:.2f}) — aligned with {direction}")
+        print(f"\n[MERG Gate] no confident reaction "
+              f"(p={pred.p_reaction:.2f} < {MERG_REACTION_THRESHOLD})")
 
     return "PASS"
 
@@ -875,7 +875,7 @@ def main():
     parser.add_argument("--no-agent", action="store_true", help="Skip agent evaluation (ML-only)")
     parser.add_argument("--borderline", action="store_true", help="Evaluate bars p in [0.20, 0.306) with strict agent rules")
     parser.add_argument("--symbol", default="EURUSD", help="Trading pair: EURUSD or GBPUSD")
-    parser.add_argument("--all", action="store_true", help="Process all pairs (EURUSD, GBPUSD, USDCHF)")
+    parser.add_argument("--all", action="store_true", help="Process all pairs (EURUSD, GBPUSD, USDCHF, USDCAD)")
     parser.add_argument("--execute", action="store_true", help="Auto-execute FIRED signals after generation")
     args = parser.parse_args()
 
@@ -887,7 +887,7 @@ def main():
                      borderline=args.borderline, pair=args.symbol)
     elif args.mode == "live":
         if args.all:
-            for pair in ["EURUSD", "GBPUSD", "USDCHF"]:
+            for pair in ["EURUSD", "GBPUSD", "USDCHF", "USDCAD"]:
                 run_live(args.threshold, agent_enabled=not args.no_agent,
                          borderline=args.borderline, pair=pair)
         else:

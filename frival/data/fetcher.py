@@ -225,6 +225,15 @@ def _fetch_mt5(
         print(f"[mt5] First fetch: {len(df):,} bars")
     df.to_csv(cache_file, index=False)
 
+    # ── Also write the full dataset to the training-data folder ────────────────
+    # The training notebooks read from DATA_DIR (ml-signal-service/data/raw/mt5/H1/),
+    # while the cache above is only for incremental live delta-fetching. Writing both
+    # keeps "fetch once → train offline" working end-to-end.
+    os.makedirs(DATA_DIR, exist_ok=True)
+    train_file = DATA_DIR / f"{symbol}_{timeframe}.csv"
+    df.to_csv(train_file, index=False)
+    print(f"[mt5] Saved training data -> {train_file} ({len(df):,} bars)")
+
     mt5.shutdown()
     return df
 

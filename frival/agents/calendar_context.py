@@ -148,6 +148,11 @@ def get_next_high_event(
     of bar_dt for currencies relevant to the given pair.
 
     Returns (event_name, minutes_to_event) or (None, None) if no HIGH event.
+    event_name is the RAW calendar Name (e.g. "Consumer Price Index (YoY) (Dec) PREL");
+    normalisation to the dataset convention happens in macro_event_responder.
+
+    NOTE: bar_dt and calendar["event_dt"] must share the same timezone. The calendar
+    files are broker-time (no TZ marker) — the P0 timezone verification is still open.
     """
     try:
         calendar = load_calendar(pair)
@@ -159,13 +164,13 @@ def get_next_high_event(
 
     window_end = bar_dt + pd.Timedelta(minutes=window_minutes)
     future = calendar[
-        (calendar["date_time"] >= bar_dt) & (calendar["date_time"] <= window_end)
+        (calendar["event_dt"] >= bar_dt) & (calendar["event_dt"] <= window_end)
     ]
-    high = future[future["impact"] == "HIGH"]
+    high = future[future["Impact"] == "HIGH"]
     if len(high) == 0:
         return None, None
 
     nearest = high.iloc[0]
-    event_name = str(nearest.get("name", nearest.get("event", "unknown")))
-    minutes_to = int((nearest["date_time"] - bar_dt).total_seconds() / 60)
+    event_name = str(nearest["Name"])
+    minutes_to = int((nearest["event_dt"] - bar_dt).total_seconds() / 60)
     return event_name, minutes_to

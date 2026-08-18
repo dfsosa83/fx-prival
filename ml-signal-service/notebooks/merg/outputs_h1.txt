@@ -1,0 +1,167 @@
+Dropped 0 rows (missing ATR) + 0 (no forward data)
+Annotated events : 2,473
+
+=== y_sell_h1 (H1 event-direction label) ===
+y_sell_h1
+0.0    0.7428
+1.0    0.2572
+
+Positive rate (SELL) : 25.7%
+Majority baseline   : 74.3%
+→ a useful model must beat the majority baseline on PR-AUC.
+
+============================================================
+FEATURE SELECTION RESULTS
+============================================================
+Real features tested : 59
+Selected             : 25
+Reduction            : 63%
+Best noise importance: 0.57461
+
+Top 15 selected features:
+                                     feature  avg_imp  total_votes
+       evt_Michigan Consumer Sentiment Index 0.906946            3
+    evt_ECB Main Refinancing Operations Rate 0.749755            3
+          evt_ECB's President Lagarde speech 0.661180            3
+                        evt_ISM Services PMI 0.633507            3
+                            evt_FOMC Minutes 0.630229            3
+                                   is_speech 0.622231            1
+                                      body13 0.580783            3
+                   evt_ISM Manufacturing PMI 0.559728            3
+                                     bWick13 0.555692            2
+                                    range_14 0.555234            2
+                                     bWick12 0.552434            2
+                                    range_12 0.548623            3
+evt_Core Harmonized Index of Consumer Prices 0.545994            3
+                      evt_HCOB Composite PMI 0.532691            3
+                                wick_asym_14 0.528349            3
+
+Event features that survived selection: 15
+['evt_Michigan Consumer Sentiment Index', 'evt_ECB Main Refinancing Operations Rate', "evt_ECB's President Lagarde speech", 'evt_ISM Services PMI', 'evt_FOMC Minutes', 'evt_ISM Manufacturing PMI', 'evt_Core Harmonized Index of Consumer Prices', 'evt_HCOB Composite PMI', "evt_Fed's Chair Powell testifies", 'evt_FOMC Press Conference', 'evt_Consumer Price Index ex Food & Energy', 'evt_Gross Domestic Product s.a.', 'evt_Retail Sales', 'evt_ECB Press Conference', 'evt_ADP Employment Change']
+
+['evt_Michigan Consumer Sentiment Index',
+ 'evt_ECB Main Refinancing Operations Rate',
+ "evt_ECB's President Lagarde speech",
+ 'evt_ISM Services PMI',
+ 'evt_FOMC Minutes',
+ 'is_speech',
+ 'body13',
+ 'evt_ISM Manufacturing PMI',
+ 'bWick13',
+ 'range_14',
+ 'bWick12',
+ 'range_12',
+ 'evt_Core Harmonized Index of Consumer Prices',
+ 'evt_HCOB Composite PMI',
+ 'wick_asym_14',
+ 'body_ratio_15',
+ "evt_Fed's Chair Powell testifies",
+ 'range_11',
+ 'evt_FOMC Press Conference',
+ 'tWick13',
+ 'evt_Consumer Price Index ex Food & Energy',
+ 'evt_Gross Domestic Product s.a.',
+ 'evt_Retail Sales',
+ 'evt_ECB Press Conference',
+ 'evt_ADP Employment Change']
+
+ LogReg       params: (baseline)
+  RandomForest params: {'max_depth': 10, 'max_features': 0.5, 'n_estimators': 200, 'min_samples_leaf': 5}
+  XGBoost      params: {'n_estimators': 250, 'reg_lambda': 1.0, 'colsample_bytree': 0.9, 'max_depth': 5, 'subsample': 0.9, 'learning_rate': 0.05}
+  LightGBM     params: {'num_leaves': 63, 'n_estimators': 150, 'reg_lambda': 0.1, 'colsample_bytree': 0.8, 'max_depth': 6, 'min_child_samples': 10, 'subsample': 0.9, 'learning_rate': 0.05}
+
+✓ Final model = soft-vote ensemble of 4 calibrated models
+
+=== Validation performance (@0.5 ref) — Ensemble ===
+ROC-AUC   : 0.630
+PR-AUC    : 0.335
+Precision : 0.000
+Recall    : 0.000
+F1        : 0.000
+
+Confusion matrix (rows=true, cols=pred):
+[[222   0]
+ [ 77   0]]
+
+Min signals floor : 20
+Optimal threshold : 0.2188
+Precision @ opt   : 0.3259
+Recall    @ opt   : 0.9481
+F1        @ opt   : 0.485
+Signals           : 224
+
+Top eligible thresholds (by F1):
+ threshold  precision  recall  n_signals
+    0.2188     0.3259  0.9481        224
+    0.2181     0.3244  0.9481        225
+    0.2172     0.3230  0.9481        226
+    0.2159     0.3216  0.9481        227
+    0.2193     0.3229  0.9351        223
+    0.2156     0.3202  0.9481        228
+    0.2123     0.3188  0.9481        229
+    0.2116     0.3174  0.9481        230
+    0.2195     0.3198  0.9221        222
+    0.2062     0.3160  0.9481        231
+
+
+Gate threshold: 0.6  (F1-optimal was 0.2188, kept as threshold_f1_optimal in bundle)
+
+============================================================
+SEALED TEST — Ensemble  (threshold=0.2188)
+============================================================
+ROC-AUC : 0.598
+PR-AUC  : 0.313
+Precision @ threshold : 0.308
+Recall    @ threshold : 0.875
+F1        @ threshold : 0.455
+Signals               : 478 / 656
+Base rate             : 0.256
+
+Confusion matrix (rows=true, cols=pred):
+[[157 331]
+ [ 21 147]]
+
+ === Test-set operating points (confidence sweep) ===
+ threshold  precision   recall      F1  signals
+--------------------------------------------------
+      0.40      0.368    0.083   0.136       38
+      0.45      0.273    0.018   0.034       11
+      0.50      1.000    0.006   0.012        1
+      0.55      1.000    0.006   0.012        1
+      0.60      1.000    0.006   0.012        1
+      0.65      1.000    0.006   0.012        1
+      0.70          —        —       —        0
+
+Per-event precision among *signals*, top 20 by count:
+                                           n  correct  precision
+event                                                           
+Retail Sales                              81       18      0.222
+ECB's President Lagarde speech            68       15      0.221
+HCOB Composite PMI                        58       20      0.345
+ADP Employment Change                     31        6      0.194
+Core Harmonized Index of Consumer Prices  31       13      0.419
+Gross Domestic Product s.a.               29       10      0.345
+Gross Domestic Product Annualized         28       11      0.393
+Average Hourly Earnings                   28       10      0.357
+Harmonized Index of Consumer Prices       27       12      0.444
+ECB Press Conference                      21        8      0.381
+ECB Main Refinancing Operations Rate      21        8      0.381
+Gross Domestic Product                    11        4      0.364
+ECB Bank Lending Survey                   10        5      0.500
+FOMC Economic Projections                  9        2      0.222
+FOMC Press Conference                      9        3      0.333
+Fed Interest Rate Decision                 7        2      0.286
+ISM Manufacturing PMI                      4        0      0.000
+Fed's Chair Powell speech                  3        0      0.000
+G7 Meeting                                 1        0      0.000
+ISM Services PMI                           1        0      0.000
+
+=== Speech vs non-speech (threshold=0.2188 — F1-optimal) ===
+  NON-SPEECH   n= 543  base_rate=0.271  ROC-AUC=0.597  signals= 407  precision=0.324  recall=0.898
+  SPEECH       n= 113  base_rate=0.186  ROC-AUC=0.531  signals=  71  precision=0.211  recall=0.714
+
+=== Speech vs non-speech (threshold=0.6000 — gate) ===
+  NON-SPEECH   n= 543  base_rate=0.271  ROC-AUC=0.597  signals=   1  precision=1.000  recall=0.007
+  SPEECH       n= 113  base_rate=0.186  ROC-AUC=0.531  signals=   0  precision=0.000  recall=0.000
+
+  

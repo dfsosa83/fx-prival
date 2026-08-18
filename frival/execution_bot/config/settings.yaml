@@ -2,7 +2,7 @@
 # Copy DeafAgent config/credentials.env contents if you want to reuse existing setup.
 
 trading:
-  mode: demo                     # demo or live
+  mode: live                     # demo or live
   default_risk_profile: MODERATE # VERY_CONSERVATIVE through VERY_AGGRESSIVE
   default_lot_size: 0.08
 
@@ -14,7 +14,6 @@ mt5:
 # ── Per-Pair Execution Rules ────────────────────────────────────────
 # signal_watcher reads Frival JSONL. order_bot checks these rules.
 # Set shadow: true to monitor only (no real orders placed).
-# EURUSD is the only live pair per deployment gate criteria.
 
 pairs:
   EURUSD:
@@ -24,17 +23,21 @@ pairs:
   GBPUSD:
     direction: SELL
     lot_size: 0.08
-    shadow: false                # shadow — EV negative, monitoring only
+    shadow: false               # LIVE — EV -0.019R, monitoring
   USDCHF:
     direction: SELL
     lot_size: 0.04
-    shadow: false                # shadow — EV negative, monitoring only
+    shadow: false               # LIVE — EV -0.014R, monitoring
+  USDCAD:
+    direction: SELL
+    lot_size: 0.08
+    shadow: false               # LIVE — EV -0.114R, shadow-worthy
 
 # ── Risk Controls ───────────────────────────────────────────────────
 risk:
   max_daily_loss: 50.0           # $ max loss per day (~5% of $1,021)
   max_positions_per_pair: 1      # never pyramid on the same symbol
-  max_total_positions: 3         # across all pairs
+  max_total_positions: 4         # across all pairs
 
 # ── Order Settings ──────────────────────────────────────────────────
 orders:

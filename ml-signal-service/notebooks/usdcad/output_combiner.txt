@@ -1,0 +1,242 @@
+## Features for Both
+## Sell:
+============================================================
+FEATURE SELECTION RESULTS
+============================================================
+Real features tested : 100
+Selected             : 42
+Reduction            : 58%
+Best noise importance : 187.21232
+
+Top 15 selected features:
+              feature    avg_imp  total_votes
+           wti_ret_1d 237.605235            2
+         wti_vs_ema20 218.406317            2
+           atr_regime 208.831034            3
+           wti_ret_5d 205.804043            2
+    deviation_sum_24h 203.405771            2
+hours_since_last_high 200.407395            2
+       rolling_std_50 194.406578            2
+      close_vs_ema200 190.810424            3
+               adx_14 189.009633            3
+           dxy_ret_1d 186.003554            2
+           dxy_ret_5d 185.411553            3
+       obv_zscore_100 185.410300            3
+               d1_rsi 183.611416            3
+                  obv 181.820478            3
+         obv_slope_20 174.607282            2
+
+Noise feature positions (for reference):
+          feature    avg_imp  total_votes
+noise_random_walk 187.212325            3
+ noise_sinusoidal 118.203777            2
+  noise_uniform_2  87.602779            1
+ noise_gaussian_3  85.203520            1
+  noise_uniform_1  77.404717            1
+ noise_gaussian_2  72.602816            1
+ noise_gaussian_1  71.404315            1
+  noise_poisson_2  34.203398            0
+  noise_poisson_1  22.802518            0
+
+## For buy:
+============================================================
+FEATURE SELECTION RESULTS
+============================================================
+Real features tested : 100
+Selected             : 33
+Reduction            : 67%
+Best noise importance : 248.40955
+
+Top 15 selected features:
+              feature    avg_imp  total_votes
+           wti_ret_1d 252.008365            2
+           wti_ret_5d 247.807642            2
+         wti_vs_ema20 240.606860            2
+               d1_rsi 229.813225            3
+    deviation_sum_24h 226.806262            2
+hours_since_last_high 226.804929            2
+           dxy_ret_5d 212.410978            3
+       rolling_std_50 210.606722            2
+           dxy_ret_1d 201.004257            2
+         dxy_vs_ema20 198.012281            3
+               adx_14 194.410631            3
+         obv_slope_20 189.610738            3
+ high_events_next_24h 183.004798            1
+    close_vs_day_open 181.823483            3
+      close_vs_ema200 175.225772            3
+
+Noise feature positions (for reference):
+          feature    avg_imp  total_votes
+noise_random_walk 248.409546            2
+ noise_sinusoidal 138.007061            2
+  noise_uniform_1  81.603650            1
+  noise_uniform_2  78.004140            0
+ noise_gaussian_1  71.403845            0
+ noise_gaussian_2  57.003165            0
+ noise_gaussian_3  54.004362            0
+  noise_poisson_2  27.603234            0
+  noise_poisson_1  17.401791            0
+
+## Now combiner outputs:
+BUY  model threshold : 0.381
+SELL model threshold : 0.341
+BUY  features        : 33
+SELL features        : 42
+Both use ATR_TP_MULT : 1.5  FW: 6 bars
+
+=== Validation set  (3,144 bars | 131 trading days) ===
+BUY  signals  (standalone candidates)   : 1123
+SELL signals  (standalone candidates)   : 135
+Conflicts suppressed                     : 47
+BUY  after filter + cooldown             : 307  (2.34/day)
+SELL after filter + cooldown             : 43  (0.33/day)
+Total actionable signals                 : 350
+
+Breakeven precision : 0.400
+
+Signal                          Precision    Signals   Per day
+-----------------------------------------------------------------
+BUY  standalone                     0.559       1123     8.57
+BUY  + cross-filter                 0.554       1076     8.21
+BUY  + filter + cooldown            0.472        307     2.34
+
+SELL standalone                     0.437        135     1.03
+SELL + cross-filter                 0.557         88     0.67
+SELL + filter + cooldown            0.419         43     0.33
+
+COMBINED final                      0.466        350     2.67
+
+Cross-filter   BUY prec    BUY n   BUY/day   SELL prec   SELL n   SELL/day
+--------------------------------------------------------------------------------
+        1.000      0.554     1076      8.21       0.557       88       0.67 ← current
+        0.341      0.554     1076      8.21         nan        0       0.00
+        0.700      0.554     1076      8.21       0.557       88       0.67
+        0.650      0.554     1076      8.21       0.557       88       0.67
+        0.600      0.554     1076      8.21       0.557       88       0.67
+        0.550      0.554     1076      8.21       0.557       88       0.67
+        0.500      0.554     1076      8.21       0.557       88       0.67
+        0.450      0.554     1076      8.21       0.557       88       0.67
+        0.400      0.554     1076      8.21       0.557       88       0.67
+
+Breakeven : 0.400
+Hint: choose the highest cross-filter where BUY precision ≥ 0.400
+
+=== Test Set (3,875 bars | 161 trading days) ===
+Breakeven precision: 0.400  (R:R = 1:1.5)
+
+Signal                          Precision    Signals   Per day
+-----------------------------------------------------------------
+BUY  final                          0.318        305     1.89
+SELL final                          0.424         33     0.20
+
+COMBINED final                      0.328        338     2.09
+
+=== Overfit Check ===
+Val  COMBINED                       0.466        350     2.67
+Test COMBINED                       0.328        338     2.09
+Gap (val - test)                   +0.138
+Overfit?                       YES - gap > 0.05
+
+Cross-filter sweep on test set (3,875 bars)
+
+    CF   BUY prec   BUY n    /day   SELL prec   SELL n    /day   COMB prec   COMB n    /day
+-----------------------------------------------------------------------------------------------
+ 0.80         0.318 *     305   1.89      0.424         33   0.20      0.328 *      338   2.09
+ 0.75         0.318 *     305   1.89      0.424         33   0.20      0.328 *      338   2.09
+ 0.70         0.318 *     305   1.89      0.424         33   0.20      0.328 *      338   2.09
+ 0.65         0.318 *     305   1.89      0.424         33   0.20      0.328 *      338   2.09
+ 0.60         0.318 *     305   1.89      0.424         33   0.20      0.328 *      338   2.09
+ 0.55         0.318 *     305   1.89      0.424         33   0.20      0.328 *      338   2.09
+ 0.50         0.318 *     305   1.89      0.424         33   0.20      0.328 *      338   2.09
+ 0.45         0.318 *     305   1.89      0.424         33   0.20      0.328 *      338   2.09
+ 0.40         0.318 *     305   1.89      0.424         33   0.20      0.328 *      338   2.09
+ 0.35         0.318 *     305   1.89      0.222 *        9   0.06      0.315 *      314   1.94
+ 0.30         0.261 *     199   1.23        nan *        0   0.00      0.261 *      199   1.23
+
+* = below breakeven (0.400)
+Selected CROSS_FILTER = 1.0 (from validation calibration)
+
+Strategy                                 Precision  Signals    /day
+----------------------------------------------------------------------
+BUY+SELL combined (cf=1.0)                   0.328      338    2.09
+BUY-only (no cross-filter)                   0.319      307    1.90
+
+ BUY-only cf  Precision  Signals    /day
+----------------------------------------
+       0.80      0.319      307    1.90 <-- best
+       0.75      0.319      307    1.90
+       0.70      0.319      307    1.90
+       0.65      0.319      307    1.90
+       0.60      0.319      307    1.90
+       0.55      0.319      307    1.90
+       0.50      0.319      307    1.90
+       0.45      0.319      307    1.90
+       0.40      0.319      307    1.90
+       0.35      0.319      307    1.90
+       0.30      0.261      199    1.23
+
+Breakeven: 0.400
+BUY-only best: cf=0.80  prec=0.319
+
+=== Test set — expected value & 95% confidence intervals ===
+
+BUY : n=305  prec=0.318  CI95=(0.268, 0.372)  EV=-0.363R (-3.70 pips)  total=-110.8R (-1127 pips)
+SELL: n= 33  prec=0.424  CI95=(0.272, 0.592)  EV=-0.114R (-1.29 pips)  total=-3.8R (-42 pips)
+
+Read: EV > 0 means the lane is profitable after spread.
+If the precision CI straddles breakeven, the sample is too small to conclude.
+
+=== SELL lane — sealed test, standalone (R2) ===
+Threshold 0.341 | breakeven 0.400 | spread 1.5 pips
+
+raw (no gates)      : n= 85  prec=0.412  CI95=(0.313, 0.518)  EV=-0.148R  total=-12.6R
+session + cooldown  : n= 36  prec=0.417  CI95=(0.271, 0.578)  EV=-0.131R  total=-4.7R
+
+Decision: adopt the SELL lane only if EV > 0 with a CI that clears breakeven.
+
+=== BUY precision by month (raw threshold 0.381) ===
+month        n  hits   prec            CI95
+2025-07    205   146  0.712  [0.65, 0.77]
+2025-08    181   109  0.602  [0.53, 0.67]
+2025-09    195   122  0.626  [0.56, 0.69]
+2025-10    255   156  0.612  [0.55, 0.67]
+2025-11    138    51  0.370  [0.29, 0.45]
+2025-12    149    44  0.295  [0.23, 0.37]
+2026-01    215    62  0.288  [0.23, 0.35]
+2026-02    149    69  0.463  [0.38, 0.54]
+2026-03    136    50  0.368  [0.29, 0.45]
+2026-04    114    28  0.246  [0.18, 0.33]
+2026-05    128    47  0.367  [0.29, 0.45]
+2026-06    109    42  0.385  [0.30, 0.48]
+2026-07    129    39  0.302  [0.23, 0.39]
+2026-08     99    29  0.293  [0.21, 0.39]
+
+POOLED BUY : n=2202 hits=994 prec=0.451 CI95=[0.43, 0.47]
+Breakeven 0.400 — if the pooled CI includes breakeven, the edge is unproven.
+
+=== SELL vector backtest (test set, 1.5:1.0 R:R, 1.5 pip spread) ===
+Trades       : 36
+  TP hits    : 15
+  SL hits    : 20
+  No hit     : 1
+Win rate     : 0.417
+Avg R/trade  : -0.103R
+Total R      : -3.7R
+Max drawdown : -11.0R
+Sharpe       : -0.08
+
+Max drawdown : -11.0R
+Sharpe       : -0.08
+Total trades : 36
+
+=== Monthly breakdown ===
+         trades  total_R  avg_R     wr
+month                                 
+2026-01       1   -1.184 -1.184  0.000
+2026-02       4   -2.118 -0.529  0.250
+2026-03       3   -0.934 -0.311  0.333
+2026-04       5   -0.934 -0.187  0.400
+2026-05       5   -2.361 -0.472  0.200
+2026-06       7   -3.124 -0.446  0.286
+2026-07       8    3.111  0.389  0.625
+2026-08       3    3.831  1.277  1.000

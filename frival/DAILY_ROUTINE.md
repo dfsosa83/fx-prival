@@ -1,10 +1,11 @@
 # Frival — Daily Routine
 
-**Account:** Live 81486396 | Standard | $1,021 | 1:500
-**Pairs:** EURUSD SELL (th=0.333) | GBPUSD SELL (th=0.381) | USDCHF SELL (th=0.365)
-**Lot size:** 0.08 (EURUSD/GBPUSD) | 0.04 (USDCHF — experimental)
+**Account:** Live 81486396 | Standard | $1,000 | 1:500
+**Pairs:** EURUSD (0.333) | GBPUSD (0.381) | USDCHF (0.365) | USDCAD (0.341) — all SELL
+**Lot size:** 0.08 (EURUSD/GBPUSD/USDCAD) | 0.04 (USDCHF)
+**Execution mode:** LIVE (orders placed in MT5)
 **Schedule:** 8:01, 9:01, 10:01, 11:01 AM Panama (UTC-5)
-**MERG:** OFF by default (MERG_ENABLED=false). See Step 3b for activation.
+**MERG:** ON in shadow mode (log-only) — built into the Step 2 command. See Step 3b for hard-block activation.
 
 ---
 
@@ -25,53 +26,51 @@ Open Git Bash in `frival/` directory:
 
 ```bash
 cd "/c/Users/david/OneDrive/Documents/fx-prival/frival"
+MERG_ENABLED=true MERG_SHADOW_ONLY=true \
 /c/Users/david/anaconda3/Library/envs/deaf_agent/python.exe -u -c \
-  "import sys; sys.path.insert(0, '.'); from main import run_live, execute_pending; run_live(borderline=True, pair='EURUSD'); run_live(borderline=True, pair='GBPUSD'); run_live(borderline=True, pair='USDCHF'); execute_pending()"
+  "import sys; sys.path.insert(0, '.'); from main import run_live, execute_pending; run_live(borderline=True, pair='EURUSD'); run_live(borderline=True, pair='GBPUSD'); run_live(borderline=True, pair='USDCHF'); run_live(borderline=True, pair='USDCAD'); execute_pending()"
 ```
 
-This generates signals for all 3 pairs, then auto-executes any FIRED orders through MT5.
+This generates signals for all 4 pairs (MERG veto in shadow/log-only mode), then auto-executes any FIRED orders through MT5.
 Wait 90–120 seconds for completion.
 
 ---
 
 ## Step 3 — Three-Tier Probability System
 
-| Tier | Range | Rule | EURUSD | GBPUSD |
-|---|---|---|---|---|
-| **Standard** | p >= th | Single agent confirm OK | p >= 0.306 | p >= 0.367 |
-| **Borderline** | 0.20 <= p < th | Both agents must CONFIRM | 0.20-0.306 | 0.20-0.367 |
-| **Blocked** | p < 0.20 | No evaluation | p < 0.20 | p < 0.20 |
+| Tier | Range | Rule | EURUSD | GBPUSD | USDCHF | USDCAD |
+|---|---|---|---|---|---|---|---|
+| **Standard** | p >= th | Single agent confirm OK | p >= 0.306 | p >= 0.367 | p >= 0.365 | p >= 0.341 |
+| **Borderline** | 0.20 <= p < th | Both agents must CONFIRM | 0.20-0.306 | 0.20-0.367 | 0.20-0.365 | 0.20-0.341 |
+| **Blocked** | p < 0.20 | No evaluation | p < 0.20 | p < 0.20 | p < 0.20 | p < 0.20 |
 
 ---
 
-## Step 3b — MERG Event-Risk Gate (OPTIONAL — only when enabled)
+## Step 3b — MERG Event-Risk Gate
 
 MERG is a silent safety gate that activates only when a HIGH-impact economic event (CPI, FOMC, NFP, etc.) is scheduled within 60 minutes of a signal firing.
 
-**Default state:** OFF. The pipeline runs exactly as before — no MERG interference.
+**Default state:** ON in **shadow mode** (log-only) — already set by the Step 2 command. The pipeline runs normally, but any MERG veto is written to the log *without* blocking the trade.
 
-**To activate MERG in shadow mode (log-only, no blocking):**
+**To switch to live-hard-block mode (after 5+ days of clean shadow validation):**
 ```bash
-export MERG_ENABLED=true
-export MERG_SHADOW_ONLY=true
-# Then run Step 2 as normal
-```
-
-**To activate MERG in live-hard-block mode (after 5+ days of shadow validation):**
-```bash
-export MERG_ENABLED=true
-export MERG_SHADOW_ONLY=false
-# Then run Step 2 as normal
+# In the Step 2 command, change MERG_SHADOW_ONLY to false:
+MERG_ENABLED=true MERG_SHADOW_ONLY=false \
+/c/Users/david/anaconda3/Library/envs/deaf_agent/python.exe -u -c \
+  "import sys; sys.path.insert(0, '.'); from main import run_live, execute_pending; run_live(borderline=True, pair='EURUSD'); run_live(borderline=True, pair='GBPUSD'); run_live(borderline=True, pair='USDCHF'); run_live(borderline=True, pair='USDCAD'); execute_pending()"
 ```
 
 **What happens when MERG is ON:**
 1. After the normal gates pass, MERG checks the calendar
-2. If a HIGH event is in the next 60 min → fetches last 15 M1 bars → runs model
-3. If MERG predicts price will move against our direction → BLOCK (signal killed before agents)
-4. If MERG predicts aligned direction or no reaction → PASS (agents run normally)
+2. If a HIGH event is in the next 60 min → fetches the last 5 M1 bars → runs the Stage-1 reaction model
+3. If MERG predicts a reaction with `P(reaction) >= 0.60` → veto (shadow: log only; hard-block: signal killed before agents)
+4. Otherwise → PASS (agents run normally)
+
+> MERG is **direction-agnostic** — it blocks on reaction confidence alone (volatility is coming),
+> not on predicted direction. Direction was tested and found to be unpredictable.
 
 **MERG decision log:** `frival/output/merg_shadow.log` — one JSON line per activation.
-Check with: `cat frival/output/merg_shadow.log | python -m json.tool`
+Check with: `tail -n 5 frival/output/merg_shadow.log`
 
 **Expected activations:** ~2-4 times per month across all 3 pairs (only when signal + HIGH event coincide).
 
