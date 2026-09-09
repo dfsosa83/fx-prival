@@ -45,6 +45,15 @@ orders:
   dynamic_sizing: false          # use fixed lot sizes from pair config
   pending_order_timeout: 600     # seconds before pending orders expire
 
+# ── Break-Even Monitor ───────────────────────────────────────────────
+# After an order is placed, monitors the position and moves SL to
+# entry price when the market covers 50% of the distance to TP1.
+# This guarantees a zero-loss trade if price subsequently reverses.
+break_even:
+  enabled: true                  # set to false to disable the monitor
+  max_wait_seconds: 600          # max polling duration (10 min)
+  poll_interval_seconds: 30      # check price every 30 seconds
+
 # ── Security ────────────────────────────────────────────────────────
 security:
   confirm_live_orders: true      # require confirmation before live orders

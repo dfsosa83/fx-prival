@@ -47,12 +47,22 @@ def _build_user_message(
     current_price: float,
     probability: float,
     calendar_context: Optional[str] = None,
+    direction: Optional[str] = None,
+    prob_up: Optional[float] = None,
 ) -> str:
-    base = (
-        f"Evaluate the macro environment for a SELL signal on {currency_pair}.\n"
-        f"Current price: {current_price:.5f}\n"
-        f"Model probability (SELL): {probability:.4f}\n\n"
-    )
+    if direction and prob_up is not None:
+        resolved = "BUY" if prob_up > 0.5 else "SELL"
+        base = (
+            f"Evaluate the macro environment for a DIRECTIONAL call on {currency_pair}.\n"
+            f"PREDICTED DIRECTION: {resolved}  (P(up) = {prob_up:.4f})\n"
+            f"Current price: {current_price:.5f}\n\n"
+        )
+    else:
+        base = (
+            f"Evaluate the macro environment for a SELL signal on {currency_pair}.\n"
+            f"Current price: {current_price:.5f}\n"
+            f"Model probability (SELL): {probability:.4f}\n\n"
+        )
     if calendar_context:
         base += (
             f"{calendar_context}\n\n"
@@ -98,24 +108,21 @@ def evaluate(
     max_retries: int = 2,
     prompt_file: Optional[str] = None,
     calendar_context: Optional[str] = None,
+    direction: Optional[str] = None,
+    prob_up: Optional[float] = None,
 ) -> Dict[str, Any]:
     """
-    Evaluate the macro environment for a EURUSD SELL signal via Perplexity.
+    Evaluate the macro environment for a directional signal via Perplexity.
 
-    Parameters
-    ----------
-    current_price : float
-    probability : float
-    currency_pair : str
-    max_retries : int
-
-    Returns
-    -------
-    dict with: decision, confidence, justification, regime_flags, news_sources
+    When direction="AGNOSTIC", the message includes the model's predicted direction
+    and P(up) — the prompt knows to evaluate directional consistency, not just SELL.
     """
     api_key = _load_api_key()
     system_prompt = _load_prompt(prompt_file)
-    user_message = _build_user_message(currency_pair, current_price, probability, calendar_context)
+    user_message = _build_user_message(
+        currency_pair, current_price, probability, calendar_context,
+        direction=direction, prob_up=prob_up,
+    )
 
     headers = {
         "Authorization": f"Bearer {api_key}",

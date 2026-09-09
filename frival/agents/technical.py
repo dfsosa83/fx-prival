@@ -31,9 +31,14 @@ def _build_user_message(
     d1_context: Dict[str, Any],
     top_features: Dict[str, float],
     mode: str = "standard",
+    direction: Optional[str] = None,
+    prob_up: Optional[float] = None,
 ) -> str:
-    """Build structured context for the technical agent."""
+    """Build structured context for the technical agent.
 
+    When direction is provided (AGNOSTIC pairs), the message includes the model's
+    predicted direction and P(up) instead of the SELL ensemble probability framing.
+    """
     model_agreement = sum(
         1 for p in individual_probs.values() if p >= threshold
     )
@@ -41,10 +46,18 @@ def _build_user_message(
     lines = [
         f"Signal mode: {mode.upper()}",
         f"Current price: {current_price:.5f}",
-        f"Ensemble probability (SELL): {probability:.4f}",
-        f"Operating threshold: {threshold}",
-        f"Model agreement: {model_agreement}/4 sub-models above threshold",
     ]
+
+    if direction and prob_up is not None:
+        resolved = "BUY" if prob_up > 0.5 else "SELL"
+        lines.append(f"PREDICTED DIRECTION: {resolved}  (P(up) = {prob_up:.4f})")
+        lines.append(f"(Direction-agnostic model. Evaluate CONSISTENCY of this call.)")
+    else:
+        lines.append(f"Ensemble probability (SELL): {probability:.4f}")
+        lines.append(f"Operating threshold: {threshold}")
+
+    if not direction:
+        lines.append(f"Model agreement: {model_agreement}/4 sub-models above threshold")
 
     lines.append("\nSub-model probabilities:")
     for name, prob in sorted(individual_probs.items()):
@@ -78,7 +91,10 @@ def _build_user_message(
         lines.append("\nCalendar context (dates and events):")
         lines.extend(cal_lines)
 
-    lines.append("\nEvaluate the SELL signal using the rules provided.")
+    if direction:
+        lines.append("\nEvaluate the directional CONSISTENCY of this call.")
+    else:
+        lines.append("\nEvaluate the SELL signal using the rules provided.")
     lines.append("Return JSON only.")
 
     return "\n".join(lines)
@@ -112,26 +128,32 @@ def evaluate(
     model: str = "openai/gpt-4o",
     prompt_file: Optional[str] = None,
     mode: str = "standard",
+    direction: Optional[str] = None,
+    prob_up: Optional[float] = None,
 ) -> Dict[str, Any]:
     """
-    Evaluate whether the technical picture supports a SELL signal.
+    Evaluate whether the technical picture supports the signal.
 
     Parameters
     ----------
     current_price : float
         Current bar close price.
     probability : float
-        Calibrated ensemble probability (class1 = SELL).
+        Calibrated ensemble probability (class1 = SELL, or P(up) for AGNOSTIC).
     threshold : float
-        Operating threshold (0.306).
+        Operating threshold.
     individual_probs : dict
-        Per-model probabilities {LogReg: 0.31, RandomForest: 0.34, ...}.
+        Per-model probabilities.
     d1_context : dict
-        Daily context: d1_rsi, d1_close_vs_ema20, d1_trend, d1_ema20, d1_ema50.
+        Daily context.
     top_features : dict
-        Current bar feature values for the model's inputs.
+        Current bar feature values.
     model : str
         OpenRouter model ID.
+    direction : str, optional
+        "AGNOSTIC" — adapts the user message for directional consistency checking.
+    prob_up : float, optional
+        P(up) from the agnostic model (used with direction="AGNOSTIC").
 
     Returns
     -------
@@ -141,6 +163,7 @@ def evaluate(
     user_message = _build_user_message(
         current_price, probability, threshold,
         individual_probs, d1_context, top_features, mode=mode,
+        direction=direction, prob_up=prob_up,
     )
 
     print(f"\n[Agent A - Technical] Evaluating signal (p={probability:.4f})...")

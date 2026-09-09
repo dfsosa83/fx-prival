@@ -1,0 +1,58 @@
+Selected features: 62 / 92
+
+Top 15 selected:
+        feature  avg_imp  total_votes
+     atr_regime 0.777355            3
+       hour_cos 0.586484            3
+           hour 0.545420            3
+       hour_sin 0.378373            3
+         atr_14 0.371571            2
+      atr_lag_1 0.355801            2
+ session_london 0.327572            3
+ close_vs_ema50 0.239870            2
+   volume_ratio 0.222310            3
+           macd 0.177631            2
+session_overlap 0.174770            3
+       macd_sig 0.162025            1
+         bb_pct 0.152084            3
+close_vs_ema200 0.148417            3
+    momentum_10 0.141012            1
+
+
+Final model = soft-vote ensemble of 4 calibrated models
+
+=== Validation (@0.5) — Ensemble ===
+ROC-AUC   : 0.594   (coin flip = 0.5)
+Accuracy  : 0.612
+Precision : 0.444
+Recall    : 0.026
+F1        : 0.050
+Confusion matrix (rows=true, cols=pred):
+[[1891   40]
+ [1181   32]]
+
+ ============================================================
+SEALED TEST — Ensemble  (direction cutoff = 0.5)
+============================================================
+ROC-AUC   : 0.619   (gate bar >= 0.55; coin flip = 0.5)
+Accuracy  : 0.611
+Precision : 0.469
+Recall    : 0.061
+F1        : 0.108
+Base rate : 0.386   (P(up))
+
+Confusion matrix (rows=true, cols=pred):
+[[2473  112]
+ [1528   99]]
+
+=== Direction accuracy vs confidence margin (sealed test) ===
+ margin >=      n   accuracy  coverage
+----------------------------------------
+      0.00   4212      0.611    100.0%
+      0.05   2175      0.700     51.6%
+      0.10   1638      0.733     38.9%
+      0.15   1255      0.756     29.8%
+      0.20    802      0.788     19.0%
+      0.25    360      0.817      8.5%
+      0.30     69      0.899      1.6%
+

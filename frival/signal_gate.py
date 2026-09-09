@@ -1,21 +1,33 @@
 """
-Decision gates for SELL signal pipeline.
+Decision gates for signal pipeline.
 
-Filters raw model probabilities through three sequential gates:
-1. Threshold   — probability must meet minimum (0.306)
+Filters raw model probabilities through sequential gates:
+1. Threshold   — probability must meet minimum
 2. Session     — only London and NY hours
 3. Cooldown    — max 1 signal per N bars
+4. Candle-close — current M15 bar must align with predicted direction
 
 Borderline gate (optional):
-  Bars with 0.20 <= p < 0.306 can be evaluated by agents.
+  Bars with 0.20 <= p < threshold can be evaluated by agents.
   Both agents must STRONGLY CONFIRM for the signal to fire.
 """
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 import pandas as pd
+import numpy as np
+
+try:
+    import MetaTrader5 as mt5
+except ImportError:
+    mt5 = None
 
 
 BORDERLINE_THRESHOLD = 0.20
+
+# Candle-close gate constants
+M15_CANDLE_WINDOW = 15               # minutes per M15 bar
+CANDLE_NEUTRAL_BODY_RATIO = 0.3      # body < 30% of range = doji/neutral → pass
+CANDLE_NEUTRAL_RANGE_RATIO = 0.5     # range < 50% of ATR → low conviction → pass
 
 
 def apply_gates(
@@ -149,3 +161,86 @@ def gate_summary(df_gated: pd.DataFrame) -> Dict[str, Any]:
         "rate_standard": round(n_standard / n, 4) if n else 0,
         "rate_total": round((n_standard + n_bl) / n, 4) if n else 0,
     }
+
+
+# ============================================================================
+# Candle-Close Gate (M15 alignment check)
+# ============================================================================
+
+def fetch_m15_candle(symbol: str) -> Optional[Dict[str, Any]]:
+    """
+    Fetch the most recently COMPLETED M15 bar from MT5 (not the forming one).
+
+    Returns dict with open/high/low/close or None if MT5 unavailable / no data.
+    """
+    if mt5 is None:
+        return None
+    try:
+        # copy_rates_from_pos returns newest-first → index 1 = last completed bar
+        bars = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M15, 1, 2)
+        if bars is None or len(bars) < 2:
+            return None
+        completed = bars[1]  # row: (time, open, high, low, close, tick_volume, spread, real_volume)
+        return {
+            "open": float(completed[1]),
+            "high": float(completed[2]),
+            "low": float(completed[3]),
+            "close": float(completed[4]),
+        }
+    except Exception:
+        return None
+
+
+def check_candle_alignment(
+    direction: str,
+    symbol: str = "EURUSD",
+) -> Tuple[bool, str]:
+    """
+    Candle-close alignment gate.
+
+    Checks whether the most recently completed M15 bar is consistent with the
+    model's predicted direction. Blocks trades where the completed candle
+    contradicts the call.
+
+    Parameters
+    ----------
+    direction : str
+        "BUY" or "SELL" — the model's predicted trade direction.
+    symbol : str
+        MT5 symbol for M15 fetch (EURUSD_AGNOSTIC → mapped to EURUSD by caller).
+
+    Returns
+    -------
+    (passes, reason)
+        passes : True if the candle does NOT contradict the direction
+        reason : human-readable explanation
+    """
+    candle = fetch_m15_candle(symbol)
+    if candle is None:
+        return True, "M15 data unavailable — gate skipped (fail-open)"
+
+    body = candle["close"] - candle["open"]
+    total_range = candle["high"] - candle["low"]
+    is_bullish = body > 0
+
+    # Neutral candle (doji, small range) → pass (no conviction either way)
+    if total_range == 0:
+        return True, "flat candle — pass"
+    body_ratio = abs(body) / total_range
+    if body_ratio < CANDLE_NEUTRAL_BODY_RATIO:
+        return True, f"doji (body_ratio={body_ratio:.2f}) — pass"
+
+    if direction.upper() == "SELL":
+        if is_bullish:
+            return False, (
+                f"M15 closed bullish (open={candle['open']:.5f} close={candle['close']:.5f} "
+                f"body_ratio={body_ratio:.2f}) — contradicts SELL"
+            )
+        return True, f"M15 closed bearish — aligned with SELL"
+    else:  # BUY
+        if not is_bullish:
+            return False, (
+                f"M15 closed bearish (open={candle['open']:.5f} close={candle['close']:.5f} "
+                f"body_ratio={body_ratio:.2f}) — contradicts BUY"
+            )
+        return True, f"M15 closed bullish — aligned with BUY"

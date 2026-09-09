@@ -44,7 +44,12 @@ PROMPTS_DIR = Path(__file__).resolve().parent / "agents" / "prompts"
 
 PAIR_CONFIG = {
     "EURUSD": {
-        "threshold": 0.333,
+        # Lowered 2026-08-25: old threshold 0.333 was above the live p90 (~0.312) and max
+        # (~0.306 over past week), so EURUSD never reached standard mode.  Raw SELL test
+        # precision at 0.326 was 0.448 (EV +0.017R).  0.276 = live p75 — produces trades
+        # in the current regime.  If test-precision decays below 0.40 over ~15 live
+        # trades, revert.  This is a trade-volume valve, not a model-fix.
+        "threshold": 0.276,
         "model_file": MODELS_BIN / "EURUSD_H1_sell_Ensemble.joblib",
         "direction": "SELL",
         "pip_multiplier": 10000,
@@ -53,7 +58,11 @@ PAIR_CONFIG = {
         "fundamental_prompt": None,  # uses default fundamental.txt
     },
     "GBPUSD": {
-        "threshold": 0.381,
+        # Recalibrated 2026-08-18: old threshold 0.381 exceeded the max observed live
+        # probability (0.3653 over 55 samples) — standard mode was unreachable and the
+        # "ensemble collapsed" tripwire (thr-0.05) auto-rejected every signal.
+        # 0.334 = p90 of the live distribution -> ~10% standard-mode rate, matching USDCHF.
+        "threshold": 0.334,
         "model_file": MODELS_BIN / "GBPUSD_H1_sell_Ensemble.joblib",
         "direction": "SELL",
         "pip_multiplier": 10000,
@@ -78,6 +87,18 @@ PAIR_CONFIG = {
         "entry_zone_size": 0.00020,
         "technical_prompt": None,
         "fundamental_prompt": None,
+    },
+    "EURUSD_AGNOSTIC": {
+        # Direction-agnostic model. P(up) > 0.5 -> BUY, else SELL. Shadow only.
+        "threshold": 0.5,
+        "model_file": MODELS_BIN / "EURUSD_H1_agnostic_Ensemble.joblib",
+        "direction": "AGNOSTIC",
+        "pip_multiplier": 10000,
+        "entry_zone_size": 0.00020,
+        "shadow": True,            # 2-week shadow validation before live
+        "lot_size": 0.04,          # half normal during shadow
+        "technical_prompt": str(PROMPTS_DIR / "technical_agnostic.txt"),
+        "fundamental_prompt": str(PROMPTS_DIR / "fundamental_agnostic.txt"),
     },
     "USDJPY": {
         "threshold": 0.367,  # placeholder — update after training
@@ -317,6 +338,10 @@ def run_backtest(
         bar_dt = row["datetime"]
         direction = pcfg.get("direction", "SELL")
         pip_mult = pcfg.get("pip_multiplier", 10000)
+        # For AGNOSTIC pairs, the model output IS P(up) — used by agents for
+        # directional consistency checking.
+        is_agnostic = (direction == "AGNOSTIC")
+        prob_up = float(row["probability"]) if is_agnostic else None
         signal_id = f"{pair}_H1_{direction}_{bar_dt.strftime('%Y-%m-%dT%H:%M:%SZ')}"
 
         tech_result = {}
@@ -353,6 +378,7 @@ def run_backtest(
                     top_features=ctx["top_features"],
                     prompt_file=pcfg["technical_prompt"],
                     mode=agent_mode,
+                    **(dict(direction=direction, prob_up=prob_up) if is_agnostic else {}),
                 )
                 t_dec = tech_result.get("decision", "NEUTRAL")
                 if t_dec == "CONFIRM": agent_tech_confirmed += 1
@@ -365,13 +391,14 @@ def run_backtest(
 # Agent B — Fundamental (rate-limited)
             time.sleep(2.5)
             try:
-                macro_ctx = build_macro_context(bar_dt, pair)
+                macro_ctx = build_macro_context(bar_dt, data_symbol)
                 fund_result = evaluate_fundamental(
                     current_price=ctx["current_price"],
                     probability=ctx["probability"],
-                    currency_pair=pair,
+                    currency_pair=data_symbol,  # real pair for Perplexity context
                     prompt_file=pcfg["fundamental_prompt"],
                     calendar_context=macro_ctx,
+                    **(dict(direction=direction, prob_up=prob_up) if is_agnostic else {}),
                 )
                 f_dec = fund_result.get("decision", "NEUTRAL")
                 if f_dec == "CONFIRM": agent_fund_confirmed += 1
@@ -403,18 +430,27 @@ def run_backtest(
 
         zone_size = pcfg.get("entry_zone_size", 0.00020)
 
-        if direction == "BUY":
+        # Direction-agnostic: resolve BUY/SELL from P(up) at the 0.5 boundary.
+        if direction == "AGNOSTIC":
+            prob_up = float(row["probability"])  # the model outputs P(up)
+            trade_direction = "BUY" if prob_up > 0.5 else "SELL"
+            # Store both in the signal: the model's predicted direction and P(up)
+        else:
+            prob_up = None
+            trade_direction = direction
+
+        if trade_direction == "BUY":
             stop_loss = round(entry_price - bar_atr * ATR_SL_MULT, 5)
             take_profit = round(entry_price + bar_atr * ATR_TP_MULT, 5)
             entry_zone = [
-                round(entry_price - zone_size, 5),  # enter as low as possible
+                round(entry_price - zone_size, 5),
                 round(entry_price + zone_size, 5),
             ]
         else:
             stop_loss = round(entry_price + bar_atr * ATR_SL_MULT, 5)
             take_profit = round(entry_price - bar_atr * ATR_TP_MULT, 5)
             entry_zone = [
-                round(entry_price + zone_size, 5),  # enter as high as possible
+                round(entry_price + zone_size, 5),
                 round(entry_price - 0.00020, 5),
             ]
         rr_ratio = round(ATR_TP_MULT / ATR_SL_MULT, 1)
@@ -424,7 +460,7 @@ def run_backtest(
             "run_id": run_id,
             "signal_id": signal_id,
 "symbol": pair,
-            "direction": direction,
+            "direction": trade_direction,    # resolved: BUY/SELL (AGNOSTIC → resolved from P(up))
             "pip_multiplier": pip_mult,
             "timestamp_utc": bar_dt.isoformat(),
             "trade": {
@@ -438,6 +474,7 @@ def run_backtest(
             "model": {
                 "probability": round(float(row["probability"]), 4),
                 "threshold": threshold,
+                **({"prob_up": round(prob_up, 4)} if prob_up is not None else {}),
             },
             "gates": {
                 "passed_threshold": bool(row["pass_threshold"]),
@@ -565,14 +602,17 @@ def _run_live_inner(threshold, agent_enabled, borderline, log_path, pair):
     pcfg = PAIR_CONFIG.get(pair, PAIR_CONFIG["EURUSD"])
     model_threshold = threshold if threshold != 0.306 else pcfg["threshold"]
 
+    # EURUSD_AGNOSTIC uses EURUSD data — map to the real MT5 symbol for fetch.
+    data_symbol = "EURUSD" if pair == "EURUSD_AGNOSTIC" else pair
+
     print(f"\n=== LIVE: {pair} {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC ===\n")
 
     # ── Fetch live data from MT5 ────────────────────────────────────────
-    df = fetch_ohlcv(pair, "H1", source="mt5")
+    df = fetch_ohlcv(data_symbol, "H1", source="mt5")
     print(f"Fetched {len(df):,} bars from MT5")
 
     # ── Compute features ────────────────────────────────────────────────
-    df_feat = compute_features(df, pair=pair)
+    df_feat = compute_features(df, pair=data_symbol)
     latest = df_feat.iloc[-1]  # current H1 bar (just closed)
     print(f"Latest bar: {latest['datetime']}  close={latest['close']:.5f}")
 
@@ -624,12 +664,25 @@ def _run_live_inner(threshold, agent_enabled, borderline, log_path, pair):
     if not gate_result and not gate_borderline:
         return
 
-    # ── MERG Gate (Macro Event Response) ─────────────────────────────────
+# ── MERG Gate (Macro Event Response) ─────────────────────────────────
     if MERG_ENABLED and gate_type:
         merg_result = _merg_event_risk_gate(latest["datetime"], pair, probability)
         if merg_result == "BLOCK":
             return
-    # ── Agent evaluation ────────────────────────────────────────────────
+        print()
+
+    # ── Candle-Close Gate (M15 alignment check) ─────────────────────────
+    if gate_type:
+        from signal_gate import check_candle_alignment
+        candle_ok, candle_reason = check_candle_alignment(
+            direction=trade_direction, symbol=data_symbol,
+        )
+        if not candle_ok:
+            print(f"[Candle Gate] BLOCKED — {candle_reason}")
+            return
+        print(f"[Candle Gate] PASS — {candle_reason}")
+
+    # ── Agent evaluation ─────────────────────────────────────────────────
     if not agent_enabled:
         signal = _build_signal(latest, probability, threshold, ind_probs, {},
                                {}, "FIRED", None, "")
@@ -666,7 +719,7 @@ def _run_live_inner(threshold, agent_enabled, borderline, log_path, pair):
     # Agent B
     time.sleep(2.5)
     try:
-        macro_ctx = build_macro_context(latest["datetime"], pair)
+        macro_ctx = build_macro_context(latest["datetime"], data_symbol)
         fund_result = evaluate_fundamental(
             current_price=ctx["current_price"],
             probability=probability,
@@ -785,11 +838,21 @@ def _build_signal(latest_row, probability, threshold, ind_probs,
 
 
 COOLDOWN_FILE = Path(__file__).resolve().parent / "data" / "last_signal.json"
-COOLDOWN_BARS = 4
+# Global cooldown between FIRED signals (hours). Set to 0 to DISABLE — every FIRED
+# signal goes to market. The execution bot still blocks a symbol only when an OPEN
+# position already exists there (pending orders do NOT block and expire in 10 min).
+COOLDOWN_BARS = 0
 
 
 def _check_cooldown() -> bool:
-    """Check if enough bars have passed since the last FIRED signal."""
+    """Check if enough bars have passed since the last FIRED signal.
+
+    COOLDOWN_BARS <= 0 disables the cooldown entirely — every FIRED signal is
+    allowed through. The remaining safety net is the execution bot, which skips
+    a symbol only when an OPEN position already exists there.
+    """
+    if COOLDOWN_BARS <= 0:
+        return True
     if not COOLDOWN_FILE.exists():
         return True
     try:
@@ -887,7 +950,7 @@ def main():
                      borderline=args.borderline, pair=args.symbol)
     elif args.mode == "live":
         if args.all:
-            for pair in ["EURUSD", "GBPUSD", "USDCHF", "USDCAD"]:
+            for pair in ["EURUSD", "GBPUSD", "USDCHF", "USDCAD", "EURUSD_AGNOSTIC"]:
                 run_live(args.threshold, agent_enabled=not args.no_agent,
                          borderline=args.borderline, pair=pair)
         else:

@@ -219,6 +219,31 @@ class OrderBot:
             self.signals_executed += 1
             print(f"[OrderBot] Order placed — ticket: {ticket}")
             self._log(signal, "EXECUTED", f"ticket={ticket}")
+
+            # ── Break-Even-at-50% monitor (opt-in via settings.yaml) ────
+            be_cfg = self.config.get_config("break_even") or {}
+            if be_cfg.get("enabled", True) and not self.config.is_demo_mode():
+                entry = signal.get("trade", {}).get("entry", entry)
+                sl = signal.get("trade", {}).get("stop_loss", stop_loss)
+                tp = signal.get("trade", {}).get("take_profit", take_profit)
+                dr = direction.upper()
+                try:
+                    be_result = self.order_manager.monitor_break_even(
+                        ticket=int(ticket), symbol=symbol,
+                        entry_price=entry, stop_loss=sl, take_profit=tp,
+                        direction="buy" if dr == "BUY" else "sell",
+                        max_wait_seconds=be_cfg.get("max_wait_seconds", 600),
+                        poll_interval=be_cfg.get("poll_interval_seconds", 30),
+                    )
+                    if be_result.get("triggered"):
+                        print(f"[OrderBot] Break-even triggered: "
+                              f"SL moved to {entry:.5f}")
+                    else:
+                        print(f"[OrderBot] Break-even: "
+                              f"{be_result.get('reason', 'not triggered')}")
+                except Exception as e:
+                    print(f"[OrderBot] Break-even monitor error: {e} (non-fatal)")
+
             return True
         else:
             error_msg = result.get("error", "unknown") if result else "no result"

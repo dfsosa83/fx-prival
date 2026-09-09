@@ -182,6 +182,75 @@ USDCAD_SELL_FEATURES = [
     "price_range",
 ]
 
+# ── Direction-Agnostic EURUSD (balanced UP/DOWN labels, R=1.0, ROC-AUC optimized)
+# Populated by agnostic_sell_improved.ipynb. 62 features selected by noise-vote,
+# dominated by time-of-day / volatility / momentum features. ROC-AUC 0.619 on sealed
+# 2026 test — clears the gate bar (>= 0.55).
+AGNOSTIC_FEATURES = [
+    "atr_regime",
+    "hour_cos",
+    "hour",
+    "hour_sin",
+    "atr_14",
+    "atr_lag_1",
+    "session_london",
+    "close_vs_ema50",
+    "volume_ratio",
+    "macd",
+    "session_overlap",
+    "macd_sig",
+    "bb_pct",
+    "close_vs_ema200",
+    "momentum_10",
+    "stoch_d",
+    "atr_lag_2",
+    "volume_lag_5",
+    "atr_lag_5",
+    "return_1b",
+    "d1_ema50",
+    "atr_lag_3",
+    "is_fomc_day",
+    "price_range",
+    "upper_wick",
+    "obv_slope_20",
+    "obv_zscore_100",
+    "rsi_lag_2",
+    "macd_hist_slope",
+    "bb_width",
+    "rolling_std_10",
+    "close_lag_3",
+    "d1_trend",
+    "is_nfp_day",
+    "williams_r",
+    "month",
+    "volume_lag_3",
+    "d1_ema20",
+    "high_events_next_24h",
+    "volume_lag_1",
+    "med_events_next_4h",
+    "rolling_std_20",
+    "sma_50",
+    "d1_close_vs_ema20",
+    "roc_10",
+    "close_lag_5",
+    "body_ratio",
+    "session_ny",
+    "volume_lag_2",
+    "lower_wick",
+    "rsi_lag_5",
+    "stoch_k",
+    "rsi_lag_1",
+    "return_5b",
+    "high_events_next_4h",
+    "close_vs_day_open",
+    "body_size",
+    "macd_hist",
+    "session_asian",
+    "d1_rsi",
+    "rsi_14",
+    "obv",
+]
+
 
 def get_features_for_pair(pair: str, direction: str = "SELL") -> list:
     """Return the model feature list for a given pair."""
@@ -194,6 +263,14 @@ def get_features_for_pair(pair: str, direction: str = "SELL") -> list:
         return USDCHF_SELL_FEATURES
     elif pair_upper == "USDCAD":
         return USDCAD_SELL_FEATURES
+    elif pair_upper in ("EURUSD_AGNOSTIC", "AGNOSTIC"):
+        if AGNOSTIC_FEATURES is None:
+            raise ValueError(
+                "AGNOSTIC_FEATURES not yet populated. Run "
+                "agnostic_sell_improved.ipynb first, then set AGNOSTIC_FEATURES "
+                "in frival/model/features.py with the selected features list."
+            )
+        return AGNOSTIC_FEATURES
     elif pair_upper == "USDJPY":
         # TODO: Replace with actual features after noise-injection voting completes
         raise NotImplementedError(

@@ -818,3 +818,157 @@ class OrderManager:
                     validation['valid'] = False
 
         return validation
+
+
+    # ============================================================================
+    # Break-Even-at-50% Monitor
+    # ============================================================================
+
+    def monitor_break_even(
+        self,
+        ticket: int,
+        symbol: str,
+        entry_price: float,
+        stop_loss: float,
+        take_profit: float,
+        direction: str,        # "buy" or "sell"
+        max_wait_seconds: int = 600,
+        poll_interval: int = 30,
+    ) -> Dict[str, Any]:
+        """
+        Monitor an open position and move SL to break-even when price covers
+        50% of the distance from entry to TP1.
+
+        This is a lightweight polling loop that checks the current market price
+        every `poll_interval` seconds. When the position is halfway to its
+        profit target, the SL is moved to the entry price — guaranteeing a
+        zero-loss trade if price subsequently reverses.
+
+        Parameters
+        ----------
+        ticket : int
+            MT5 position ticket.
+        symbol : str
+            Trading symbol.
+        entry_price : float
+            Original entry price.
+        stop_loss : float
+            Original stop-loss level.
+        take_profit : float
+            Take-profit level.
+        direction : str
+            "buy" or "sell".
+        max_wait_seconds : int
+            Maximum time to monitor (default 10 min). After this, the monitor
+            exits silently — the original SL remains in place.
+        poll_interval : int
+            Seconds between price checks (default 30).
+
+        Returns
+        -------
+        Dict with result: triggered (bool), price_at_trigger, reason.
+        """
+        half_point = entry_price + (take_profit - entry_price) * 0.5
+        be_level = entry_price
+
+        # Work out which direction is "in profit" for the BE trigger check
+        if direction == "buy":
+            # price must go UP from entry to reach half_point
+            half_point_reached = lambda p, hp: p >= hp
+        else:
+            # price must go DOWN from entry to reach half_point
+            half_point_reached = lambda p, hp: p <= hp
+
+        result = {
+            "triggered": False,
+            "price_at_trigger": None,
+            "reason": f"timed out after {max_wait_seconds}s",
+        }
+
+        elapsed = 0
+        self.logger.info(
+            f"Break-even monitor started for ticket={ticket} {symbol} "
+            f"(entry={entry_price}, half={half_point:.5f}, BE={be_level:.5f})"
+        )
+
+        while elapsed < max_wait_seconds:
+            # Check if position still exists
+            try:
+                positions = mt5.positions_get(ticket=ticket)
+                if not positions:
+                    result["reason"] = "position closed before BE triggered"
+                    self.logger.info(f"Break-even: position {ticket} already closed")
+                    return result
+                pos = positions[0]
+                # If SL already moved to BE (by a previous run), stop
+                if abs(pos.sl - be_level) < 1e-8:
+                    result["triggered"] = True
+                    result["reason"] = "SL already at break-even"
+                    result["price_at_trigger"] = pos.price_current
+                    return result
+            except Exception:
+                # MT5 error — retry next poll
+                time.sleep(poll_interval)
+                elapsed += poll_interval
+                continue
+
+            # Get current price
+            try:
+                tick = mt5.symbol_info_tick(symbol)
+                if tick is None:
+                    time.sleep(poll_interval)
+                    elapsed += poll_interval
+                    continue
+                current = tick.ask if direction == "buy" else tick.bid
+            except Exception:
+                time.sleep(poll_interval)
+                elapsed += poll_interval
+                continue
+
+            # Check if half-point reached
+            if half_point_reached(current, half_point):
+                # Move SL to break-even
+                try:
+                    modify_request = {
+                        "action": mt5.TRADE_ACTION_SLTP,
+                        "position": ticket,
+                        "sl": round(be_level, 5),
+                        "tp": take_profit,
+                    }
+                    if self.config_manager.is_demo_mode():
+                        self.logger.info(
+                            f"DEMO: would move SL to BE at {be_level:.5f} "
+                            f"(price={current:.5f})"
+                        )
+                    else:
+                        mod_result = mt5.order_send(modify_request)
+                        if mod_result and mod_result.retcode == mt5.TRADE_RETCODE_DONE:
+                            self.logger.info(
+                                f"Break-even TRIGGERED: SL moved to {be_level:.5f} "
+                                f"(price={current:.5f})"
+                            )
+                        else:
+                            self.logger.warning(
+                                f"Break-even modify failed: "
+                                f"retcode={mod_result.retcode if mod_result else 'None'}"
+                            )
+                            time.sleep(poll_interval)
+                            elapsed += poll_interval
+                            continue
+
+                    result["triggered"] = True
+                    result["price_at_trigger"] = current
+                    result["reason"] = f"half-point hit at {current:.5f}"
+                    return result
+
+                except Exception as e:
+                    self.logger.error(f"Break-even modify error: {e}")
+                    time.sleep(poll_interval)
+                    elapsed += poll_interval
+                    continue
+
+            time.sleep(poll_interval)
+            elapsed += poll_interval
+
+        self.logger.info(f"Break-even monitor stopped after {elapsed}s (BE not triggered)")
+        return result
