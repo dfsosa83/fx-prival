@@ -454,8 +454,12 @@ class GoldRunner:
         trade_info = ""
         if self.state.active_trade:
             trade_info = f", open trade {self.state.active_trade.get('ticket')}"
+        # _persisted_bar (from the state file) is the last bar the engine
+        # actually processed before this launch; _last_bar_key gets reset to
+        # None at startup and is only filled when the first new bar is seen.
+        shown_bar = self._persisted_bar or "none yet (first launch)"
         print(f"[gold] resumed: {self.state.state} | bias {self.state.h1_bias} | "
-              f"last bar {self._last_bar_key}{trade_info}")
+              f"last bar {shown_bar}{trade_info}")
         print("[gold] waiting for a confirmed setup (WATCH_ZONE → break → retest → gates). "
               "You will see a heartbeat on every new M15 bar.")
         while True:
