@@ -99,7 +99,11 @@ def load_state() -> tuple[eng_module.EngineState, dict]:
 def journal(dt: datetime, entry: dict) -> None:
     JOURNAL_DIR.mkdir(parents=True, exist_ok=True)
     file = JOURNAL_DIR / f"{dt.date().isoformat()}.jsonl"
-    line = {**entry, "ts": dt.isoformat() + "Z"}
+    line = {
+        **entry,
+        "ts": dt.isoformat() + "Z",      # bar open time (BROKER SERVER zone, not UTC)
+        "utc": datetime.utcnow().isoformat() + "Z",  # true wall-clock UTC for audits
+    }
     with open(file, "a", encoding="utf-8") as f:
         f.write(json.dumps(line, default=str) + "\n")
 
@@ -198,15 +202,42 @@ class GoldRunner:
             return False
 
     def fetch_bars(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        """Fetch M15/M30/H1 closed bars (design §3.2). Returns (m15, m30, h1)."""
+        """Fetch M15/M30/H1 CLOSED bars (design §3.2). Returns (m15, m30, h1).
+
+        G1 enforcement (§2.3): `copy_rates_from_pos(pos=0)` returns the
+        CURRENT FORMING (open) bar as the last row — verified live on this
+        broker (M15: last row age 3 min = still open). Evaluating an open
+        candle violates the single most important rule of the playbook
+        ("Vela M15 abierta → No entras"), so the last row is dropped when its
+        open time is younger than one full period vs the server clock. Only
+        fully closed bars reach the engine.
+        """
         import MetaTrader5 as mt5
         max_points = {"M15": 1000, "M30": 400, "H1": 200}
+        period_sec = {"M15": 15 * 60, "M30": 30 * 60, "H1": 60 * 60}
+        server_now = None
+        try:
+            t = mt5.symbol_info_tick("XAUUSD")
+            if t is not None:
+                server_now = t.time
+        except Exception:
+            pass
         frames = {}
         for name, tf in (("M15", mt5.TIMEFRAME_M15), ("M30", mt5.TIMEFRAME_M30), ("H1", mt5.TIMEFRAME_H1)):
-            rates = mt5.copy_rates_from_pos("XAUUSD", tf, 0, max_points[name])
+            # Fetch one extra bar so dropping the forming row never starves history
+            rates = mt5.copy_rates_from_pos("XAUUSD", tf, 0, max_points[name] + 1)
             if rates is None or len(rates) == 0:
                 raise RuntimeError(f"MT5 returned no XAUUSD {name}: {mt5.last_error()}")
             df = pd.DataFrame(rates)
+            if server_now is not None:
+                closed = df["time"] <= (server_now - period_sec[name])
+                df = df[closed]
+            else:
+                # server clock unavailable: conservative G1 fallback — drop the
+                # newest bar entirely rather than risk acting on an open candle
+                df = df.iloc[:-1]
+            if len(df) == 0:
+                raise RuntimeError(f"MT5 returned no CLOSED XAUUSD {name} bars")
             df["datetime"] = pd.to_datetime(df["time"], unit="s")
             df.drop(columns=["time", "spread", "real_volume"], inplace=True, errors="ignore")
             df.rename(columns={"tick_volume": "volume"}, inplace=True)
@@ -312,11 +343,16 @@ class GoldRunner:
             self._last_bar_seen_utc = now_utc.isoformat() + "Z"
         else:
             self._silent_ticks = getattr(self, "_silent_ticks", 0) + 1
-            if self._silent_ticks == 2 and not self._reported_no_bar:
+            # Informational notice ONLY once a bar is genuinely overdue.
+            # At tick 2 this fires every 15 min during LIVE trading (normal gap
+            # between M15 closes) — pure noise. At tick 16 the next bar is ~1 min
+            # late, so a quiet market / start of a halt is plausible; the real
+            # pause still latches at 20.
+            if self._silent_ticks == 16 and not self._reported_no_bar:
                 self._reported_no_bar = True
-                print(f"[gold] no new M15 bar since {bar_key} — market likely in the "
-                      f"daily halt / weekend. Engine stays alive and resumes "
-                      f"automatically on the next bar.")
+                print(f"[gold] no new M15 bar since {bar_key} — bar overdue; "
+                      f"likely entering the daily halt / weekend. Engine stays "
+                      f"alive and resumes automatically on the next bar.")
 
         if new_bar:
             self._reported_no_bar = False
