@@ -2,6 +2,12 @@
 apy-key-roo-code.txt
 *.env
 openrouterkey.txt
+fred-credentials.txt
+
+# Personal / sensitive data (never commit)
+ml-signal-service/data/david felipe.txt
+# Session transcripts contain live credentials — never commit
+session-ses_*.md
 
 # Python
 __pycache__/
@@ -13,6 +19,10 @@ frival/output/
 frival/data/cache/
 frival/data/last_signal.json
 frival/execution_bot/data/
+
+# Gold Rules Engine — runtime artifacts (regenerable; never commit)
+frival/gold_rules/state/
+frival/gold_rules/journal/
 
 # Kilo local config
 .kilo/
