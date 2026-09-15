@@ -143,8 +143,16 @@ class GoldRunner:
         self.cm = None
         self._market_paused = False
         self._silent_ticks = 0
-        self._last_bar_key = self._state_meta.get("last_bar_time")
-        self._last_bar_seen_utc = self._state_meta.get("last_bar_seen_utc")
+        self._last_bar_key = None
+        self._last_bar_seen_utc = None
+        # ── startup-only cross-restart pause detection ────────────────────
+        # The PREVIOUS run's last-seen bar + when it was first observed are
+        # persisted in the state file. Stored separately from _last_bar_key so
+        # the restart check below can compare against the OLD value, not the
+        # live one (which is overwritten as soon as a new bar arrives).
+        self._persisted_bar = self._state_meta.get("last_bar_time")
+        self._persisted_bar_seen_utc = self._state_meta.get("last_bar_seen_utc")
+        self._restart_check_done = False
         self._reported_no_bar = False
         self._previous_paused = False
         # Dry-run bookkeeping (simulates a single open position through IN_TRADE)
@@ -313,20 +321,28 @@ class GoldRunner:
         if new_bar:
             self._reported_no_bar = False
 
-        # Cross-restart staleness: same bar as last run and seen long ago.
-        persisted_bar = getattr(self, "_last_bar_key", None)
-        persisted_utc = self._state_meta.get("last_bar_seen_utc")
-        if persisted_bar == bar_key and persisted_utc:
-            try:
-                seen = datetime.fromisoformat(persisted_utc.replace("Z", "+00:00"))
-                seen_utc = seen.replace(tzinfo=None)
-                if (now_utc - seen_utc).total_seconds() > 20 * 60:
-                    self._market_paused = True
-                    self._previous_paused = True
-                    self._reported_no_bar = True
-                    return "ok"
-            except ValueError:
-                pass
+        # ── STARTUP-ONLY cross-restart pause detection ─────────────────────────
+        # If the previous run ended with bar X (frozen market) and we come back
+        # to find the SAME bar X still the newest AND it was first observed more
+        # than ~20 min ago (in UTC), the market has been frozen across the
+        # restart — go straight to paused instead of burning 20 startup ticks.
+        # Runs once: `_restart_check_done` prevents re-evaluating this against
+        # later bars, which previously re-paused the engine on every new bar
+        # after the first reopen (persisted_bar was being overwritten by the
+        # live _last_bar_key before the comparison).
+        if not self._restart_check_done:
+            self._restart_check_done = True
+            if self._persisted_bar == bar_key and self._persisted_bar_seen_utc:
+                try:
+                    seen = datetime.fromisoformat(self._persisted_bar_seen_utc.replace("Z", "+00:00"))
+                    seen_utc = seen.replace(tzinfo=None)
+                    if (now_utc - seen_utc).total_seconds() > 20 * 60:
+                        self._market_paused = True
+                        self._previous_paused = True
+                        self._reported_no_bar = True
+                        return "ok"
+                except ValueError:
+                    pass
 
         if self._silent_ticks >= 20 or not market_open:
             self._market_paused = True
@@ -334,7 +350,15 @@ class GoldRunner:
             self._reported_no_bar = True
             return "ok"  # idle; keep-alive tick in run() reports state
 
+        # ── market transition: leave the paused state on a fresh bar ───────────
+        was_paused = self._market_paused
         self._market_paused = False
+        if new_bar and (was_paused or self._previous_paused):
+            self._previous_paused = False
+            print(f"[gold] MARKET RESUMED — new M15 bar {last_time} detected, "
+                  f"resuming live evaluation.")
+        else:
+            self._previous_paused = False
 
         try:
             import MetaTrader5 as mt5
@@ -398,14 +422,11 @@ class GoldRunner:
                 journal(last_time.to_pydatetime(), {"action": "CLOSE_POSITION", "ticket": ticket, "result": result})
                 print(f"[gold] >>> INVALIDATED — closing ticket {ticket}: {result}")
 
-        # ── heartbeat: one visible line per NEW completed M15 bar ───────────
+# ── heartbeat: one visible line per NEW completed M15 bar ───────────
         # Uses the upstream `new_bar` flag (freshness block already updated
-        # _last_bar_key); printing is suppressed while paused.
+        # _last_bar_key); the MARKET RESUMED announcement is emitted in the
+        # transition block above, so only the plain heartbeat prints here.
         if new_bar:
-            was_paused = getattr(self, "_previous_paused", False)
-            self._previous_paused = False
-            if was_paused:
-                print(f"[gold] MARKET RESUMED — new M15 bar {last_time} detected.")
             print(f"[gold] [{datetime.utcnow().strftime('%H:%M:%S')}Z] bar {last_time} "
                   f"| bid {bid:.2f} | {self.state.state} | {self.state.h1_bias} "
                   f"| {dec.reason}")
