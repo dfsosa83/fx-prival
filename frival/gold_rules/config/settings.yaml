@@ -1,0 +1,34 @@
+# Gold Rules Engine — settings for the reused ConfigManager/OrderManager (design doc §3.4)
+# trading.mode is the single source of truth for demo-vs-live (config_manager.py is_demo_mode).
+# risk section values here feed the REUSED OrderManager internals; the gold engine's own
+# risk atomics live in ../config.yaml and are enforced by the engine itself.
+trading:
+  mode: live                     # demo or live — LIVE per operator decision 2026-09-15
+  default_risk_profile: MODERATE
+  default_lot_size: 0.01
+
+mt5:
+  timeout: 30
+  retries: 3
+  timezone: America/Panama
+
+risk:
+  max_daily_loss: 50.0           # gold engine's own daily cap (design doc §2.4 Gate 3)
+  max_positions_per_pair: 1
+  max_total_positions: 1
+
+orders:
+  deviation_points: 5
+  dynamic_sizing: false          # fixed lot from ../config.yaml (0.01)
+  pending_order_timeout: 600
+
+break_even:
+  enabled: true
+  max_wait_seconds: 600
+  poll_interval_seconds: 30
+
+security:
+  confirm_live_orders: true
+  emergency_controls:
+    enabled: true
+    stop_file: ../frival/data/emergency_stop.txt

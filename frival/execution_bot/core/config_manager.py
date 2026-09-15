@@ -54,7 +54,7 @@ class ConfigManager:
             'mt5_password': self._get_env_var('MT5_PASSWORD', required=True),
             'mt5_server': self._get_env_var('MT5_SERVER', required=True),
             'mt5_terminal_path': self._get_env_var('MT5_TERMINAL_PATH', required=False, default=""),
-            'demo_mode': self._get_env_bool('DEMO_MODE', default=True),
+            'demo_mode': self._get_env_bool('DEMO_MODE', default=False),
             'emergency_stop': self._get_env_bool('EMERGENCY_STOP', default=False),
             'log_level': self._get_env_var('LOG_LEVEL', default='INFO'),
             'max_daily_trades': self._get_env_int('MAX_DAILY_TRADES', default=50),
@@ -210,8 +210,20 @@ class ConfigManager:
         return self.config.get('logging', {})
     
     def is_demo_mode(self) -> bool:
-        """Check if running in demo mode."""
-        return self.credentials.get('demo_mode', True)
+        """Check if running in demo mode.
+
+        Single source of truth: settings.yaml `trading.mode`.
+        - "live" -> False (place real orders)
+        - "demo" -> True (simulate)
+        Falls back to the DEMO_MODE env var (default False = live) only if the
+        YAML mode is missing/invalid.
+        """
+        yaml_mode = self.config.get("trading", {}).get("mode", "")
+        if yaml_mode == "live":
+            return False
+        if yaml_mode == "demo":
+            return True
+        return self.credentials.get('demo_mode', False)
     
     def is_emergency_stop(self) -> bool:
         """Check if emergency stop is activated."""

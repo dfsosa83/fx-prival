@@ -1,0 +1,57 @@
+# Gold Rules Engine — v1 config (EXP-2026-03-RULEENGINE)
+# Every parameter below maps 1:1 to the design document v1.3.
+# Any change must be documented in the Design Document §0 table with a reason.
+
+symbol: XAUUSD
+
+timeframes:
+  bias: H1
+  levels: M30
+  decision: M15
+
+bias:
+  ema_fast: 20
+  ema_slow: 50
+
+levels:
+  lookback_bars_m30: 200
+  fractal_wing: 2            # bars each side: 5-bar fractal (wing=2)
+  merge_distance_atr_mult: 0.5
+  pending_retest_max_bars_m15: 20
+  confirm_max_bars_m15: 3    # CONFIRMED extreme must break within N M15 bars
+
+gates:
+  location_tolerance_atr_mult: 0.15
+  location_tolerance_min_usd: 1.00
+  min_rr: 1.5
+
+risk:
+  fixed_lot: 0.01
+  max_risk_usd: 25.0
+  max_concurrent_positions: 1
+  daily_loss_cap_usd: 50.0
+  sl_buffer_atr_mult: 0.05
+  sl_buffer_min_usd: 0.30
+  contract_size: 100.0       # VERIFIED live against mt5.symbol_info (pre-flight 2026-09-15)
+
+management:
+  be_trigger_fraction: 0.5
+
+candles:
+  solid_body_min_fraction: 0.30   # body >= 30% of range = solid body (§2.1.3)
+
+order:
+  comment: "GOLD_RULES_v1"
+  dynamic_sizing: false
+
+resilience:
+  max_consecutive_errors: 5       # ~75 min of failed cycles before hard stop
+  error_backoff_seconds: 60
+
+session:
+  loop_tick_seconds: 60           # main loop cadence
+  # Daily maintenance halt / weekend handling (design doc §3.6): NOT a fixed
+  # UTC window. Implemented in run_gold_rules.py via BAR FRESHNESS: if no new
+  # M15 bar closes for ~20 min the market is paused (halt/weekend/holiday) and
+  # the engine idles, resuming automatically when bars advance again. This is
+  # more robust than hardcoding a time that can drift with DST.

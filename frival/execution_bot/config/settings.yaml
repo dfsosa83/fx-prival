@@ -35,7 +35,7 @@ pairs:
 
 # ── Risk Controls ───────────────────────────────────────────────────
 risk:
-  max_daily_loss: 50.0           # $ max loss per day (~5% of $1,021)
+  max_daily_loss: 200.0           # $ max loss per day (~6% of ~$3,287)
   max_positions_per_pair: 1      # never pyramid on the same symbol
   max_total_positions: 4         # across all pairs
 

@@ -605,6 +605,13 @@ def _run_live_inner(threshold, agent_enabled, borderline, log_path, pair):
     # EURUSD_AGNOSTIC uses EURUSD data — map to the real MT5 symbol for fetch.
     data_symbol = "EURUSD" if pair == "EURUSD_AGNOSTIC" else pair
 
+    # Resolve trade direction early (needed for candle gate + agent prompts).
+    # AGNOSTIC: resolved from P(up) vs 0.5 boundary after inference.
+    # Directional pairs: use the PAIR_CONFIG direction directly.
+    cfg_direction = pcfg.get("direction", "SELL")
+    is_agnostic = (cfg_direction == "AGNOSTIC")
+    trade_direction = cfg_direction   # placeholder; resolved after model inference for AGNOSTIC
+
     print(f"\n=== LIVE: {pair} {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC ===\n")
 
     # ── Fetch live data from MT5 ────────────────────────────────────────
@@ -622,6 +629,14 @@ def _run_live_inner(threshold, agent_enabled, borderline, log_path, pair):
     bundle = load_model(str(pcfg["model_file"]))
     result = predict(bundle, df_model)
     probability = result["probability"]
+
+    # Resolve AGNOSTIC direction now that probability is known
+    if is_agnostic:
+        prob_up = probability               # model output IS P(up)
+        trade_direction = "BUY" if prob_up > 0.5 else "SELL"
+    else:
+        prob_up = None
+        trade_direction = cfg_direction     # already resolved
 
     # Per-model probs for agent context
     ind_probs = {}
@@ -711,6 +726,7 @@ def _run_live_inner(threshold, agent_enabled, borderline, log_path, pair):
             top_features=ctx["top_features"],
             prompt_file=pcfg["technical_prompt"],
             mode=live_mode,
+            **(dict(direction=cfg_direction, prob_up=prob_up) if is_agnostic else {}),
         )
     except Exception as e:
         errors += 1
@@ -723,9 +739,10 @@ def _run_live_inner(threshold, agent_enabled, borderline, log_path, pair):
         fund_result = evaluate_fundamental(
             current_price=ctx["current_price"],
             probability=probability,
-            currency_pair=pair,
+            currency_pair=data_symbol,  # real pair for Perplexity context
             prompt_file=pcfg["fundamental_prompt"],
             calendar_context=macro_ctx,
+            **(dict(direction=cfg_direction, prob_up=prob_up) if is_agnostic else {}),
         )
     except Exception as e:
         errors += 1
@@ -752,8 +769,10 @@ def _run_live_inner(threshold, agent_enabled, borderline, log_path, pair):
     signal = _build_signal(latest, probability, model_threshold, ind_probs,
                            tech_result, fund_result,
                            final_decision, final_confidence, veto_reason,
-                           gate_type=gate_type, pair=pair, direction=pcfg.get("direction", "SELL"),
+                           gate_type=gate_type, pair=pair, direction=trade_direction,
                            pip_multiplier=pcfg.get("pip_multiplier", 10000))
+    if is_agnostic and prob_up is not None:
+        signal["model"]["prob_up"] = round(prob_up, 4)
     log_signal(signal)
 
     is_shadow = pcfg.get("shadow", False)

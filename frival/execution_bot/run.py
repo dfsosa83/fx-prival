@@ -50,9 +50,10 @@ def main():
                     _key, _, _val = _line.partition("=")
                     _os.environ[_key.strip()] = _val.strip()
         print(f"Loaded credentials from {frival_env}")
-        # Inject defaults ConfigManager requires but Frival .env doesn't have
+        # Inject defaults ConfigManager requires but Frival .env doesn't have.
+        # DEMO_MODE is left UNSET here: the single source of truth is
+        # settings.yaml `trading.mode`. is_demo_mode() reads the YAML first.
         _os.environ.setdefault("MT5_TERMINAL_PATH", "")
-        _os.environ.setdefault("DEMO_MODE", "true")
         _os.environ.setdefault("EMERGENCY_STOP", "false")
         _os.environ.setdefault("LOG_LEVEL", "INFO")
         _os.environ.setdefault("MAX_DAILY_TRADES", "5")
@@ -62,7 +63,7 @@ def main():
         env_file = config_dir / "credentials.env"
         with open(frival_env, encoding="utf-8") as src, open(env_file, "w", encoding="utf-8") as dst:
             dst.write(src.read())
-            dst.write("\nMT5_TERMINAL_PATH=\nDEMO_MODE=true\nEMERGENCY_STOP=false\n")
+            dst.write("\nMT5_TERMINAL_PATH=\nEMERGENCY_STOP=false\n")
             dst.write("LOG_LEVEL=INFO\nMAX_DAILY_TRADES=5\nMAX_DAILY_LOSS=50.0\n")
 
     if not config_dir.exists():

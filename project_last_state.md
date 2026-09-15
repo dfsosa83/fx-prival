@@ -1,7 +1,7 @@
 # Project Last State — Frival Trading System
 
-**Last updated:** 2026-09-09T17:10-05:00
-**Status:** LIVE — 5-pair pipeline (4 SELL + 1 agnostic in shadow). Execution bot in live mode ($3,287 balance). MERG volatility gate active in shadow. Daily scheduler operational (double-click `run_daily.bat`). Candle-close gate + break-even monitor deployed.
+**Last updated:** 2026-09-15T20:50-05:00
+**Status:** LIVE — 5-pair ML pipeline (4 SELL + 1 agnostic in shadow) + **NEW standalone rule-based Gold Engine (XAUUSD) LIVE** since 2026-09-15 20:40 UTC. Single account 81486396 (~$536–550 balance). Daily scheduler operational (`run_daily.bat`). Gold engine operational (`run_gold_rules.bat`) — Step 11 of EXP-2026-03-RULEENGINE in progress (first live trade pending), Step 12 (20–30 trade review) pending.
 
 ---
 
@@ -21,7 +21,7 @@
 | USDCAD | SELL | 0.341 | — | 0.424 | 0.08 | **Live** |
 | **EURUSD_AGNOSTIC** | **AGNOSTIC** | **0.5** | **0.619** | — | **0.04** | **Shadow** (1-week validation) |
 | USDJPY | — | — | <0.60 | <0.400 | — | **KILLED** |
-| XAUUSD | — | — | — | 0.258 | — | **KILLED** (needs TIPS/VIX) |
+| XAUUSD (ML) | — | — | — | 0.258 / 0.346 | — | **KILLED** — superseded by rule-based Gold Engine (§10) |
 
 ### 1.2 Direction-Agnostic Model (NEW)
 
@@ -37,7 +37,7 @@
 ### 1.3 Execution Bot (`frival/execution_bot/`)
 
 - **Mode:** LIVE (`settings.yaml`: `trading.mode: live`).
-- **Risk:** max_daily_loss $50, max 1 position per pair, max 5 total positions, deviation_points=5.
+- **Risk:** max_daily_loss $200 (raised 50→200 on 2026-09-15 per operator request; **flagged as 37.6% of the current ~$536 balance** — see §10.9), max 1 position per pair, max 5 total positions, deviation_points=5.
 - **Break-even monitor (NEW):** After order placement, polls MT5 every 30s. When price covers 50% of distance from entry to TP1, moves SL to break-even. Max 10 min. Toggled via `settings.yaml` → `break_even.enabled`.
 - **Safety:** `confirm_live_orders: true` (manual confirmation each trade). Emergency stop file at `frival/data/emergency_stop.txt`.
 
@@ -161,9 +161,13 @@ CAD is oil-driven (oil ≈ 40% of Canada's export revenue). Adding WTI H1 data a
 
 ---
 
-## 6. XAUUSD — Attempted & Killed
+## 6. XAUUSD — ML Attempted & Killed → Superseded by Rule Engine
 
-USDX was insufficient for gold. The model **did select** USDX features (ranked #4–6 in the noise-vote), but test precision stayed at 0.258 — below breakeven. Gold is primarily driven by **real yields** (TIPS 10Y), not the dollar index alone. USDX is a secondary driver. To revisit gold: add TIPS data from FRED (`DFII10`) plus VIX.
+USDX was insufficient for gold. The model **did select** USDX features (ranked #4–6 in the noise-vote), but test precision stayed at 0.258 — below breakeven. Gold is primarily driven by **real yields** (TIPS 10Y), not the dollar index alone.
+
+**Final ML retrain (2026-09-15, `xauusd_sell_macro_improved.ipynb`):** added FRED TIPS (`DFII10`) + VIX (`VIXCLS`) via `ml-signal-service/scripts/fetch_fred.py` → `ml-signal-service/data/macro/tips10y_daily.csv`, `vix_daily.csv`. Sealed test precision 0.346 < 0.400 breakeven, EV −0.135R, 71% of signals clustered in Jan 2026 (regime capture, not edge). **XAUUSD ML killed a third time.**
+
+**Decision (2026-09-15):** gold moves to a **100% rule-based, deterministic engine** — no ML, no agents. See §10 (EXP-2026-03-RULEENGINE).
 
 ---
 
@@ -204,6 +208,8 @@ USDX was insufficient for gold. The model **did select** USDX features (ranked #
 - **Bundle threshold mismatch:** MERG bundle stores `threshold=0.2809` (F1-optimal), runtime uses hardcoded `REACTION_THRESHOLD=0.60`.
 - **USDCAD EV borderline:** −0.114R is close to zero but still negative. Monitor closely in live mode.
 - **Agnostic model in shadow:** 1-week validation in progress. Need 10–15 directional predictions to assess live accuracy before flipping to live.
+- **ML `max_daily_loss: 200.0` is ~37.6% of the current ~$536 balance** (was ~6% at $3,287). See §10.9 — recommendation to lower to $50 pending operator decision.
+- **Gold engine Step 11 (first live trade) + Step 12 (20–30 trade review):** pending; see §10.6–§10.8.
 
 ### Signal-drought diagnosis & fixes (2026-08-18)
 
@@ -223,10 +229,9 @@ USDX was insufficient for gold. The model **did select** USDX features (ranked #
 - Break-even monitor: after order placement, moves SL to break-even when price covers 50% of distance to TP1. Preserves capital on trades that had early momentum but later reversed.
 - Both patterns extracted from the XAUUSD manual trading experiment (Sep 4-9, ~$3,287 balance, 0.01 lots).
 
-### XAUUSD — path to viability
-- Dominant drivers (TIPS real yields via FRED, VIX) still missing. USDX-only experiment failed (test precision 0.258).
-- Manual experiment proved multi-timeframe structural analysis works but requires real-time LLM chart analysis — incompatible with our batched H1 pipeline architecture.
-- Gold remains a future project after FRED/TIPS integration.
+### XAUUSD — path to viability (superseded 2026-09-15)
+- ML path (TIPS/VIX retrain) FAILED a third time — test precision 0.346, regime capture. **ML gold is dead.**
+- The rules path is now the answer: **the rule-based Gold Engine (EXP-2026-03-RULEENGINE) went LIVE 2026-09-15** — it operationalizes exactly what the manual experiment proved (multi-timeframe structure, break-and-retest, candle-close discipline) as a fully deterministic engine with no LLM in the loop (§10).
 
 ### P2
 - **Calendar reload per call:** `get_next_high_event()` reloads all 20 CSVs each time.
@@ -246,11 +251,113 @@ The experiment used 0.01 lots per trade (risk ~$10–25), had one major risk inc
 
 ---
 
-## 10. Environment
+## 10. Gold Rules Engine — EXP-2026-03-RULEENGINE (NEW — LIVE 2026-09-15)
+
+### 10.1 What this is
+
+A **standalone, 100% rule-based XAUUSD trading engine** — **no ML, no AI agents** in the decision loop. Built because gold ML failed three times (USDX; TIPS+VIX; regime capture) while the manual experiment's *rules* appeared to have edge but were drowned out by reckless sizing (0.55 lots → margin calls, near-blowup). The engine isolates two claims:
+
+- **Claim A** — the structural rules (candle-close discipline, break-and-retest, break-even-50%, structural SL) produce positive expected value.
+- **Claim B** — the same edge exists at 0.01 lots with strict caps.
+
+Runs **alongside** `run_daily.bat` (ML pipeline) on the same MT5 account/terminal, but as a separate process, separate symbol, separate cadence (M15 vs H1), and its own risk book.
+
+### 10.2 Design contract
+
+`ml-signal-service/docs/experiments/EXP-2026-03-RULEENGINE_gold-rules-engine-design.md` — **v1.3**. The audit contract: every rule, parameter, and decision is specified there and must be changed only with a logged reason. Key operator decisions folded into v1.2/v1.3:
+
+1. **No shadow run** — went straight to LIVE (operator decision 2026-09-15).
+2. **$500-scale risk capital** — realized as the single existing account 81486396, balance $531.78 at pre-flight (observed $536–550 during operation; the "$500" is this account, not a new one).
+3. **Independent systems** — true only at process level: separate processes/symbols/cadences, but **shared account equity** and the ML bot's account-wide daily-loss check will still see gold losses (§2.4.3, §9 of the design doc).
+4. **Pre-flight verified live** (read-only, 2026-09-15): XAUUSD contract size **100.0 oz/lot ✓**, digits 2 ✓, point 0.01 ✓, volume_min 0.01 ✓, 0.01-lot margin ≈ **$8.60** ✓, spread ~19 pts ($0.19).
+
+### 10.3 How it trades — the playbook (v1 atomics)
+
+| Component | Definition |
+|---|---|
+| Timeframes | M15 decision / M30 structural levels / H1 bias |
+| H1 bias (§2.1.1) | EMA(20) vs EMA(50) + price position → BULLISH/BEARISH/FLAT; only bias-consistent direction armed (S4.1) |
+| Structural levels (§2.1.2) | 5-bar M30 fractal (wing=2, confirmed 2 bars after pivot), 200-bar lookback, merge within 0.5×ATR, consumption on solid-body close beyond level, nearest-only arming |
+| Entry | **Break-and-retest, market order at retest confirmation** (variant B or R). No pending orders. |
+| Golden rules (§2.3) | G1 no action on open M15; G2 a wick is not a signal (next close must break the confirm-candle extreme); G3 never anticipate |
+| Gates (§2.4) | G1 location ≤ 15% ATR_M15 (floor $1); G2 R:R ≥ 1.5; G3 risk: **0.01 lot, ≤ $25/trade, ≤ 1 position (all XAUUSD positions), −$50/day (comment-tagged)** |
+| SL (§2.7.1) | invalidation level + buffer `max(0.05×ATR_M15, $0.30)` — hard SL never sits exactly at invalidation |
+| Management (§2.6) | M1 BE-50 (SL→entry at 50% of entry→TP1), M2 structural trail after BE, M3 TP1 broker-side / TP2 informational, M4 no averaging |
+| Exit (§2.7) | any M15/M30 solid-body close beyond invalidation → close immediately |
+
+### 10.4 Files & architecture
+
+```
+frival/
+├── run_gold_rules.bat               # DOUBLE-CLICK TO RUN (live engine; leave window open)
+└── gold_rules/
+    ├── run_gold_rules.py            # main loop: MT5 wiring, journal, state, resilience, login guard
+    ├── engine.py                    # state machine WATCH→WAIT_CANDLE_CLOSE→CONFIRMED→ENTRY_READY→IN_TRADE→DONE/INVALIDATED
+    ├── bias.py                      # H1 EMA(20/50) bias — pure function
+    ├── levels.py                    # M30 fractal detection, merge, consumption, watch-select, TP/SL helpers
+    ├── config.yaml                  # all v1 atomics (§3.3.1 schema)
+    ├── config/
+    │   ├── credentials.env          # account 81486396 + MT5_TERMINAL_PATH (explicit)
+    │   └── settings.yaml            # ConfigManager mirror (live mode)
+    ├── state/engine_state.json      # §6.4 persistence — engine resumes after restarts
+    └── journal/YYYY-MM-DD.jsonl     # §6.1 journal — every M15 evaluation, one line
+```
+
+Reused from the existing execution bot (`frival/execution_bot/`): `MT5Connector`, `ConfigManager` (`is_demo_mode()` already fixed to honor `settings.yaml`), `OrderManager.execute_order()` (called with `dynamic_sizing=False` + `comment="GOLD_RULES_v1"` so the 0.01 lot cannot be silently rescaled) and `close_position()`. The blocking `monitor_break_even()` poller is **not** reused — the gold engine does its own non-blocking per-cycle BE/trail/invalidation via `TRADE_ACTION_SLTP`.
+
+### 10.5 Operational runbook (what the user does)
+
+1. Keep the PC awake (disable sleep/hibernate) and the FPMarkets MT5 terminal running.
+2. Double-click `frival\run_gold_rules.bat`.
+3. Verify in the console: `connected account 81486396 balance …` and `entering loop`.
+4. Leave the window open. It runs ~24h/day while gold is tradable, idles through the daily maintenance halt and weekends (§3.6), and re-evaluates every 60s on the latest completed M15 close.
+5. On PC/terminal restart: restart MT5, re-double-click the `.bat`. State resumes from `engine_state.json`; an open trade is always protected by broker-side SL/TP.
+6. **Manual XAUUSD trading is NOT allowed while the engine runs** (§1.4) — it contaminates the experiment and the 1-position gate.
+
+### 10.6 Deployment state (2026-09-15)
+
+- Roadmap steps 0–10: **complete** (skeleton, pre-flight, bias, levels, state machine, gates, entry, management, journaling/persistence/resilience, launcher).
+- **Step 11 (LIVE directly): in progress** — engine is running live since ~20:40 UTC 2026-09-15. Completes when the **first live order** fires with a confirmed ticket + journal entry + correctly buffered SL.
+- **Step 12 (review): pending** — acceptance review after 20–30 live trades.
+
+### 10.7 Verification evidence
+
+- **25/25 unit tests** (`frival/gold_rules/tests/`): bias orientation, fractal detection (5-bar + confirmation), consumption (wick ≠ break), directional watch selection, nearest-only arming, full Variant-B SELL→ENTRY lifecycle, gates (wide-SL rejection), BE-50, structural trail, invalidation close, external-position-close → DONE, bias-flip voiding, daily-loss gate.
+- **Real-data sanity walk** (`tests/sanity_walk.py`): 900 live XAUUSD M15 bars → 1 gated ENTRY (R:R 3.6, $0.83 risk), zero ERROR actions.
+- **Live cycle check:** one connected live cycle returned `ok`; engine correctly held WATCH_ZONE + BEARISH + resistance 4310.60, wrote journal + state, sent **zero orders** (correct).
+- **Three real bugs found & fixed during build:** (1) bias-flip guard compared the value against itself; (2) break events were lost because re-arming ran before edge detection (would have starved the engine of entries); (3) `dec.action` was never set to `ENTRY` on the order decision (journal would never have seen it).
+- **Fourth gap found & fixed (2026-09-15, §3.6):** `is_market_open()` returns `True` during the FPMarkets daily gold halt because `trade_mode` stays `4 (FULL)` — the heartbeat kept printing through a market closure. Fixed via **bar freshness**: if no new closed M15 bar appears for ~20 min, the engine reports `MARKET PAUSED (daily halt/weekend)` and idles, resuming automatically on the first new bar. Handles the daily halt, weekends, and holidays uniformly; supersedes the fixed-UTC-window design. **Console visibility added:** heartbeat on every new M15 bar + 10-min keep-alive with paused state + loud prints on ENTRY/BE/TRAIL/INVALIDATE/CLOSE + `gold_rules/status.py` status reporter.
+
+### 10.8 Acceptance criteria (design doc §7)
+
+- **PASS A (rules have edge):** ≥ 30 live trades with win-rate × R:R ≥ 1.
+- **PASS B (edge at sane risk):** ≥ 20 trades, per-trade risk never > $25, no margin call.
+- **FAIL→rebuild:** F1 < 15 trades in 4 weeks; F2 negative realized EV after 30 trades; F3 any margin call.
+- **ABORT:** margin call, account drop > $150/day, or a §1.4 manual-trading contamination flag persisting across >1 session.
+
+### 10.9 Known couplings & open flags (operator decisions pending)
+
+1. **`max_daily_loss: 200.0` in `frival/execution_bot/config/settings.yaml`** — calibrated for the old ~$3,287 balance (~6%); on the current ~$536 balance it is **~37.6%/day** for the ML pipeline alone. Gold + ML worst case ≈ 47% of equity in one day. **Recommendation: lower to ~$50 (~9.4%). NOT changed without explicit operator approval.**
+2. **Account-wide daily-loss check in the ML pipeline** (§2.4.3 of design doc): gold losses will still throttle ML pipeline trades on the same account (observed 2026-09-10 with manual gold losses: `daily loss limit: $-152.12`).
+3. **Balance fluctuation:** pre-flight $531.78 → $550.02 → $536.36 across sessions (ML pipeline trades). The engine's own caps are dollar-based, so this is absorbed; the $50/day cap is ~9% of current equity.
+4. **Three MT5 terminals on this machine** (FPMarkets, FXChoice, RoboForex) — the gold engine pins the FPMarkets path explicitly and has a **login-mismatch guard (R4)**: refuses to trade if the connected account ≠ configured `MT5_LOGIN`.
+
+### 10.10 Key references
+
+- **Design doc:** `ml-signal-service/docs/experiments/EXP-2026-03-RULEENGINE_gold-rules-engine-design.md` (v1.3, audit contract)
+- **Source evidence:** `ml-signal-service/notebooks/xauusd/xauusd-manual-trading.md` (9,455-line manual experiment transcript; §10 references cite this as "tu manual" via section numbers that live in the operator's external manual)
+- **Killed gold ML:** `ml-signal-service/notebooks/xauusd/xauusd_sell_macro_improved.ipynb` (TIPS+VIX retrain, precision 0.346)
+- **Engine code:** `frival/gold_rules/` (see §10.4)
+- **Launcher:** `frival/run_gold_rules.bat`
+
+---
+
+## 11. Environment
 
 - **Python:** `C:\Users\david\anaconda3\Library\envs\deaf_agent\python.exe` (conda `deaf_agent`)
 - **Key packages:** pandas, numpy, scikit-learn 1.5.2, xgboost, lightgbm, joblib, MetaTrader5, openai, openpyxl, yaml
-- **MT5:** Account 81486396, Server FPMarketsSC-Live, LIVE mode active (~$3,287 balance)
+- **MT5:** Account 81486396, Server FPMarketsSC-Live, LIVE mode active (~$536 balance as of 2026-09-15 20:40 UTC — was $3,287 on 09-09; funds moved to a $500-scale risk envelope per operator decision)
+- **MT5 terminal:** `C:\Program Files\FPMarkets MT5 Terminal\terminal64.exe` (the only one the gold engine uses; FXChoice and RoboForex terminals also exist on this machine — three total)
 - **API keys:** OpenRouter + Perplexity in `frival/config/.env` (gitignored)
 - **Model storage:** `.joblib` files under `ml-signal-service/models_bin/`
 

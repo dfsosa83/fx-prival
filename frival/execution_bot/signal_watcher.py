@@ -11,6 +11,7 @@ survive restarts.
 
 import json
 import os
+import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -36,15 +37,40 @@ def save_state(state: Dict[str, Any]):
         json.dump(state, f, indent=2, default=str)
 
 
+def _parse_signal_ts(ts: str) -> Optional[datetime]:
+    """Parse a signal timestamp to a tz-aware UTC datetime (None on failure)."""
+    try:
+        dt = datetime.fromisoformat(ts)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc)
+    except (ValueError, TypeError):
+        return None
+
+
 def read_new_signals(last_signal_id: Optional[str] = None) -> List[Dict[str, Any]]:
     """
     Read all FIRED signals that appeared after last_signal_id.
 
     Scans signal JSONL files sorted by date, reads only new entries.
     Returns signals in chronological order (oldest first).
+
+    Ordering is by the signal TIMESTAMP, not the signal_id string. Signal IDs are
+    prefixed by symbol (e.g. "GBPUSD_H1_SELL_..."), so a naive string comparison
+    sorts alphabetically by pair instead of chronologically — which wrongly skipped
+    EURUSD/GBPUSD whenever the last processed signal was USDCAD/USDCHF.
     """
     if not SIGNALS_DIR.exists():
         return []
+
+    last_ts = None
+    if last_signal_id:
+        # Derive the timestamp of the last processed signal from its ID suffix
+        # (format: SYMBOL_H1_SELL_YYYY-MM-DDTHH:MM:SSZ). If unparseable, fall back
+        # to accepting everything (safest: re-process, not skip).
+        m = re.search(r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})Z?$", last_signal_id)
+        if m:
+            last_ts = _parse_signal_ts(m.group(1))
 
     signals = []
     signal_files = sorted(SIGNALS_DIR.glob("**/*.jsonl"))
@@ -64,26 +90,21 @@ def read_new_signals(last_signal_id: Optional[str] = None) -> List[Dict[str, Any
                 if sig.get("final_decision") != "FIRED":
                     continue
 
-                # Skip already-processed signals
                 signal_id = sig.get("signal_id", "")
-                if last_signal_id and signal_id == last_signal_id:
-                    continue
-
-                # Skip if we've already passed this signal in the file
-                if last_signal_id and signal_id <= last_signal_id:
-                    continue
 
                 # Skip signals older than 24 hours or with unparseable timestamps
                 ts = sig.get("timestamp_utc", "")
-                try:
-                    sig_dt = datetime.fromisoformat(ts)
-                    if sig_dt.tzinfo is None:
-                        sig_dt = sig_dt.replace(tzinfo=timezone.utc)
+                sig_dt = _parse_signal_ts(ts)
+                if sig_dt is None:
+                    if ts:  # has timestamp but couldn't parse → skip
+                        continue
+                else:
                     age = (datetime.now(timezone.utc) - sig_dt).total_seconds()
                     if age > 86400:  # 24 hours
                         continue
-                except (ValueError, TypeError):
-                    if ts:  # has timestamp but couldn't parse → skip
+
+                    # Skip signals at or before the last processed timestamp
+                    if last_ts is not None and sig_dt <= last_ts:
                         continue
 
                 # Skip signals with zero trade levels (old format)

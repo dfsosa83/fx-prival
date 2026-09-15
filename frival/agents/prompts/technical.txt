@@ -24,9 +24,11 @@ Rules (apply in this order — be decisive but not overly strict):
 
 3. REJECT if the price is above all three key EMAs (10, 50, 200) AND RSI > 50.
 
-4. PRE-EVENT PRECAUTION: if `high_events_next_1h >= 1`, a major release is imminent
-   in the next hour. Return NEUTRAL — do NOT confirm or reject based on stale pre-release
-   data. (Exception: if 3+ CONFIRM conditions already hold, evaluating is still OK.)
+4. PRE-EVENT PRECAUTION: if `high_events_next_1h >= 3`, a CLUSTER of major releases is
+   imminent in the next hour. Return NEUTRAL — do NOT confirm or reject based on stale
+   pre-release data. A single scheduled release (1-2 events) is normal intraday noise and
+   must NOT trigger this rule. (Exception: if 2+ CONFIRM conditions already hold,
+   evaluating is still OK.)
 
 5. CONFIRM if at least 2 of these conditions hold:
    - Price below EMA50
@@ -52,8 +54,10 @@ The model is less confident. Be LOOSER on rejection and STRICTER on confirmation
 
 3. Same as standard — reject if price firmly above all EMAs with RSI > 50.
 
-4. PRE-EVENT PRECAUTION: `high_events_next_1h >= 1` → NEUTRAL
-   (exception if 4+ CONFIRM conditions already hold — evaluating is still OK).
+4. PRE-EVENT PRECAUTION: `high_events_next_1h >= 3` → NEUTRAL
+   (exception if 3+ CONFIRM conditions already hold — evaluating is still OK).
+   A single scheduled release (1-2 events) is normal intraday noise and must NOT
+   trigger this rule.
 
 5. CONFIRM only if at least 3 of these conditions hold (stricter):
    - Price below EMA50
@@ -65,9 +69,6 @@ The model is less confident. Be LOOSER on rejection and STRICTER on confirmation
    - hours_since_last_high between 2 and 24 (post-event trend windows)
 
 6. If none of the rejection rules fire AND fewer than 3 confirm conditions hold,
-   return NEUTRAL.
-
-5. If none of the rejection rules fire AND fewer than 3 confirm conditions hold,
    return NEUTRAL.
 
 ----- IMPORTANT NOTES -----

@@ -22,8 +22,10 @@ Rules (apply in this order — be decisive but not overly strict):
 
 3. REJECT if the price is above all three key EMAs (10, 50, 200) AND RSI > 50.
 
-4. PRE-EVENT PRECAUTION: if `high_events_next_1h >= 1`, return NEUTRAL.
-   (Exception: 3+ CONFIRM conditions already hold — evaluating is still OK.)
+4. PRE-EVENT PRECAUTION: if `high_events_next_1h >= 3` (a CLUSTER of releases), return
+   NEUTRAL. A single scheduled release (1-2 events) is normal intraday noise and must
+   NOT trigger this rule.
+   (Exception: 2+ CONFIRM conditions already hold — evaluating is still OK.)
 
 5. CONFIRM if at least 2 of these conditions hold:
    - Price below EMA50
@@ -47,7 +49,8 @@ Rules (apply in this order — be decisive but not overly strict):
 
 3. Same as standard — reject if price firmly above all EMAs with RSI > 50.
 
-4. PRE-EVENT: `high_events_next_1h >= 1` → NEUTRAL (4+ CONFIRM = exception).
+4. PRE-EVENT: `high_events_next_1h >= 3` (CLUSTER) → NEUTRAL (3+ CONFIRM = exception).
+   A single scheduled release (1-2 events) must NOT trigger this rule.
 
 5. CONFIRM only if at least 3 of these conditions hold (stricter):
    - Price below EMA50

@@ -24,8 +24,10 @@ You will receive:
 3. REJECT if the price is below all three key EMAs (10, 50, 200) AND RSI < 50.
    The trend is firmly down — CHF is already strengthening against USD.
 
-4. PRE-EVENT PRECAUTION: `high_events_next_1h >= 1` → NEUTRAL
-   (Exception: 3+ CONFIRM conditions already hold — evaluating is still OK.)
+4. PRE-EVENT PRECAUTION: `high_events_next_1h >= 3` (a CLUSTER of releases) → NEUTRAL.
+   A single scheduled release (1-2 events) is normal intraday noise and must NOT
+   trigger this rule.
+   (Exception: 2+ CONFIRM conditions already hold — evaluating is still OK.)
 
 5. CONFIRM if at least 2 of these conditions hold:
    - Price above EMA50 (USDCHF rising = dollar bid fading = reversal potential)
@@ -47,7 +49,8 @@ You will receive:
 
 3. Same as standard.
 
-4. PRE-EVENT: `high_events_next_1h >= 1` → NEUTRAL (4+ CONFIRM = exception).
+4. PRE-EVENT: `high_events_next_1h >= 3` (CLUSTER) → NEUTRAL (3+ CONFIRM = exception).
+   A single scheduled release (1-2 events) must NOT trigger this rule.
 
 5. CONFIRM only if at least 3 of these conditions hold (stricter):
    - Price above EMA50, MACD positive, RSI > 55
