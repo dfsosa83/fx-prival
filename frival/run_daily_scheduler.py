@@ -1,19 +1,27 @@
 # -*- coding: utf-8 -*-
-"""Frival Daily Pipeline Scheduler — DYNAMIC session window.
+"""Frival Daily Pipeline Scheduler — UTC-calibrated session window.
 
 Double-click run_daily.bat → this script runs the 5-pair pipeline at every
-hourly :01 target within the FULL valid FX session window.
+hourly :01 target within the FULL legitimate FX session window, every day,
+rolling over at midnight Panama.
 
-Why dynamic:
-    The session gate in main.py/signal_gate.py tests `latest["datetime"].hour`
-    where the H1 bar timestamp is BROKER SERVER time (MT5 epoch, not UTC).
-    FPMarkets server = UTC+3 (verified live). The gate allows server bar-open
-    hours [7,15] U [13,21] (=7..21), so the pipeline may run at :01 for server
-    run-hours 8..22 — i.e. ~07:00-19:00 UTC, 00-14:00 Panama.
+Calibration (verified live 2026-09-16):
+    The session gate in main.py / signal_gate.py tests
+    `latest["datetime"].hour` where the H1 bar datetime comes from
+    `pd.to_datetime(mt5_epoch, unit="s")` — which is a clean UTC clock
+    (a live probe at 13:39 UTC returned stored hour == real UTC hour == 13).
+    The gate accepts evaluated-bar hours in [7,16) U [13,22) = 07..21 UTC.
 
-    Instead of hardcoding a UTC/Panama table (which drifts if the broker
-    changes its DST offset), this scheduler queries the live server-UTC offset
-    from MT5 at launch and computes today's Panama-local targets from it.
+    A :01 run at UTC hour X evaluates the bar that opened at X:00 (it closed
+    at :00, so the run at :01 sees exactly that completed bar). Panama = UTC-5,
+    so valid PANAMA run hours are X-5 for X in 07..21  =>  02..16.
+
+    => Window: 02:01 .. 16:01 Panama local (15 hourly runs/day), the exact
+       London/NY window the models were calibrated on. No wasted predawn runs
+       outside the gate.
+
+Rollover: after the last target, waits until Panama midnight, recomputes the
+next day's targets, and continues — click once, leave the window open.
 
 No cron, no Task Scheduler. Just keep the terminal window open.
 """
@@ -25,10 +33,10 @@ from datetime import datetime, timedelta
 # ── Session config ─────────────────────────────────────────────────────────────
 # Run at :01 (let the H1 bar close first).
 TARGET_MINUTE = 1
-# Session-gate valid RUN server-hours: bar-open [7,21] => run hour = open+1 => [8,22].
-# Within these server hours the pipeline is inside the calibrated London/NY domain.
-SESSION_RUN_SERVER_HOURS = list(range(8, 23))     # 8..22 inclusive
-UTC_OFFSET = -5                                    # America/Panama (no DST)
+# Valid PANAMA run hours: gate allows evaluated-bar UTC hours 07..21,
+# Panama = UTC-5  =>  run hours 02..16.
+TARGET_HOURS = list(range(2, 17))        # 02..16 inclusive
+UTC_OFFSET = -5                           # America/Panama (no DST)
 PAIRS = ["EURUSD", "GBPUSD", "USDCHF", "USDCAD", "EURUSD_AGNOSTIC"]
 
 # ── Environment ────────────────────────────────────────────────────────────────
@@ -38,36 +46,6 @@ os.environ.setdefault("MERG_SHADOW_ONLY", "true")
 # Set CWD so frival imports resolve
 sys.path.insert(0, ".")
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
-
-
-def query_server_utc_offset() -> float:
-    """Live server-UTC offset (h) from MT5; fallback to +3.0 (FPMarkets)."""
-    try:
-        import MetaTrader5 as mt5
-        if mt5.initialize():
-            try:
-                t = mt5.symbol_info_tick("EURUSD")
-                if t is not None:
-                    return (t.time - time.time()) / 3600.0
-            finally:
-                mt5.shutdown()
-    except Exception as e:
-        print(f"[WARN] server-offset query failed, using +3.0: {e}")
-    return 3.0
-
-
-def panama_run_hours(server_offset: float) -> list:
-    """Map valid server run-hours to Panama-local hours (0..23, sorted).
-
-    server = utc + offset ; panama = utc - 5
-    => panama = server - offset - 5  =  server - offset + UTC_OFFSET
-    """
-    hours = set()
-    for sh in SESSION_RUN_SERVER_HOURS:
-        ph = sh - server_offset + UTC_OFFSET
-        if 0 <= ph <= 23:
-            hours.add(int(ph))
-    return sorted(hours)
 
 
 def now_local():
@@ -126,11 +104,11 @@ def run_pipeline():
 
 def _sleep_until_next_midnight():
     """Wait until Panama local midnight (00:00), printing a countdown."""
-    now = now_local()
-    tomorrow = now.date() + timedelta(days=1)
-    midnight = datetime(tomorrow.year, tomorrow.month, tomorrow.day, 0, 0, 0)
     while True:
-        wait = (midnight - now_local()).total_seconds()
+        now = now_local()
+        tomorrow = now.date() + timedelta(days=1)
+        midnight = datetime(tomorrow.year, tomorrow.month, tomorrow.day, 0, 0, 0)
+        wait = (midnight - now).total_seconds()
         if wait <= 0:
             break
         sys.stdout.write(f"\r[WAITING] Next day starts in {int(wait)//60:>3d} min "
@@ -143,25 +121,18 @@ def _sleep_until_next_midnight():
 if __name__ == "__main__":
     print(f"[START] Scheduler started at {_fmt(now_local())} local  (UTC{UTC_OFFSET:+d})")
     print(f"[START] Stays alive 24/7: runs every hourly :01 in the valid session "
-          f"window each day, rolls over at midnight. Click once; leave the "
-          f"window open.\n")
+          f"window (Panama {_fmt(build_targets(TARGET_HOURS)[0])} - "
+          f"{_fmt(build_targets(TARGET_HOURS)[-1])}) and rolls over at midnight.\n")
 
     run_count_total = 0
 
     while True:
-        server_offset = query_server_utc_offset()
-        run_hours = panama_run_hours(server_offset)
-        targets = build_targets(run_hours)          # today's targets
-        last_target = targets[-1] if targets else None
+        targets = build_targets(TARGET_HOURS)   # today's targets
+        last_target = targets[-1]
 
         now = now_local()
-        print(f"[DAY] {now.strftime('%Y-%m-%d')} — server UTC+{server_offset:.0f} h; "
-              f"valid run hours: {', '.join(f'{h:02d}:01' for h in run_hours)}")
-
-        if last_target is None:
-            print("[DAY] No valid session hours today; waiting for tomorrow.")
-            _sleep_until_next_midnight()
-            continue
+        print(f"[DAY] {now.strftime('%Y-%m-%d')} — valid run hours: "
+              f"{', '.join(f'{h:02d}:01' for h in TARGET_HOURS)}")
 
         # Immediate run if we're inside today's window (before last target)
         if now < last_target:
@@ -174,9 +145,9 @@ if __name__ == "__main__":
             pending = [t for t in targets if t > now_local()]
             if not pending:
                 print(f"[DONE] Today's session complete after {run_count_total} "
-                      f"run(s). Waiting for tomorrow at 00:01 local.\n")
+                      f"run(s). Waiting for tomorrow at 02:01 local.\n")
                 _sleep_until_next_midnight()
-                break       # roll over: recompute hours/offset for the new day
+                break       # roll over for the new day
 
             next_run = pending[0]
             wait = seconds_until(next_run)

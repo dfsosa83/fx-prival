@@ -13,8 +13,8 @@ if not exist "%PYTHON%" (
 echo ============================================================
 echo   Frival Daily Pipeline — Scheduler Mode ^(24/7 rolling^)
 echo   Pairs: EURUSD GBPUSD USDCHF USDCAD EURUSD_AGNOSTIC
-echo   Window: dynamic — every hourly :01 within the valid FX
-echo           session ^(currently 00:01-14:01 Panama, UTC-5^)
+echo   Window: 02:01-16:01 Panama ^(UTC-5^) — London/NY session,
+echo           the exact window the models were calibrated on.
 echo   Leave open: it rolls over to the next day automatically.
 echo ============================================================
 echo.
