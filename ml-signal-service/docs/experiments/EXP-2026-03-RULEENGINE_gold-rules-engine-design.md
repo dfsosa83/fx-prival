@@ -13,6 +13,7 @@
 | v1.1 | 2026-09-15 | **Audit pass.** Closed every ambiguity found by cross-referencing this document against `session-ses_056e.md` (the brainstorming session that produced it), `xauusd-manual-trading.md` (the source evidence), and `project_last_state.md` (the live system this engine runs alongside). Added: formal structural-level detection spec, formal H1-bias definition, SL/invalidation buffer logic, $-risk formula with contract-size verification, position-identification (comment-tag) scheme, manual/automated XAUUSD conflict policy, daily-loss-accounting scope (and its documented coupling limitation with the ML pipeline), gold session/maintenance-break handling, process-resilience requirement, and a corrected WATCH_ZONE rule (single-direction arming per H1 bias, not a "pair of levels"). No parameter in Section 5 changed; this pass adds precision, not new risk.
 | v1.2 | 2026-09-15 | **Operator decisions (live-direct).** Per explicit operator instruction: (1) **no shadow run — the experiment goes straight to LIVE** with real risk capital; (2) the gold engine is provisioned against a **$500 live risk-capital account** (separate from the main ~$3,287 account if the separate-account model in §1.3.1 is executed); (3) `run_daily.bat` ML pipeline continues unchanged on its configured window; (4) the two systems are to be independent. §1.1, §1.3/§1.3.1, §4, §7, §8, §9 updated. Risk parameters in §5 are **unchanged**; the $50 daily cap on a $500 account is 10%/day — arithmetic flagged in §1.3.1, accepted by the operator.
 | v1.3 | 2026-09-15 | **Pre-flight results (live broker, read-only).** Connected to 81486396/FPMarketsSC-Live: **balance $531.78, equity $531.78, zero open positions** — the "separate account" hypothesis (A1–A5) is **void**; this IS the $500-scale risk-capital account, already funded to target. XAUUSD spec validated against the broker: contract size **100.0 oz/lot ✓**, digits 2 ✓, point 0.01 ✓, volume_min 0.01 ✓, tick value $1 per $1 price move at 1.0 lot ✓, 0.01-lot margin ≈ $8.60 ✓, spread 19 pts ($0.19), trade_mode full. §1.3.1 rewritten to the resolved reality: single account, single terminal, A5 fallback engaged, and the ML-pipeline cross-throttle limitation (§2.4.3, §9) is **live**, not moot. **Flagged observation (operator decision required):** `max_daily_loss: 200.0` in the ML execution bot's `settings.yaml` is ~37.6% of the current $532 balance — untouched in this pass, recorded for review. Roadmap steps 0–1 marked done (≥ 2 of their checks completed via this pre-flight).
+| v1.4 | 2026-09-16 | **Claim C — breakout-continuation variant, LIVE by operator decision.** The A/B engine trades only level *tests* (price comes to a level). It was observed structurally idle during a clean 4330→4351 gold trend (no level tests = no trades). **Claim C adds a SECOND, independent trigger**: a solid-bodied M15 close **through** a structural level, in the direction of the H1 bias, enters at market immediately (momentum/continuation), with the just-broken level as the invalidation reference (SL = level + buffer, ~1R risk on failure). Same atomics as A/B (0.01 lot, $25/trade, $50/day, 1 position) enforced through the same gates; **order comment `GOLD_RULES_C`** so Claim-C PnL is attributable separately from A/B. **Shadow was explicitly rejected by the operator** ("mandatory place in live mode too, we cannot wait 2 weeks") — accepted and recorded here; the bounded-atomics argument (§1.1 operator-decision note) is the mitigation, and Claim C is graded **independently** in §7 (criterion C) with its own F2 gate. 6 new unit tests (31 total). §2.5, §2.8, §4, §7, §9 updated. No A/B parameter changed. |
 
 This document is the audit contract for the experiment. Any parameter change must be logged in version control with a reason, and any correction to this document's own logic must bump the Document Control table above.
 
@@ -253,6 +254,18 @@ This is the single most consistent setup in the manual experiment, and it maps d
 3. Next candle's **close** breaks the wick's local extreme → **ENTER at market**. *(→ `ENTRY_READY` → `IN_TRADE`.)*
 
 **Entry is ALWAYS by market at the moment of retest confirmation. No pending orders.** This eliminates the order-expiry problem from the manual experiment (pending orders at levels expired unfilled, or filled on false retests before a close ever confirmed them).
+
+### 2.5.1 Claim C — breakout-continuation (added v1.4, LIVE by operator decision)
+
+The A/B variants are **level-test** trades: price comes *to* a level, acts on it. They are structurally silent when price **trends between levels** — observed 2026-09-15/16 when gold rallied 4330→4351 and the engine never traded (all day no level test). **Claim C** trades the opposite event:
+
+**Variant C (trend-aligned breakout → enter at the break):**
+1. H1 bias = BULLISH or BEARISH (requires a directional bias; FLAT arms nothing).
+2. Watch the *intact structural level just ahead in the trend direction*: for BULLISH, the nearest intact swing-high above price; for BEARISH, the nearest intact swing-low below price.
+3. An M15 candle closes **through** that level with solid body (§2.1.3) → **ENTER at market immediately** on that close. No retest wait, no wick wait.
+4. **Just-broken level = invalidation reference.** SL sits a buffer beyond it (§2.7.1) so a failed breakout costs ~1R if price closes back through. TP1/TP2 = next intact structure beyond entry (§2.6.1). Management (BE-50, trail, invalidation) is identical to A/B (§2.6/§2.7).
+
+**Attribution and risk:** orders carry comment `GOLD_RULES_C` (A/B = `GOLD_RULES_v1`), so Claim-C PnL is measurable separately. The `$50/day` cap and `$25/trade`/1-position gates are shared and include *both* comments. **Live directly, shadow rejected by operator (recorded in v1.4).** Independent — a clean level-test day and a clean trending day are opposite regimes and must not be pooled. See §7 criterion C.
 
 ### 2.6 Management rules (S10) — between entry and exit
 
@@ -523,6 +536,7 @@ Graded independently, per §1.1's Claim A / Claim B split. **Since v1.2 (operato
 
 - **Claim A (do the rules have edge) — criterion A:** ≥ 30 live trades with win rate × R:R ≥ 1 (i.e., the EV is positive at 0.01 lots).
 - **Claim B (does edge survive at sane risk) — criterion B:** ≥ 20 trades with per-trade risk never exceeding $25 (§2.4 Gate 3, using the confirmed contract-size formula) and no margin call.
+- **Claim C (does the breakout-continuation variant have edge — v1.4) — criterion C:** ≥ 20 **Claim-C trades** (comment `GOLD_RULES_C`), per-trade risk ≤ $25, no margin call, and EV/R > +0.3 over those trades. Graded **separately** from A/B: level-test days and trending days are different regimes; pooling would mask a failure in either.
 
 The experiment is a **PASS** if EITHER A or B is met (per the original design intent — A alone proves the logic works; B alone proves the sizing discipline holds even if sample size for A is still thin).
 

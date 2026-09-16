@@ -1,7 +1,7 @@
 # Project Last State — Frival Trading System
 
-**Last updated:** 2026-09-15T20:50-05:00
-**Status:** LIVE — 5-pair ML pipeline (4 SELL + 1 agnostic in shadow) + **NEW standalone rule-based Gold Engine (XAUUSD) LIVE** since 2026-09-15 20:40 UTC. Single account 81486396 (~$536–550 balance). Daily scheduler operational (`run_daily.bat`). Gold engine operational (`run_gold_rules.bat`) — Step 11 of EXP-2026-03-RULEENGINE in progress (first live trade pending), Step 12 (20–30 trade review) pending.
+**Last updated:** 2026-09-16
+**Status:** LIVE — 5-pair ML pipeline (4 SELL + 1 agnostic in shadow) + **standalone rule-based Gold Engine (XAUUSD) LIVE** with **two entry modes: Claim A/B (level-test, comment `GOLD_RULES_v1`) + Claim C (breakout-continuation, comment `GOLD_RULES_C`) — C live by operator decision 2026-09-16 (shadow explicitly rejected, "cannot wait 2 weeks")**. Single account 81486396 (~$540 balance). Daily scheduler operational (`run_daily.bat`, UTC-calibrated window 02:01–16:01 Panama, 15 runs/day, rolls across days). Gold engine operational (`run_gold_rules.bat`) — Step 11 of EXP-2026-03-RULEENGINE in progress (first trades pending for both A/B and C), Step 12 (20–30 trade review) pending. FX EV/R baseline measured: +0.39 over 8 current-window trades (EURUSD ≈ 0).
 
 ---
 
@@ -314,11 +314,12 @@ Reused from the existing execution bot (`frival/execution_bot/`): `MT5Connector`
 5. On PC/terminal restart: restart MT5, re-double-click the `.bat`. State resumes from `engine_state.json`; an open trade is always protected by broker-side SL/TP.
 6. **Manual XAUUSD trading is NOT allowed while the engine runs** (§1.4) — it contaminates the experiment and the 1-position gate.
 
-### 10.6 Deployment state (2026-09-15)
+### 10.6 Deployment state (2026-09-15 → 16)
 
 - Roadmap steps 0–10: **complete** (skeleton, pre-flight, bias, levels, state machine, gates, entry, management, journaling/persistence/resilience, launcher).
-- **Step 11 (LIVE directly): in progress** — engine is running live since ~20:40 UTC 2026-09-15. Completes when the **first live order** fires with a confirmed ticket + journal entry + correctly buffered SL.
-- **Step 12 (review): pending** — acceptance review after 20–30 live trades.
+- **v1.4 (2026-09-16): Claim C — breakout-continuation variant LIVE.** Second engine trigger: solid M15 close through a structural level in the H1-bias direction → market entry immediately, just-broken level as invalidation (SL = level + buffer, ~1R failure risk). Same atomics as A/B; separate comment `GOLD_RULES_C` for PnL attribution. **Shadow rejected by operator — live directly.** 6 new unit tests (31 total).
+- **Step 11 (LIVE directly): in progress** — engine running live; first A/B or C trade completes it.
+- **Step 12 (review): pending** — acceptance review after 20–30 trades (A/B) + 20 (C).
 
 ### 10.7 Verification evidence
 

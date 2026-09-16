@@ -108,11 +108,12 @@ def journal(dt: datetime, entry: dict) -> None:
         f.write(json.dumps(line, default=str) + "\n")
 
 
-def session_pnl(comment: str, day: datetime) -> float:
+def session_pnl(comments: list, day: datetime) -> float:
     """Comment-tagged realized XAUUSD PnL for today (§2.4.2).
 
-    Reads MT5 history deals filtered to XAUUSD + engine comment. Any manual
-    gold trade (different comment) is excluded from this sum by design.
+    Sums engine comments only (since Claim C, both `GOLD_RULES_v1` and
+    `GOLD_RULES_C` are engine orders). Any manual gold trade (different
+    comment) is excluded from this sum by design.
     """
     try:
         import MetaTrader5 as mt5
@@ -122,7 +123,7 @@ def session_pnl(comment: str, day: datetime) -> float:
             return 0.0
         total = 0.0
         for d in deals:
-            if d.symbol == "XAUUSD" and getattr(d, "comment", "") == comment:
+            if d.symbol == "XAUUSD" and getattr(d, "comment", "") in comments:
                 total += d.profit
         return float(total)
     except Exception:
@@ -136,6 +137,9 @@ class GoldRunner:
         self.state, self._state_meta = load_state()
         self.dry = dry
         self.comment = self.cfg.get("order", {}).get("comment", "GOLD_RULES_v1")
+        # Both engine variants (A/B and Claim C) count toward the $50 daily cap.
+        self._engine_comments = [self.comment,
+                                 self.cfg.get("breakout", {}).get("comment", "GOLD_RULES_C")]
 
         res_cfg = self.cfg.get("resilience", {})
         self.max_consecutive_errors = int(res_cfg.get("max_consecutive_errors", 5))
@@ -405,7 +409,7 @@ class GoldRunner:
             bid = float(m15["close"].iloc[-1])
             ask = bid + 0.2
 
-        pnl = session_pnl(self.comment, datetime.utcnow()) if not self.dry else self.dry_pnl
+        pnl = session_pnl(self._engine_comments, datetime.utcnow()) if not self.dry else self.dry_pnl
 
         snap = eng_module.Snapshot(
             m15_df=m15, m30_df=m30, h1_df=h1,
@@ -521,7 +525,7 @@ class GoldRunner:
                         print(f"[gold] [{datetime.utcnow().strftime('%H:%M:%S')}Z] {status} — "
                               f"state {self.state.state}, bias {self.state.h1_bias}, "
                               f"positions {self.positions_open()}, session PnL "
-                              f"{session_pnl(self.comment, datetime.utcnow()) if not self.dry else self.dry_pnl:.2f}")
+                              f"{session_pnl(self._engine_comments, datetime.utcnow()) if not self.dry else self.dry_pnl:.2f}")
             except KeyboardInterrupt:
                 print("\n[gold] stopped by user — state persisted, resumes next launch")
                 break

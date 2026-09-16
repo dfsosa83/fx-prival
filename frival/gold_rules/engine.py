@@ -193,6 +193,20 @@ class GoldRulesEngine:
         order_cfg = cfg.get("order", {})
         self.comment = order_cfg.get("comment", "GOLD_RULES_v1")
 
+        # ── Claim C — breakout-continuation variant (design doc v1.4) ─────
+        # A SECOND, separate trigger: when price closes (solid body) THROUGH a
+        # structural level in the direction of the H1 bias, enter at market
+        # immediately — riding the momentum instead of waiting for a retest.
+        # Same atomics as A/B (0.01 lot, $25 risk, $50/day, 1 position) but a
+        # different order comment so per-variant PnL attribution is clean.
+        breakout_cfg = cfg.get("breakout", {})
+        self.breakout_enabled = bool(breakout_cfg.get("enabled", False))
+        self.breakout_comment = breakout_cfg.get("comment", "GOLD_RULES_C")
+        self.breakout_min_rr = float(breakout_cfg.get("min_rr", self.min_rr))
+        # breakout entry steps ONE level beyond the broken level (risk = the
+        # just-broken level plus the SL buffer) so a failed break costs ~1R.
+        self.breakout_rr_enforce = bool(breakout_cfg.get("rr_enforce", True))
+
     # ── helpers ────────────────────────────────────────────────────────────────
 
     def _bar_closed(self, bar_time, utc_now: datetime) -> bool:
@@ -306,10 +320,15 @@ class GoldRulesEngine:
             "rr": rr,
         }
 
-    def _run_gates(self, snap: Snapshot, metrics: dict) -> Dict[str, Any]:
-        """All three hard gates §2.4. No resize, no relax."""
+    def _run_gates(self, snap: Snapshot, metrics: dict, min_rr: float | None = None) -> Dict[str, Any]:
+        """All three hard gates §2.4. No resize, no relax.
+
+        `min_rr` overrides the A/B default (used by Claim C, which has its
+        own R:R requirement from the breakout config).
+        """
+        rr_threshold = min_rr if min_rr is not None else self.min_rr
         loc = bool(metrics["loc_ok"])
-        rr = bool(metrics["rr"] >= self.min_rr)
+        rr = bool(metrics["rr"] >= rr_threshold)
         risk = bool(metrics["risk_usd"] <= self.max_risk_usd)
         concurrency = bool(snap.open_positions < self.max_positions)
         day = bool(snap.today_realized_pnl > -self.daily_loss_cap) and not (
@@ -384,6 +403,19 @@ class GoldRulesEngine:
                 stable.last_action = dec.action
                 stable.last_reason = dec.reason
                 return stable, dec
+
+        # ── Claim C — breakout-continuation trigger (checked first) ─────────
+        # A clean trend-aligned breakout fires immediately (market entry at the
+        # closing bar), ahead of the A/B retest-waiting path. If C fills a
+        # trade, it consumes the level and WATCH clears; A/B never sees it.
+        if stable.state == WATCH_ZONE:
+            breakout_state, breakout_dec = self._check_breakout(
+                snap, stable, dec, levels_df, atr_m15)
+            if breakout_dec.action == ENTRY:
+                breakout_dec.state = breakout_state.state
+                stable.last_action = breakout_dec.action
+                stable.last_reason = breakout_dec.reason
+                return breakout_state, breakout_dec
 
         # ── WATCH_ZONE with an armed level: edge events first ──────────────────
         # CRITICAL ordering: edge detection (break/rejection) runs against the
@@ -617,6 +649,125 @@ class GoldRulesEngine:
             "open": float(bar["open"]),
             "close": float(bar["close"]),
         }
+
+    # ── Claim C — breakout-continuation trigger ────────────────────────────────
+    def _check_breakout(self, snap: Snapshot, state: EngineState, dec: Decision,
+                        levels_df: pd.DataFrame, atr_m15: float,
+                        ) -> tuple[EngineState, Decision]:
+        """Evaluate a trend-aligned structural breakout (Claim C).
+
+        Logic (design doc v1.4):
+          BULLISH bias  -> watch nearest intact swing_high ABOVE the bar close;
+                           a solid M15 close THROUGH it = BUY at market.
+          BEARISH bias  -> watch nearest intact swing_low BELOW the bar close;
+                           a solid M15 close THROUGH it = SELL at market.
+          FLAT bias     -> nothing.
+
+        IMPORTANT: level selection uses the BAR CLOSE (the event price), not
+        the live bid — the close is the reference for "has price crossed this
+        level". A/B atomics apply through the same gates; only the order
+        comment differs (GOLD_RULES_C) so Claim-C PnL is attributable.
+        """
+        if not self.breakout_enabled:
+            return state, dec
+        if state.state != WATCH_ZONE or state.active_trade is not None:
+            return state, dec
+
+        bias = state.h1_bias
+        if bias not in (bias_mod.BULLISH, bias_mod.BEARISH):
+            return state, dec
+
+        bar = snap.last_bar()
+        if not self._solid(bar):
+            return state, dec
+
+        close = float(bar["close"])
+        prev_close = float(snap.m15_df.iloc[-2]["close"]) if len(snap.m15_df) >= 2 else close
+
+        # Consumption must EXCLUDE the current bar: the break bar itself is the
+        # event that consumes the level, so a level set computed over the full
+        # df would mark it consumed in the same evaluation C must register the
+        # cross (same ordering rule as A/B edge detection).
+        res_pre = levels_mod.build_active_levels(
+            snap.m30_df, lookback=self.lookback_m30, merge_atr_mult=self.merge_atr_mult)
+        levels_pre = levels_mod.active_level_status(
+            res_pre["levels"], snap.m15_df.iloc[:-1], self.solid_body_frac)
+        if levels_pre is None or levels_pre.empty:
+            return state, dec
+
+        intact = levels_pre[levels_pre["consumed"] == False]  # noqa: E712
+        if intact.empty:
+            return state, dec
+
+        if bias == bias_mod.BULLISH:
+            # level just crossed: an intact swing_high it between prev_close and
+            # close (price was under it, now above). Take the NEAREST one to close.
+            cand = intact[(intact["kind"] == "swing_high")
+                          & (intact["price"] < close)
+                          & (intact["price"] > prev_close)]
+            direction = "buy"
+            lvl = cand.sort_values("price").iloc[-1] if not cand.empty else None
+        else:
+            # bearish: intact swing_low crossed from above.
+            cand = intact[(intact["kind"] == "swing_low")
+                          & (intact["price"] > close)
+                          & (intact["price"] < prev_close)]
+            direction = "sell"
+            lvl = cand.sort_values("price").iloc[0] if not cand.empty else None
+
+        if lvl is None:
+            return state, dec
+
+        level_price = float(lvl["price"])
+        broke = (close > level_price) if direction == "buy" else (close < level_price)
+        if not broke:
+            return state, dec
+
+        # Build the trade using the standard entry math (SL buffered beyond the
+        # broken level, TP = next intact structure, R:R + $risk via gates).
+        metrics = self._entry_metrics(snap, direction, level_price, levels_df, atr_m15)
+        if metrics is None:
+            return state, dec
+        metrics["loc_ok"] = True  # Gate 1 (location) is inherently satisfied: the
+                                  # close THROUGH the level is the entry itself.
+        gates = self._run_gates(snap, metrics, min_rr=self.breakout_min_rr)
+        dec.gate_results = gates
+        if not gates["pass"]:
+            return state, dec
+
+        # Gate 3 concurrency re-check at order time (§2.4.1)
+        if snap.open_positions >= self.max_positions:
+            return state, dec
+
+        state.active_trade = {
+            "entry": metrics["entry"],
+            "sl": metrics["sl"],
+            "tp1": metrics["tp1"],
+            "tp2": metrics["tp2"],
+            "invalidation": metrics["invalidation"],
+            "be_triggered": False,
+            "comment": self.breakout_comment,
+            "variant": "C",
+        }
+        dec.order = {
+            "symbol": self.symbol,
+            "action": direction,
+            "lot_size": self.fixed_lot,
+            "stop_loss": metrics["sl"],
+            "take_profit": metrics["tp1"],
+            "dynamic_sizing": False,
+            "comment": self.breakout_comment,
+        }
+        dec.reason = (f"CLAIM-C BREAKOUT {direction.upper()} 0.01 @{metrics['entry']:.2f} "
+                      f"through {level_price:.2f} | SL {metrics['sl']:.2f} TP1 {metrics['tp1']:.2f} "
+                      f"R:R {metrics['rr']:.2f} risk ${metrics['risk_usd']:.2f}")
+        dec.action = ENTRY
+        state.state = IN_TRADE
+        state.direction = direction
+        state.watched_level = None      # C consumed the level; A/B re-arms fresh
+        state.broken_level = None
+        state.confirm_candle = None
+        return state, dec
 
     def _manage_trade(self, snap: Snapshot, state: EngineState, dec: Decision,
                       levels_df: pd.DataFrame, atr_m15: float) -> tuple[EngineState, Decision]:

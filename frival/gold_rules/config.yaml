@@ -44,6 +44,17 @@ order:
   comment: "GOLD_RULES_v1"
   dynamic_sizing: false
 
+# Claim C — breakout-continuation variant (design doc v1.4).
+# SECOND trigger: trend-aligned structural breakout closes through a level
+# and enters at market immediately. Same atomics as A/B (lot/$risk/$daily/
+# 1-position) enforced through the same gates; separate order comment so
+# per-variant PnL is attributable. LIVE per operator decision 2026-09-16.
+breakout:
+  enabled: true
+  comment: "GOLD_RULES_C"
+  min_rr: 1.5
+  rr_enforce: true
+
 resilience:
   max_consecutive_errors: 5       # ~75 min of failed cycles before hard stop
   error_backoff_seconds: 60
