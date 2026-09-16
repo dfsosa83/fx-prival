@@ -2,7 +2,7 @@
 
 **Pairs:** EURUSD (0.276) | GBPUSD (0.334) | USDCHF (0.365) | USDCAD (0.341) | EURUSD_AGNOSTIC (0.5, SHADOW)
 **Execution mode:** LIVE (orders placed in MT5). AGNOSTIC in shadow — logs only, no trades.
-**Schedule:** 8:01, 9:01, 10:01, 11:01 AM Panama (UTC-5) = 13:01–16:01 UTC
+**Schedule:** DYNAMIC — `run_daily.bat` queries the live broker server clock at launch and runs at every hourly `:01` in the valid session window. With FPMarkets at server=UTC+3 (current): **00:01–14:01 Panama local** (15 runs/day), covering the full London/NY calibration domain (server run-hours 08–22). If you click mid-window it runs immediately, then every remaining `:01` until 14:01, then exits.
 **MERG:** ON in shadow mode (log-only) — built into the Step 2 command.
 
 ---
@@ -20,6 +20,13 @@ EURUSD AND GBPUSD must be visible in Market Watch.
 
 ## Step 2 — Run all pairs + auto-execute at each hour (:01)
 
+**Simplest:** double-click `frival\run_daily.bat`. The scheduler starts, prints the
+computed session window, runs immediately if inside it, then fires at every
+hourly `:01` until the last valid target (14:01 Panama with server+3), then exits.
+
+<details>
+<summary>Manual (Git Bash) alternative — same as before</summary>
+
 Open Git Bash in `frival/` directory:
 
 ```bash
@@ -31,6 +38,7 @@ MERG_ENABLED=true MERG_SHADOW_ONLY=true \
 
 This generates signals for all 5 pairs (EURUSD_AGNOSTIC in SHADOW — log only, no MT5 orders), then auto-executes any FIRED orders through MT5.
 Wait 90–120 seconds for completion.
+</details>
 
 ---
 
