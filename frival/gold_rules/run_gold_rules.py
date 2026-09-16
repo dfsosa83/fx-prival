@@ -249,11 +249,19 @@ class GoldRunner:
         return frames["M15"], frames["M30"], frames["H1"]
 
     def positions_open(self) -> int:
-        """§2.4.1: count ALL XAUUSD positions regardless of comment."""
-        if self.dry:
-            return self.dry_positions
-        pos = self.conn.get_positions("XAUUSD")
-        return len(pos) if pos else 0
+        """§2.4.1: count ALL XAUUSD positions regardless of comment.
+
+        Failure-tolerant: a transient MT5 IPC error (e.g. the ML bot's own
+        connection activity on this terminal) must NEVER kill the loop or
+        invent a phantom position — return the last known count instead.
+        """
+        try:
+            if self.dry:
+                return self.dry_positions
+            pos = self.conn.get_positions("XAUUSD")
+            return len(pos) if pos else 0
+        except Exception:
+            return getattr(self, "_last_positions_count", 0)
 
     # ── order actions ──────────────────────────────────────────────────────────
     def execute_order(self, order: dict) -> dict:
@@ -409,13 +417,21 @@ class GoldRunner:
             bid = float(m15["close"].iloc[-1])
             ask = bid + 0.2
 
+        # Gate 3 concurrency check inside the loop: cache the count so a
+        # transient read failure falls back to the last known value.
+        try:
+            open_n = self.positions_open()
+            self._last_positions_count = open_n
+        except Exception:
+            open_n = getattr(self, "_last_positions_count", 0)
+
         pnl = session_pnl(self._engine_comments, datetime.utcnow()) if not self.dry else self.dry_pnl
 
         snap = eng_module.Snapshot(
             m15_df=m15, m30_df=m30, h1_df=h1,
             utc_now=last_time + timedelta(minutes=16),
             bid=bid, ask=ask,
-            open_positions=self.positions_open(),
+            open_positions=open_n,
             today_realized_pnl=pnl,
         )
 
@@ -522,10 +538,17 @@ class GoldRunner:
                         last_alive_print = time.time()
                         paused = getattr(self, "_market_paused", False)
                         status = "MARKET PAUSED (daily halt/weekend — engine idle, resumes automatically)" if paused else "ALIVE"
+                        try:
+                            pos_n = self.positions_open()
+                            self._last_positions_count = pos_n
+                            pnl_n = session_pnl(self._engine_comments, datetime.utcnow()) if not self.dry else self.dry_pnl
+                            if not self.dry:
+                                self.dry_pnl = pnl_n  # harmless no-op in live
+                        except Exception:
+                            pos_n, pnl_n = getattr(self, "_last_positions_count", 0), 0.0
                         print(f"[gold] [{datetime.utcnow().strftime('%H:%M:%S')}Z] {status} — "
                               f"state {self.state.state}, bias {self.state.h1_bias}, "
-                              f"positions {self.positions_open()}, session PnL "
-                              f"{session_pnl(self._engine_comments, datetime.utcnow()) if not self.dry else self.dry_pnl:.2f}")
+                              f"positions {pos_n}, session PnL {pnl_n:.2f}")
             except KeyboardInterrupt:
                 print("\n[gold] stopped by user — state persisted, resumes next launch")
                 break
