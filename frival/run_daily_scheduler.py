@@ -75,12 +75,12 @@ def now_local():
     return datetime.utcnow() + timedelta(hours=UTC_OFFSET)
 
 
-def build_targets(run_hours: list):
-    """Today's :01 targets (Panama local) for the given hours."""
-    today = now_local().date()
+def build_targets(run_hours: list, day=None):
+    """:01 targets (Panama local) for the given hours on `day` (default today)."""
+    day = day or now_local().date()
     targets = []
     for h in run_hours:
-        targets.append(datetime(today.year, today.month, today.day, h, TARGET_MINUTE, 0))
+        targets.append(datetime(day.year, day.month, day.day, h, TARGET_MINUTE, 0))
     return targets
 
 
@@ -124,50 +124,71 @@ def run_pipeline():
     print(f"[LIVE] Pipeline completed in {elapsed:.0f}s  ({_fmt(now_local())})\n")
 
 
-# ── Main loop ──────────────────────────────────────────────────────────────────
-if __name__ == "__main__":
-    server_offset = query_server_utc_offset()
-    run_hours = panama_run_hours(server_offset)
-    targets = build_targets(run_hours)
-    last_target = targets[-1] if targets else None
-
-    print(f"[START] Scheduler started at {_fmt(now_local())} local  (UTC{UTC_OFFSET:+d})")
-    print(f"[START] Server-UTC offset: +{server_offset:.0f}h  ->  valid run hours "
-          f"today: {', '.join(f'{h:02d}:01' for h in run_hours)}\n")
-
-    if last_target is None:
-        print("[DONE] No valid session hours today.")
-        sys.exit(0)
-
-    # 1) Immediate first run (matching legacy behavior) unless past the last target
-    if now_local() < last_target:
-        print(f"[LIVE] Running initial pipeline... ({_fmt(now_local())})\n")
-        run_pipeline()
-    else:
-        print("[DONE] Already past the final valid target for today — "
-              "no executions remaining.\n")
-        sys.exit(0)
-
-    # 2) Loop for remaining :01 targets
-    run_count = 1
+def _sleep_until_next_midnight():
+    """Wait until Panama local midnight (00:00), printing a countdown."""
+    now = now_local()
+    tomorrow = now.date() + timedelta(days=1)
+    midnight = datetime(tomorrow.year, tomorrow.month, tomorrow.day, 0, 0, 0)
     while True:
-        pending = [t for t in targets if t > now_local()]
-        if not pending:
-            print(f"[DONE] Last execution complete. Session ended after "
-                  f"{run_count} run(s).  ({_fmt(now_local())})\n")
+        wait = (midnight - now_local()).total_seconds()
+        if wait <= 0:
             break
+        sys.stdout.write(f"\r[WAITING] Next day starts in {int(wait)//60:>3d} min "
+                         f"(at 12:00 AM local)   ")
+        sys.stdout.flush()
+        time.sleep(min(wait, 300))      # wake every 5 min to re-check alignment
 
-        next_run = pending[0]
-        wait = seconds_until(next_run)
-        if wait < 1.0:
-            print(f"\n[LIVE] Running pipeline... ({_fmt(now_local())})\n")
-            run_pipeline()
-            run_count += 1
+
+# ── Main loop (ROLLING — stays alive across days) ──────────────────────────────
+if __name__ == "__main__":
+    print(f"[START] Scheduler started at {_fmt(now_local())} local  (UTC{UTC_OFFSET:+d})")
+    print(f"[START] Stays alive 24/7: runs every hourly :01 in the valid session "
+          f"window each day, rolls over at midnight. Click once; leave the "
+          f"window open.\n")
+
+    run_count_total = 0
+
+    while True:
+        server_offset = query_server_utc_offset()
+        run_hours = panama_run_hours(server_offset)
+        targets = build_targets(run_hours)          # today's targets
+        last_target = targets[-1] if targets else None
+
+        now = now_local()
+        print(f"[DAY] {now.strftime('%Y-%m-%d')} — server UTC+{server_offset:.0f} h; "
+              f"valid run hours: {', '.join(f'{h:02d}:01' for h in run_hours)}")
+
+        if last_target is None:
+            print("[DAY] No valid session hours today; waiting for tomorrow.")
+            _sleep_until_next_midnight()
             continue
 
-        print(f"[WAITING] Next run at {_fmt(next_run)} local  ({wait:.0f}s from now)")
-        countdown_loop(wait, next_run)
+        # Immediate run if we're inside today's window (before last target)
+        if now < last_target:
+            print(f"[LIVE] Running initial pipeline... ({_fmt(now)})")
+            run_pipeline()
+            run_count_total += 1
 
-        print(f"\n[LIVE] Running pipeline... ({_fmt(now_local())})\n")
-        run_pipeline()
-        run_count += 1
+        # Fire every remaining :01 target, then roll to the next day
+        while True:
+            pending = [t for t in targets if t > now_local()]
+            if not pending:
+                print(f"[DONE] Today's session complete after {run_count_total} "
+                      f"run(s). Waiting for tomorrow at 00:01 local.\n")
+                _sleep_until_next_midnight()
+                break       # roll over: recompute hours/offset for the new day
+
+            next_run = pending[0]
+            wait = seconds_until(next_run)
+            if wait < 1.0:
+                print(f"[LIVE] Running pipeline... ({_fmt(now_local())})")
+                run_pipeline()
+                run_count_total += 1
+                continue
+
+            print(f"[WAITING] Next run at {_fmt(next_run)} local  ({wait:.0f}s from now)")
+            countdown_loop(wait, next_run)
+
+            print(f"[LIVE] Running pipeline... ({_fmt(now_local())})")
+            run_pipeline()
+            run_count_total += 1
