@@ -1,7 +1,7 @@
 # Project Last State — Frival Trading System
 
-**Last updated:** 2026-09-16
-**Status:** LIVE — 5-pair ML pipeline (4 SELL + 1 agnostic in shadow) + **standalone rule-based Gold Engine (XAUUSD) LIVE** with **two entry modes: Claim A/B (level-test, comment `GOLD_RULES_v1`) + Claim C (breakout-continuation, comment `GOLD_RULES_C`) — C live by operator decision 2026-09-16 (shadow explicitly rejected, "cannot wait 2 weeks")**. Single account 81486396 (~$540 balance). Daily scheduler operational (`run_daily.bat`, UTC-calibrated window 02:01–16:01 Panama, 15 runs/day, rolls across days). Gold engine operational (`run_gold_rules.bat`) — Step 11 of EXP-2026-03-RULEENGINE in progress (first trades pending for both A/B and C), Step 12 (20–30 trade review) pending. FX EV/R baseline measured: +0.39 over 8 current-window trades (EURUSD ≈ 0).
+**Last updated:** 2026-09-17
+**Status:** LIVE — 5-pair ML pipeline (4 SELL + 1 agnostic in shadow) + **standalone rule-based Gold Engine (XAUUSD) LIVE** with **two entry modes: Claim A/B (level-test, comment `GOLD_RULES_v1`) + Claim C (breakout-continuation, comment `GOLD_RULES_C`) — C live by operator decision 2026-09-16 (shadow explicitly rejected, "cannot wait 2 weeks")**. Single account 81486396 (~$526 balance, manual-trading drawdown recovered). Daily scheduler operational (`run_daily.bat`, UTC-calibrated window 02:01–16:01 Panama, 15 runs/day, rolls across days). Gold engine operational (`run_gold_rules.bat`). **NEW (2026-09-17): EXP-2026-04 spec approved — FX rule-engine backtest over EURUSD/USDJPY/GBPUSD/USDCAD history; ownership rule recorded (one engine per pair, USDJPY = first live target if EV/R>+0.3); measurement study in progress, no live orders.**
 
 ---
 
