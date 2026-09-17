@@ -9,6 +9,7 @@ Cache-first: MT5 data is saved to CSV after fetch so backtests can run offline.
 """
 
 import os
+import time
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -136,20 +137,38 @@ def _fetch_mt5(
 
     login, password, server, mt5_path = _load_env()
 
-    # ── Initialize MT5 ────────────────────────────────────────────────────
-    if mt5_path:
-        if not mt5.initialize(path=mt5_path):
-            raise ConnectionError(f"MT5 initialize() failed: {mt5.last_error()}")
-    else:
-        if not mt5.initialize():
-            raise ConnectionError(f"MT5 initialize() failed: {mt5.last_error()}")
+    # ── Initialize MT5 (hardened vs transient -6 'Authorization failed') ──
+    # The package's registry may point at a terminal whose session is
+    # momentarily unauthorized (observed 2026-09-17 18:09Z mid-scheduler).
+    # With an explicit path + login, initialization is deterministic. On a
+    # transient failure we retry once with backoff before surfacing the error,
+    # so the hourly scheduler never crashes on a momentary blip.
+    if not mt5_path:
+        raise ConnectionError(
+            "MT5_PATH not configured in frival/config/.env — the scheduler "
+            "cannot initialize the correct terminal deterministically."
+        )
+
+    ok = False
+    err = None
+    for attempt in range(2):
+        ok = mt5.initialize(path=mt5_path)
+        if ok:
+            break
+        err = mt5.last_error()
+        print(f"[mt5] initialize() attempt {attempt + 1} failed: {err} — retrying")
+        time.sleep(3)
+    if not ok:
+        raise ConnectionError(f"MT5 initialize() failed: {err}")
 
     print(f"[mt5] Connected to terminal")
 
-    # ── Login if credentials provided ─────────────────────────────────────
+    # ── Login if credentials provided (explicit auth, gold-engine pattern) ──
     if login and password and server:
-        if not mt5.login(int(login), password, server):
-            print(f"[mt5] Warning: login failed: {mt5.last_error()}")
+        logged = mt5.login(int(login), password, server)
+        if not logged:
+            # session may already be authorized; do not hard-fail on login
+            print(f"[mt5] Warning: login() not confirmed: {mt5.last_error()}")
         else:
             print(f"[mt5] Logged in to {server} (account {login})")
 
