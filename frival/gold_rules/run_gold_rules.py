@@ -302,14 +302,22 @@ class GoldRunner:
     def cycle(self) -> str:
         """Evaluate on the latest closed M15 bar. Returns 'ok' | 'error'."""
         # Ensure MT5 is initialized: live via connector, dry via _ensure_mt5.
-        # (Bugfix: previously the `or` short-circuit skipped connect() in dry
-        #  mode, leaving MT5 uninitialized so the session check idled forever.)
-        if self.dry:
-            if not self._ensure_mt5():
-                return "error"
-        elif not (self.conn and self.conn.validate_connection()):
-            if not self.connect():
-                return "error"
+        # HARDENING (2026-09-18): a shared-terminal native IPC failure can kill
+        # the process with NO Python exception (observed: journal stops clean at
+        # 17:06:22Z, no error entry, exit code 1). Detect a dead link EARLY and
+        # reconnect before touching anything else — one transient terminal
+        # blip must never end the loop.
+        if not self.dry:
+            alive = False
+            try:
+                alive = bool(self.conn and self.conn.validate_connection())
+            except Exception:
+                alive = False
+            if not alive:
+                if not self.connect():
+                    return "error"
+        elif not self._ensure_mt5():
+            return "error"
 
         # §3.6 market-open check.
         # NOTE: `is_market_open()` (trade_mode != DISABLED) returns True on

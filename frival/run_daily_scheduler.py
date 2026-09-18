@@ -125,6 +125,8 @@ if __name__ == "__main__":
           f"{_fmt(build_targets(TARGET_HOURS)[-1])}) and rolls over at midnight.\n")
 
     run_count_total = 0
+    consecutive_errors = 0
+    MAX_CONSECUTIVE = 5   # mirror gold engine resilience §3.5
 
     while True:
         targets = build_targets(TARGET_HOURS)   # today's targets
@@ -137,7 +139,18 @@ if __name__ == "__main__":
         # Immediate run if we're inside today's window (before last target)
         if now < last_target:
             print(f"[LIVE] Running initial pipeline... ({_fmt(now)})")
-            run_pipeline()
+            try:
+                run_pipeline()
+                consecutive_errors = 0
+            except KeyboardInterrupt:
+                raise
+            except Exception as e:
+                print(f"[ERROR] pipeline run failed (transient?): {e} "
+                      f"({consecutive_errors + 1}/{MAX_CONSECUTIVE})")
+                consecutive_errors += 1
+                if consecutive_errors >= MAX_CONSECUTIVE:
+                    print("[ERROR] too many consecutive failures — HARD STOP")
+                    sys.exit(1)
             run_count_total += 1
 
         # Fire every remaining :01 target, then roll to the next day
@@ -153,7 +166,18 @@ if __name__ == "__main__":
             wait = seconds_until(next_run)
             if wait < 1.0:
                 print(f"[LIVE] Running pipeline... ({_fmt(now_local())})")
-                run_pipeline()
+                try:
+                    run_pipeline()
+                    consecutive_errors = 0
+                except KeyboardInterrupt:
+                    raise
+                except Exception as e:
+                    print(f"[ERROR] pipeline run failed (transient?): {e} "
+                          f"({consecutive_errors + 1}/{MAX_CONSECUTIVE})")
+                    consecutive_errors += 1
+                    if consecutive_errors >= MAX_CONSECUTIVE:
+                        print("[ERROR] too many consecutive failures — HARD STOP")
+                        sys.exit(1)
                 run_count_total += 1
                 continue
 
@@ -161,5 +185,16 @@ if __name__ == "__main__":
             countdown_loop(wait, next_run)
 
             print(f"[LIVE] Running pipeline... ({_fmt(now_local())})")
-            run_pipeline()
+            try:
+                run_pipeline()
+                consecutive_errors = 0
+            except KeyboardInterrupt:
+                raise
+            except Exception as e:
+                print(f"[ERROR] pipeline run failed (transient?): {e} "
+                      f"({consecutive_errors + 1}/{MAX_CONSECUTIVE})")
+                consecutive_errors += 1
+                if consecutive_errors >= MAX_CONSECUTIVE:
+                    print("[ERROR] too many consecutive failures — HARD STOP")
+                    sys.exit(1)
             run_count_total += 1
