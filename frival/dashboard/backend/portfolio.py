@@ -96,6 +96,8 @@ def get_mt5_snapshot() -> Dict[str, Any]:
         "account": None,
         "positions": [],
         "today_deals_pnl": 0.0,
+        "today_deals_count": 0,
+        "today_deals_raw_count": 0,
         "error": None,
         "ts": datetime.utcnow().isoformat() + "Z",
     }
@@ -139,11 +141,18 @@ def get_mt5_snapshot() -> Dict[str, Any]:
             })
         result["positions"] = pos_rows
 
-        # realized PnL today (all symbols; dashboard is display-only)
+        # realized PnL today (trade deals only; deposits/withdrawals excluded)
+        # FIX (2026-09-18): history_deals_get returns deposits + withdrawals as
+        # DEAL_TYPE_BALANCE records; summing d.profit over all deals counted a
+        # $5,000 demo deposit as "today's PnL". Only actual trades (BUY/SELL
+        # deals) are PnL. DEAL_TYPE_BUY=0, DEAL_TYPE_SELL=1, BALANCE=2.
         start = datetime.combine(datetime.utcnow().date(), datetime.min.time())
         deals = _safe_mt5(lambda: mt5.history_deals_get(start, datetime.utcnow()), [])
         if deals:
-            result["today_deals_pnl"] = sum(d.profit for d in deals)
+            trade_deals = [d for d in deals if d.type in (0, 1)]  # BUY / SELL only
+            result["today_deals_pnl"] = sum(d.profit for d in trade_deals)
+            result["today_deals_count"] = len(trade_deals)
+            result["today_deals_raw_count"] = len(deals)
     finally:
         try:
             mt5.shutdown()

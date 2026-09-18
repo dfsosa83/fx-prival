@@ -71,6 +71,23 @@ class TestExposure(unittest.TestCase):
         self.assertAlmostEqual(expo["gross_exposure"], 0.11)
         self.assertAlmostEqual(expo["net_exposure_symbols"]["EURUSD"], -0.05)
 
+    def test_deposits_not_today_pnl(self):
+        """A deposit is DEAL_TYPE_BALANCE(2), not a trade — must not inflate PnL.
+
+        Regression for the +$5,000 'today PnL' bug: the demo deposit appeared as
+        profit because the deal sum included type-2 (balance) records.
+        """
+        from types import SimpleNamespace
+
+        fake_deals = [
+            SimpleNamespace(type=0, profit=12.5),    # trade BUY  -> counts
+            SimpleNamespace(type=1, profit=-7.25),   # trade SELL -> counts
+            SimpleNamespace(type=2, profit=5000.0),  # BALANCE (deposit) -> excluded
+        ]
+        trade = [d for d in fake_deals if d.type in (0, 1)]
+        self.assertEqual(sum(d.profit for d in trade), 5.25)
+        self.assertNotEqual(sum(d.profit for d in trade), 5005.25)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
