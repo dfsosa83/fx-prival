@@ -3,7 +3,7 @@
 # risk section values here feed the REUSED OrderManager internals; the gold engine's own
 # risk atomics live in ../config.yaml and are enforced by the engine itself.
 trading:
-  mode: live                     # demo or live — LIVE per operator decision 2026-09-15
+  mode: demo                     # demo or live — DEMO (paper, 7409623) per operator decision 2026-09-18
   default_risk_profile: MODERATE
   default_lot_size: 0.01
 

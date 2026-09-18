@@ -1,7 +1,7 @@
 # Project Last State — Frival Trading System
 
-**Last updated:** 2026-09-17
-**Status:** LIVE — 5-pair ML pipeline (4 SELL + 1 agnostic in shadow) + **standalone rule-based Gold Engine (XAUUSD) LIVE** with **two entry modes: Claim A/B (level-test, comment `GOLD_RULES_v1`) + Claim C (breakout-continuation, comment `GOLD_RULES_C`) — C live by operator decision 2026-09-16 (shadow explicitly rejected, "cannot wait 2 weeks")**. Single account 81486396 (~$526 balance, manual-trading drawdown recovered). Daily scheduler operational (`run_daily.bat`, UTC-calibrated window 02:01–16:01 Panama, 15 runs/day, rolls across days). Gold engine operational (`run_gold_rules.bat`). **NEW (2026-09-17): EXP-2026-04 spec approved — FX rule-engine backtest over EURUSD/USDJPY/GBPUSD/USDCAD history; ownership rule recorded (one engine per pair, USDJPY = first live target if EV/R>+0.3); measurement study in progress, no live orders.**
+**Last updated:** 2026-09-18
+**Status:** **DEMO MODE (paper)** — All engines pointed at **FPMarketsSC-Demo / account 7409623 / $5,000 paper** per operator decision 2026-09-18 (experiment phase; live book 81486396 parked). Verified read-only: config chain (FX fetcher, execution bot, gold engine) all connect as 7409623, $5,000/$5,000, leverage 30. Demo password confirmed == live password. `run_daily.bat` (FX) + `run_gold_rules.bat` (gold) launch the same scripts; only configs changed (credentials.env files are gitignored/local; `trading.mode: demo` in both settings.yaml is committed). EURUSD-FX backtest study (EXP-2026-04) completed: EV/R EURUSD −0.174, GBPUSD −0.170, USDCAD −0.175, USDJPY −0.392 → **no pair qualifies for Claim-D live transfer**; USDJPY = STOP. Gold engine (A/B+C) previously live; now demo.
 
 ---
 

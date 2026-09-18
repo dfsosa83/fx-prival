@@ -136,12 +136,19 @@ floor means nothing on EURUSD (pip = 0.0001). The mapping:
 | `sl_buffer_min_usd: 0.30` | same per-pair unit scale ×0.3 |
 | `max_risk_usd: 25.00` | expressed as **R-relative, not $-relative**: simulated risk = |entry−SL| × lot × contract; lot = **0.01** fixed, contract = per-pair `symbol_info` (100,000 for FX). $ cap = 25.00 × (ATR_EURUSD / ATR_XAUUSD) reference? **NO** — see note below. |
 
-**Critical decision — dollar cap on FX:** at 0.01 lots, EURUSD $25 risk ≈ 250 pips of
-distance — the cap would never bind, which makes the backtest *too permissive*. The
-spec preserves the engine's *risk posture*, not its raw dollars: **the $25 cap scales
-to the pair's ATR:** `cap_usd_pair = 25 × ATR_M15_pair ÷ ATR_M15_XAUUSD` computed once.
-This keeps "max ~2.5× ATR of loss" philosophically identical to gold. The scalar is
-logged and fixed before the run — not tuned after seeing results.
+**Critical decision — dollar cap on FX (SPEC FIX v1.1, 2026-09-17):** the original
+formula `cap_usd = 25 × ATR_pair / ATR_gold` is **unit-wrong**: gold ATR is in price
+*points* while the cap is in *dollars*, and scaling a dollar by a price-point ratio
+without the contract conversion collapsed EURUSD's cap to ~$0.004 — every ENTRY_READY
+failed the risk gate (0 entries over 8,641 bars; 100% of gate rejections were
+`risk=False`). **Corrected rule** (keeps the intent — max ~2.5× ATR_M15 of loss per
+trade, with `RISK_ATR_MULT = 2.5` set so gold's cap lands back at $25):
+
+```
+cap_usd = RISK_ATR_MULT × ATR_M15_pair × contract_pair × lot        (contract=100,000 FX)
+```
+
+The scalar is fixed before the run and is not tuned after seeing results.
 
 ### 3.4 Claim C excluded from the base spec (for clean attribution)
 

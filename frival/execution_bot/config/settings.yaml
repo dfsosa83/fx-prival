@@ -2,7 +2,7 @@
 # Copy DeafAgent config/credentials.env contents if you want to reuse existing setup.
 
 trading:
-  mode: live                     # demo or live
+  mode: demo                     # demo or live — DEMO (paper, 7409623) per operator decision 2026-09-18
   default_risk_profile: MODERATE # VERY_CONSERVATIVE through VERY_AGGRESSIVE
   default_lot_size: 0.08
 
