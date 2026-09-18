@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Frival Book Dashboard</title>
+    <style>
+      :root {
+        --bg: #0f1419;
+        --panel: #171d26;
+        --panel2: #1e2632;
+        --border: #2a3547;
+        --text: #d7e0ea;
+        --muted: #8b98a9;
+        --green: #2ecc71;
+        --red: #e74c3c;
+        --amber: #f1c40f;
+        --blue: #3498db;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { background: var(--bg); color: var(--text); font: 14px/1.5 system-ui, -apple-system, sans-serif; }
+      header { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border); }
+      header h1 { font-size: 16px; font-weight: 600; }
+      .meta { color: var(--muted); font-size: 12px; }
+      .pulse { color: var(--green); }
+      .pulse.off { color: var(--red); }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; padding: 16px 20px; }
+      .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+      .panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 10px; }
+      .row { display: flex; justify-content: space-between; padding: 3px 0; }
+      .row .k { color: var(--muted); }
+      .pos { color: var(--green); }
+      .neg { color: var(--red); }
+      .bar-track { height: 8px; background: var(--panel2); border-radius: 4px; overflow: hidden; margin: 6px 0; }
+      .bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+      .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+      .tag.live { background: rgba(46,204,113,0.15); color: var(--green); }
+      .tag.demo { background: rgba(52,152,219,0.15); color: var(--blue); }
+      .tag.off { background: rgba(231,76,60,0.15); color: var(--red); }
+      table { width: 100%; border-collapse: collapse; font-size: 12px; }
+      th, td { padding: 4px 6px; text-align: left; border-bottom: 1px solid var(--border); }
+      th { color: var(--muted); font-weight: 500; }
+      .micro { display: grid; gap: 6px; }
+      .empty { color: var(--muted); font-style: italic; }
+      .bar-row { display: flex; align-items: center; gap: 10px; }
+      .bar-row .label { width: 42px; color: var(--muted); font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

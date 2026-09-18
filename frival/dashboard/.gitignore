@@ -1,0 +1,10 @@
+# Book Dashboard — gitignore
+# frontend build / deps / node
+frontend/node_modules/
+frontend/dist/
+# backend python
+backend/__pycache__/
+*.py[cod]
+# runtime artifacts (dashboard is read-only; it must never track these)
+artifacts/*
+!artifacts/.gitkeep

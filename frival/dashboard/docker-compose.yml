@@ -1,0 +1,27 @@
+# Book Dashboard — multi-service compose (your proven bond-project pattern)
+# Read-only mounts into the gold_rules state/journal + fx output, so the
+# dashboard can observe but NEVER modify engine state.
+
+services:
+  backend:
+    build: { context: ., dockerfile: backend/Dockerfile }
+    environment:
+      - DASHBOARD_TOKEN=${DASHBOARD_TOKEN:-}   # set in .env for access guard
+    volumes:
+      # READ-ONLY: engine state + journals for display
+      - ../../frival/gold_rules/state:/data/gold_state:ro
+      - ../../frival/gold_rules/journal:/data/gold_journal:ro
+      - ../../frival/output:/data/fx_output:ro
+    expose:
+      - "8000"
+    restart: unless-stopped
+    # The MT5 terminal runs on the HOST, so the container needs host-network
+    # access for MetaTrader5 IPC. With host networking we bind 8000 directly.
+    network_mode: host
+
+  frontend:
+    build: { context: ., dockerfile: frontend/Dockerfile }
+    ports:
+      - "80:80"
+    depends_on: [backend]
+    restart: unless-stopped
