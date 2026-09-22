@@ -1,0 +1,31 @@
+# Pre-registration manifest — EXP-2026-08 (US30 SELL)
+
+exp_id: EXP-2026-08-EQUITY-INDEX-COSTLABEL
+instrument: US30 (Dow Jones 30 CFD, rolling contract)
+status: stop                    # 2026-09-21: sealed-test CI wholly below zero
+scored_at: 2026-09-21
+verdict_evidence: reports/US30_sell_test_metrics.json  # ev=-0.178, CI [-0.261,-0.104], n=1576
+
+broker_spec:                     # authenticated from MT5 terminal (read-only)
+  swap_long_per_lot_day: -7.61
+  swap_short_per_lot_day: 3.23
+  swap_mode: 2
+  session_utc: "23h/day; quiet hour 00 UTC; ~50h weekend close"
+  expiration: rolling (expiration_time=0)
+  dividend_adjustment: "no broker field; adjudicated non-blocking for backtest (0.05%/trade)"
+  friction_per_r: 0.030          # spread 3.2px / median ATR(14) 105px
+  yahoo_placeholder: true        # MT5 is source of truth
+
+hypothesis: "The same cost-adjusted label methodology finds edge on an instrument
+  where friction per risk-unit is ~30x lower than crosses (clean-lab instrument)."
+
+primary_metric: test_ev_per_r
+decision_gate:
+  go:   ev_per_r > 0 AND ev_ci_95_lo > -0.05 AND n_signals >= 30
+  hold: CI straddles zero beyond +-0.05R, or n_signals < 30
+  stop: ev_per_r <= -0.05 AND ci_hi < 0
+
+result_summary:
+  only_change_vs_production: cost-adjusted TP barrier + PAIR=US30
+  controls_untouched: features, split, cv, calibration, threshold rule
+  production_bundles_untouched: true

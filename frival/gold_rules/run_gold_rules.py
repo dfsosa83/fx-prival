@@ -43,6 +43,10 @@ STATE_FILE = HERE / "state" / "engine_state.json"
 JOURNAL_DIR = HERE / "journal"
 CONFIG_DIR = HERE / "config"           # credentials.env + settings.yaml (ConfigManager)
 
+# Shared paper-trading ledger (PORTFOLIO-DEMO-SPEC §3): ONE book for FX + gold
+# demo trades so the account accumulates real virtual PnL.
+DEMO_LEDGER_FILE = HERE.parent / "execution_bot" / "data" / "demo_trades_ledger.jsonl"
+
 import engine as eng_module            # noqa: E402
 
 try:
@@ -256,12 +260,22 @@ class GoldRunner:
         invent a phantom position — return the last known count instead.
         """
         try:
-            if self.dry:
+            # Demo/dry: the engine must see the SIMULATED slot (settings
+            # trading.mode=demo), or it would read the real broker (0) and
+            # instantly self-close every paper trade (audit G7, fixed 2026-09-22).
+            if self.dry or self._demo_active():
                 return self.dry_positions
             pos = self.conn.get_positions("XAUUSD")
             return len(pos) if pos else 0
         except Exception:
             return getattr(self, "_last_positions_count", 0)
+
+    def _demo_active(self) -> bool:
+        """True when running under demo mode (OrderManager simulates orders)."""
+        try:
+            return bool(self.cm and self.cm.is_demo_mode())
+        except Exception:
+            return False
 
     # ── order actions ──────────────────────────────────────────────────────────
     def execute_order(self, order: dict) -> dict:
@@ -297,6 +311,49 @@ class GoldRunner:
             print(f"[gold][DRY] would close {ticket}")
             return {"success": True, "dry": True}
         return self.om.close_position(ticket)
+
+    def _realize_trade(self, trade: dict, bid: float, reason: str) -> None:
+        """Record REALIZED PnL for a demo/dry global trade (PORTFOLIO-DEMO-SPEC §3).
+
+        Only appends when running simulated (dry or demo mode) and we have a
+        valid entry/SL/tp and a current price; never in live mode. Computes
+        realized USD (volume * contract) and R, appended to the shared ledger.
+        """
+        if (not self.dry and not self._demo_active()) or not trade:
+            return
+        try:
+            from execution_bot.core.demo_ledger import VirtualPosition, append_trade
+
+            entry = float(trade.get("entry"))
+            sl = float(trade.get("sl"))
+            tp = trade.get("tp1")
+            symbol = self.cfg.get("symbol", "XAUUSD")
+            direction = self.state.direction or "sell"
+            risk = abs(entry - sl)
+            # exit conservatively at the triggered barrier (or current price)
+            if direction == "sell":
+                exit_px = sl if bid >= sl else (float(tp) if tp and bid <= float(tp) else bid)
+            else:
+                exit_px = sl if bid <= sl else (float(tp) if tp and bid >= float(tp) else bid)
+            sign = -1.0 if direction == "sell" else 1.0
+            contract = float(self.cfg.get("risk", {}).get("contract_size", 100.0))
+            vol = float(self.cfg.get("risk", {}).get("fixed_lot", 0.01) or 0.01)
+            realized_usd = sign * (exit_px - entry) * contract * vol
+            r_mul = sign * (exit_px - entry) / risk if risk > 0 else 0.0
+
+            pos = VirtualPosition(
+                ticket=f"GOLD-{int(time.time() * 1000)}", symbol=symbol,
+                direction=direction, volume=vol, entry=entry, sl=sl,
+                tp=float(tp) if tp else 0.0,
+                opened_at=str(trade.get("opened_at", "")), status="CLOSED",
+                exit_price=exit_px, exit_reason=reason,
+                realized_usd=round(realized_usd, 2), r=round(r_mul, 3),
+            )
+            append_trade(DEMO_LEDGER_FILE, pos)
+            print(f"[gold] DEMO PnL realized: {reason} pnl={realized_usd:+.2f} "
+                  f"R={r_mul:+.2f} -> {DEMO_LEDGER_FILE.name}")
+        except Exception as e:
+            print(f"[gold] demo PnL realize error: {e}")
 
     # ── one evaluation cycle ───────────────────────────────────────────────────
     def cycle(self) -> str:
@@ -443,6 +500,10 @@ class GoldRunner:
             today_realized_pnl=pnl,
         )
 
+        # capture the pre-decision trade so a CLOSE/INVALIDATE can realize PnL
+        # (the engine nulls active_trade inside the CLOSE transition)
+        prev_trade = dict(self.state.active_trade) if self.state.active_trade else None
+
         try:
             new_state, dec = self.engine.evaluate(snap, self.state)
         except Exception as e:
@@ -479,12 +540,26 @@ class GoldRunner:
                 journal(last_time.to_pydatetime(), {"action": dec.action, "ok": ok, "sl": sl, "tp": tp1})
                 print(f"[gold] {dec.action} on ticket {ticket}: SL -> {sl:.2f}, TP {tp1 or '--'} ({'OK' if ok else 'FAILED'})")
 
-        elif dec.action == eng_module.INVALIDATE and self.state.active_trade:
-            ticket = self.state.active_trade.get("ticket")
+        elif dec.action == eng_module.INVALIDATE:
+            ticket = (self.state.active_trade or {}).get("ticket")
             if ticket:
                 result = self.close_position(ticket)
                 journal(last_time.to_pydatetime(), {"action": "CLOSE_POSITION", "ticket": ticket, "result": result})
                 print(f"[gold] >>> INVALIDATED — closing ticket {ticket}: {result}")
+            # demo/dry: realize PnL for the trade that was invalidated
+            if prev_trade and (self.dry or self._demo_active()):
+                self._realize_trade(prev_trade, bid, "INVALIDATE")
+
+        elif dec.action == eng_module.CLOSE:
+            # SL/TP/timeout/external close (engine sets active_trade=None)
+            reason = getattr(dec, "reason", "CLOSE") or "CLOSE"
+            reason_short = "SL/TP" if "position count" in reason or "SL" in reason \
+                else ("timeout" if "timeout" in reason else "CLOSE")
+            if prev_trade and (self.dry or self._demo_active()):
+                self._realize_trade(prev_trade, bid, reason_short)
+            elif self.state.active_trade:
+                self.state.active_trade = None
+            print(f"[gold] >>> CLOSE — {reason}")
 
 # ── heartbeat: one visible line per NEW completed M15 bar ───────────
         # Uses the upstream `new_bar` flag (freshness block already updated

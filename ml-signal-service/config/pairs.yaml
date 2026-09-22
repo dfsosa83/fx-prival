@@ -32,11 +32,36 @@ pairs:
     - symbol: AUDJPY
       mt5: "AUDJPY"
       yahoo: "AUDJPY=X"
+    # EXP-2026-07 liquid-cross book (ROADMAP-2026-Q4 §9 P1) — diversification
+    # first: crosses move off the USD axis that dominated EURUSD BUY/SELL.
+    # Deliberately NOT adding other minors here (Issue A: keep the
+    # multiple-testing surface to the three planned crosses only).
+    - symbol: EURGBP
+      mt5: "EURGBP"
+      yahoo: "EURGBP=X"
+    - symbol: GBPJPY
+      mt5: "GBPJPY"
+      yahoo: "GBPJPY=X"
+    - symbol: EURJPY
+      mt5: "EURJPY"
+      yahoo: "EURJPY=X"
 
   commodities:
     - symbol: XAUUSD
       mt5: "XAUUSD"
       yahoo: "GC=F"           # Gold futures — closest free proxy for spot gold
+
+  # EXP-2026-08 equity-index CFD pilot (ROADMAP-2026-Q4 §4.2/§9). Cheap quotes
+  # on the demo account, friction ~3-10x lower per risk-unit than EURUSD. NAS100
+  # does NOT exist on account 7409623; US30 (Dow) primary, US100 backup. MT5 is
+  # the source of truth (no free index proxy for downloader fallback).
+  indices:
+    - symbol: US30
+      mt5: "US30"
+      yahoo: "US30"
+    - symbol: US100
+      mt5: "US100"
+      yahoo: "US100"
 
 timeframes:
   - name: H1

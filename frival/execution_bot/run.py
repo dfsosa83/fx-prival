@@ -57,14 +57,14 @@ def main():
         _os.environ.setdefault("EMERGENCY_STOP", "false")
         _os.environ.setdefault("LOG_LEVEL", "INFO")
         _os.environ.setdefault("MAX_DAILY_TRADES", "5")
-        _os.environ.setdefault("MAX_DAILY_LOSS", "50.0")
+        _os.environ.setdefault("MAX_DAILY_LOSS", "100.0")
 
         # Also write a proper credentials.env so ConfigManager internals get real values
         env_file = config_dir / "credentials.env"
         with open(frival_env, encoding="utf-8") as src, open(env_file, "w", encoding="utf-8") as dst:
             dst.write(src.read())
             dst.write("\nMT5_TERMINAL_PATH=\nEMERGENCY_STOP=false\n")
-            dst.write("LOG_LEVEL=INFO\nMAX_DAILY_TRADES=5\nMAX_DAILY_LOSS=50.0\n")
+            dst.write("LOG_LEVEL=INFO\nMAX_DAILY_TRADES=5\nMAX_DAILY_LOSS=100.0\n")
 
     if not config_dir.exists():
         print(f"Config directory not found: {config_dir}")

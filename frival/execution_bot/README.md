@@ -45,7 +45,7 @@ Every signal passes these checks before execution:
 |---|---|---|
 | Emergency stop | All execution if `emergency_stop.txt` exists | Create/delete `frival/data/emergency_stop.txt` |
 | Shadow pairs | No execution for GBPUSD/USDCHF | Set `shadow: false` in settings.yaml |
-| Daily loss | Blocks after $50 loss per day | `risk.max_daily_loss` in settings.yaml |
+| Daily loss | Blocks after `risk.max_daily_loss` (=$100 = 2% of the $5,000 demo, operator decision 2026-09-21) loss per day | `risk.max_daily_loss` in settings.yaml |
 | Duplicate position | Skips if pair already has open position | Automatic |
 | Margin check | Skips if insufficient free margin | Automatic |
 | Signal expiry | Skips if `expires_at_utc` is in the past | From signal JSON |

@@ -1,0 +1,11 @@
+{
+  "precision": 0.3871,
+  "recall": 0.0226,
+  "roc_auc": 0.629,
+  "n_signals": 62,
+  "ev_per_r": -0.03226,
+  "ev_ci_95_lo": -0.51613,
+  "ev_ci_95_hi": 0.45161,
+  "breakeven": 0.4,
+  "block_length_used": 8
+}

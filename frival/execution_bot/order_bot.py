@@ -22,11 +22,14 @@ from typing import Dict, Any, Optional
 import MetaTrader5 as mt5
 
 from core.config_manager import ConfigManager
+from core.demo_ledger import (append_trade, close_pool, load_ledger,
+                              manage_open, open_virtual)
 from core.mt5_connector import MT5Connector
 from core.order_manager import OrderManager
 
 LOG_FILE = Path(__file__).resolve().parent / "data" / "execution_log.jsonl"
 EMERGENCY_STOP = Path(__file__).resolve().parents[1] / "data" / "emergency_stop.txt"
+DEMO_LEDGER_FILE = Path(__file__).resolve().parent / "data" / "demo_trades_ledger.jsonl"
 
 
 class OrderBot:
@@ -48,6 +51,9 @@ class OrderBot:
         self.daily_pnl = 0.0
         self.signals_executed = 0
         self.signals_rejected = 0
+        # Demo virtual-fill book (PORTFOLIO-DEMO-SPEC §3): simulated orders get a
+        # real lifecycle and realized PnL so paper trading produces evidence.
+        self.demo_positions = load_ledger(DEMO_LEDGER_FILE)
         self._load_pair_config()
 
     def _load_pair_config(self):
@@ -114,6 +120,11 @@ class OrderBot:
         if EMERGENCY_STOP.exists():
             print("[OrderBot] Emergency stop — signal rejected")
             return True
+
+        # ── Manage open DEMO virtual positions against the live market ─────
+        # Called on every tick so simulated fills actually resolve (SL/TP),
+        # compute realized PnL, and get appended to the ledger.
+        self._manage_demo_positions()
 
         if not self.connector or not self.order_manager:
             print("[OrderBot] Not connected — signal rejected")
@@ -203,22 +214,48 @@ class OrderBot:
         print(f"[OrderBot] EXECUTING: {symbol} {action.upper()} {lot_size} lots")
         print(f"  Entry: {entry:.5f}  SL: {stop_loss:.5f}  TP: {take_profit:.5f}")
 
+        # §6.1 diagnostics: measure latency and capture fill/spread/slippage.
+        _t0 = time.time()
         try:
             result = self.order_manager.execute_order(order_params)
         except Exception as e:
+            _t1 = time.time()
             print(f"[OrderBot] Execution error: {e}")
-            self._log(signal, "ERROR", str(e))
+            diag = self._diagnostics(signal, symbol, entry, None, _t0, _t1)
+            diag["execution_time_s"] = round(_t1 - _t0, 3)
+            self._log(signal, "ERROR", str(e), **diag)
             return False
+        _t1 = time.time()
 
         if result and result.get("success"):
             ticket = result.get("order")
+            # DEMO mode: OrderManager returns order=0 by design (node 501-516).
+            # Treat that as a REAL virtual fill: open a ledger position so the
+            # paper account accumulates realized PnL (PORTFOLIO-DEMO-SPEC §3).
+            demo_fill = bool(ticket is None or ticket == 0)
+            if demo_fill:
+                direction_l = "buy" if action.upper() == "BUY" else "sell"
+                pos = open_virtual(
+                    self.demo_positions, symbol, direction_l,
+                    lot_size, entry, stop_loss, take_profit,
+                    event_ts=datetime.now(timezone.utc).isoformat(),
+                )
+                print(f"[OrderBot] DEMO virtual fill opened — {pos.ticket}")
+                diag = self._diagnostics(signal, symbol, entry, result, _t0, _t1)
+                diag["execution_time_s"] = round(_t1 - _t0, 3)
+                self._log(signal, "EXECUTED", f"ticket={pos.ticket} (virtual)", **diag)
+                self.signals_executed += 1
+                return True
+
             if ticket is None:
                 self._log(signal, "FAILED", "success=True but no order id returned")
                 self.signals_rejected += 1
                 return True
             self.signals_executed += 1
             print(f"[OrderBot] Order placed — ticket: {ticket}")
-            self._log(signal, "EXECUTED", f"ticket={ticket}")
+            diag = self._diagnostics(signal, symbol, entry, result, _t0, _t1)
+            diag["execution_time_s"] = round(_t1 - _t0, 3)
+            self._log(signal, "EXECUTED", f"ticket={ticket}", **diag)
 
             # ── Break-Even-at-50% monitor (opt-in via settings.yaml) ────
             be_cfg = self.config.get_config("break_even") or {}
@@ -248,7 +285,9 @@ class OrderBot:
         else:
             error_msg = result.get("error", "unknown") if result else "no result"
             print(f"[OrderBot] Order failed: {error_msg}")
-            self._log(signal, "FAILED", str(error_msg))
+            diag = self._diagnostics(signal, symbol, entry, result, _t0, _t1)
+            diag["execution_time_s"] = round(_t1 - _t0, 3)
+            self._log(signal, "FAILED", str(error_msg), **diag)
             self.signals_rejected += 1
             return True
 
@@ -263,8 +302,44 @@ class OrderBot:
         except Exception:
             return 0.0
 
-    def _log(self, signal: Dict, status: str, detail: str):
-        """Write an execution log entry."""
+    def _manage_demo_positions(self) -> None:
+        """Advance open DEMO virtual positions against the latest tick.
+
+        For each open virtual position, read the current bid/ask (live or, in
+        demo, the last available quote), resolve SL/TP, compute realized USD + R,
+        and append the closed trade to the ledger. Non-blocking/failure-tolerant:
+        a transient tick read failure simply leaves the position open.
+        """
+        if not self.demo_positions:
+            return
+        for pos in list(self.demo_positions):
+            if pos.status != "OPEN":
+                continue
+            try:
+                price: Optional[float] = None
+                if self.connector is not None:
+                    tick = self.connector.get_symbol_tick(pos.symbol)
+                    if tick:
+                        price = float(getattr(tick, "ask", 0.0) or getattr(tick, "bid", 0.0) or 0.0) or None
+                        if price is None and hasattr(tick, "get"):
+                            price = float(tick.get("ask") or 0.0) or None
+                if price is None or price <= 0.0:
+                    continue
+                closed = manage_open(self.demo_positions, price)
+                for c in closed:
+                    append_trade(DEMO_LEDGER_FILE, c)
+                    print(f"[OrderBot] DEMO close {c.ticket} -> {c.exit_reason} "
+                          f"pnl={c.realized_usd:+.2f} R={c.r:+.2f}")
+            except Exception as e:
+                print(f"[OrderBot] demo manage error ({pos.symbol}): {e}")
+
+    def _log(self, signal: Dict, status: str, detail: str, **extra):
+        """Write an execution log entry.
+
+        `extra` carries §6.1 diagnostic fields (slippage, latency, spread-at-fill)
+        when the status path measured them; otherwise they are simply absent.
+        Additive only — never changes trading behavior.
+        """
         os.makedirs(LOG_FILE.parent, exist_ok=True)
         entry = {
             "timestamp_utc": datetime.now(timezone.utc).isoformat(),
@@ -275,5 +350,100 @@ class OrderBot:
             "detail": detail,
             "daily_pnl": round(self.daily_pnl, 2),
         }
+        entry.update(extra)
         with open(LOG_FILE, "a", encoding="utf-8") as f:
             f.write(json.dumps(entry, default=str) + "\n")
+
+    # ── §6.1 execution diagnostics (ROADMAP-2026-Q4 §6.1) ──────────────────────
+    # Measures slippage, latency, and spread-at-fill per executed signal so the
+    # cost model (_core/costs.py) can be upgraded from spread-only assumptions
+    # to measured values. All fields are informational; nothing here gates orders.
+    @staticmethod
+    def _core_costs():
+        """Lazily import the shared cost table (single source of truth).
+
+        Mirrors dashboard/backend/tag_metrics.py: resolves fx-prival root and
+        hooks ml-signal-service so `experiments._core.costs` is importable from
+        the frival/ tree. Returns None (silently) if unavailable so diagnostics
+        never break order execution.
+        """
+        try:
+            import sys as _sys
+            from pathlib import Path as _P
+
+            root = _P(__file__).resolve().parents[2]  # .../fx-prival/
+            ml = root / "ml-signal-service"
+            if str(ml) not in _sys.path:
+                _sys.path.insert(0, str(ml))
+            from experiments._core import costs as _c
+            return _c
+        except Exception:
+            return None
+
+    @staticmethod
+    def _signal_ts_utc(signal: Dict) -> Optional[datetime]:
+        raw = signal.get("timestamp_utc") or signal.get("ts")
+        if not raw:
+            return None
+        try:
+            dt = datetime.fromisoformat(str(raw)[:19])
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt
+        except ValueError:
+            return None
+
+    def _diagnostics(self, signal: Dict, symbol: str, entry: float,
+                     result: Optional[Dict], t0: float, t1: float) -> Dict:
+        """Collect per-trade §6.1 metrics. Never raises on data gaps."""
+        diag: Dict[str, Any] = {}
+        signal_ts = self._signal_ts_utc(signal)
+        if signal_ts is not None:
+            sent_ts = datetime.fromtimestamp(t1, tz=timezone.utc)
+            diag["latency_seconds"] = round(max(0.0, (sent_ts - signal_ts).total_seconds()), 2)
+            diag["signal_ts_utc"] = signal_ts.isoformat()
+            diag["sent_ts_utc"] = sent_ts.isoformat()
+
+        pip_size = None
+        try:
+            tick = self.connector.get_symbol_tick(symbol)
+        except Exception:
+            tick = None
+        if tick is not None and tick.get("spread") is not None:
+            diag["spread_at_fill_price"] = round(float(tick["spread"]), 6)
+            diag["bid_at_fill"] = round(float(tick["bid"]), 6)
+            diag["ask_at_fill"] = round(float(tick["ask"]), 6)
+
+        # pip size: shared cost table first, symbol info fallback
+        core_costs = self._core_costs()
+        pip_size = core_costs.PIP_SIZE_PX.get(symbol.upper()) if core_costs else None
+        if pip_size is None:
+            try:
+                sym = self.connector.get_symbol_info(symbol)
+                pip_size = sym.get("point", 1e-4)
+            except Exception:
+                pip_size = None
+
+        if entry:
+            diag["requested_entry"] = round(float(entry), 6)
+
+        # backtest-assumed round-trip cost from the shared table (Issue C)
+        if core_costs is not None:
+            diag["cost_assumed_pips"] = core_costs.ROUND_TRIP_COST_PIPS.get(
+                symbol.upper(), {}).get("ALL")
+        else:
+            diag["cost_assumed_pips"] = None
+
+        if result:
+            diag["retcode"] = result.get("retcode")
+            fill = result.get("price")
+            if fill is not None:
+                diag["fill_price"] = round(float(fill), 6)
+                if entry and pip_size:
+                    # signed: positive = adverse fill for the traded direction
+                    diag["slippage_price"] = round(float(fill) - float(entry), 6)
+                    diag["slippage_pips"] = round((float(fill) - float(entry)) / pip_size, 3)
+                if diag.get("spread_at_fill_price") is not None and pip_size:
+                    diag["spread_at_fill_pips"] = round(
+                        diag["spread_at_fill_price"] / pip_size, 3)
+        return diag

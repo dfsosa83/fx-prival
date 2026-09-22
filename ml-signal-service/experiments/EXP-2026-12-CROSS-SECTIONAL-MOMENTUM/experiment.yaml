@@ -1,0 +1,73 @@
+# Pre-registration manifest — EXP-2026-12-CROSS-SECTIONAL-MOMENTUM
+
+Written BEFORE any code/analysis, per Issue A. The sealed evaluation window
+(2025–2026 unseen) is judged once; any material change (lookback, k, rebalance
+cadence, cost model) = new experiment ID (EXP-2026-12b) + supersede note.
+
+exp_id: EXP-2026-12-CROSS-SECTIONAL-MOMENTUM
+status: hold                    # 2026-09-22: no GO cell; not all STOP. LETTER=HOLD,
+                               #   substance = NOT SUPPORTED (EV consistent with 0;
+                               #   gross-positive only in trending 2022; costs flip
+                               #   every cell negative in the unseen 2025+ window).
+created: 2026-09-22
+hypothesis_family: cross-sectional momentum (relative strength persistence)
+
+## Hypothesis
+
+> "Ranking the project's instrument universe by trailing return and holding the
+> top-k long / bottom-k short for a weekly rebalance produces **positive net-of-cost
+> expectancy** out-of-sample, because relative strength persists across a
+> multi-day horizon."
+
+Why NEW: every falsified approach predicted *one instrument's next move from its
+own recent H1 prices*. This predicts *relative* ranking at a *multi-day* horizon
+across instruments — a different mechanism (relative-strength persistence), the
+same documented effect family (time-series/cross-sectional momentum), and it is
+**friction-favourable** (weekly moves 100–300 pips vs 1–14 pips spread) — the
+constraint that killed every prior experiment.
+
+## Pre-registered specification
+
+- **Universe (10):** EURUSD, GBPUSD, USDJPY, USDCHF, USDCAD, EURGBP, GBPJPY,
+  EURJPY, XAUUSD, US30 — daily closes resampled from H1.
+  *Amended 2026-09-22 (pre-run): USDX and WTI excluded because their round-trip
+  spreads could not be measured live (market closed at instrumentation time) and
+  the project's discipline forbids guessing costs. Restored only if/when measured.*
+- **Lookback** (trailing days used to rank): **{5, 10, 20}**.
+- **k** (long the top-k, short the bottom-k of 10): **{2, 3}**.
+- **Rebalance cadence:** **weekly** (evaluate/rank on each Monday's daily close;
+  hold one week; no intraday timing).
+- **Sizing:** equal notional per leg (each leg 1/k of the book); PnL computed per
+  leg from the next-week price move.
+- **Costs:** both legs pay round-trip spread from `experiments/_core/costs.py`
+  (per-symbol, extended to the full 12). Swap NOT folded in (separate diagnostic,
+  Issue C). Slippage = 0 (unmeasured, §6.1 — recorded as a known under-estimate of
+  costs, i.e. bias *against* GO).
+- **Walk-forward:** ranking uses ONLY data before the rebalance date (no
+  lookahead). Train/rank 2019-01-01 → 2024-12-31; **evaluate 2025-01-01 →
+  present.** No parameter re-tune after seeing the eval window.
+- **Metrics (per grid cell):** number of rebalances, net USD (per $1 notional
+  book), per-rebalance EV, win% (positive rebalance weeks), profit factor,
+  block-bootstrap 95% CI on EV (`_core/bootstrap.py`, **block = 5 consecutive
+  rebalances**, χ²-amended 2026-09-22: rebalances are weekly, so the block is in
+  *weeks*, not calendar days), max drawdown.
+
+## Decision gate (the 2×3 = 6-cell grid, evaluated on the unseen window)
+
+- **GO (any cell):** net-of-cost EV > 0 AND CI_lo > −0.05 AND ≥ 30 rebalances →
+  the effect warrants an ML/strategy stage (new experiment ID).
+- **STOP (all cells):** every cell EV ≤ −0.05 with CI_hi < 0, OR the best cell's
+  profit comes from ≤ 3 rebalances / a single year → hypothesis rejected.
+- **HOLD:** otherwise → collect more data / widen the universe, pre-registered.
+
+## Honest expectation
+
+Momentum is a documented but crowded effect that has decayed since its discovery
+decade; retail cross-sectional momentum on 12 instruments is plausibly <40% to be
+positive after costs. This is a low-cost, fast accept-or-reject — not a bet-the-
+farm quest.
+
+## Non-goals
+No ML in this experiment (mechanical rank-then-hold only); no intraday timing; no
+stat-arb microstructure; no look-ahead bias; no parameter search beyond the
+pre-registered grid.

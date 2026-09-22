@@ -1,0 +1,37 @@
+# Pre-registration — EXP-2026-11-GOLD-EXIT-ATR
+
+Written BEFORE the run (Issue A). Follow-up to EXP-2026-10, whose pre-registered
+policies were **confounded**: they anchored 1R to the operator's own SLs, which are
+far too tight for XAUUSD (median 8.0 pts, 25th pct 4.2 pts, vs M5 bar range 4.15
+and H1 ATR(14) 5.0). Any policy anchored to those stops is noise-stopped by
+construction (observed win rate collapsed to 12–29%).
+
+exp_id: EXP-2026-11-GOLD-EXIT-ATR
+status: pre-registered
+created: 2026-09-22
+builds_on: EXP-2026-10 (STOP under its own anchoring — see reports/)
+
+## Hypothesis (the fair version of the management question)
+
+> "With risk anchored to VOLATILITY (ATR), a mechanical exit policy applied to the
+> SAME manual entries produces positive net expectancy."
+
+## Method (pre-registered)
+
+- **Entries fixed** (same 114 gold trades from EXP-2026-10's ledger).
+- **1R = ATR(H1, 14) at the entry bar** (not the operator's SL). Two anchors tested:
+  `R = 1.0×ATR` and `R = 1.5×ATR`.
+- **Policies:** SL = 1R, TP = {1.5R, 2.0R, 3.0R}; plus 1.5R with break-even at +1R.
+- Path: XAUUSD M5, 48h horizon, ambiguous bar → SL first (conservative).
+- PnL = points × 100 × volume. Same metrics/gate as EXP-2026-10.
+
+## Decision gate (once)
+
+- **CONTINUE** → any policy EV > 0 on ≥ 100 trades and PF ≥ 1.10 → the entries
+  carry value under volatility-anchored management; build the automation.
+- **STOP** → every ATR-anchored policy is negative → the manual gold entries have
+  no edge extractable by mechanical management; close the gold-automation line.
+
+## Non-goals
+No new entries, no ML, no policy search beyond the listed set. Any further policy
+is a new experiment ID.

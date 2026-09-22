@@ -35,7 +35,10 @@ pairs:
 
 # ── Risk Controls ───────────────────────────────────────────────────
 risk:
-  max_daily_loss: 200.0           # $ max loss per day (~6% of ~$3,287)
+  max_daily_loss: 100.0           # $ max loss per day = 2% of $5,000 demo (7409623)
+                                  # operator decision 2026-09-21: sized above the
+                                  # ~$6/trade daily swing so it protects without
+                                  # ending test days early (roadmap §6.2).
   max_positions_per_pair: 1      # never pyramid on the same symbol
   max_total_positions: 4         # across all pairs
 

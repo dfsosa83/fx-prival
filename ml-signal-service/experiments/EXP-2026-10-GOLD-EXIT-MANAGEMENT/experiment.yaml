@@ -1,0 +1,75 @@
+# Pre-registration manifest — EXP-2026-10-GOLD-EXIT-MANAGEMENT
+
+Written BEFORE the analysis runs, per Issue A. This is a **retrospective study**
+on the operator's real manual gold trades (live account 81486396) — it tests a
+*management* hypothesis, not an entry model, and consumes no model-training budget.
+
+exp_id: EXP-2026-10-GOLD-EXIT-MANAGEMENT
+status: pre-registered
+created: 2026-09-22
+data_source: notebooks/xauusd/ReportHistory-81486396.xlsx  (real live statement)
+
+## Context — the corrected baseline (verified 2026-09-22)
+
+The account statement's own summary block: **139 trades, net −815.25, PF 0.94,
+55.4% win rate, avg win +166.68 vs avg loss −220.15, max drawdown 107%.**
+There is **no positive edge in any account** (ML: 6 experiments / 0 GO; gold
+rules: never traded; manual gold: net loss).
+
+## Hypothesis
+
+At a **55.4% win rate** the breakeven win/loss ratio is `(1−p)/p = 0.805`, but the
+book runs **0.757** (167/220) — a **6% shortfall**. Therefore the negative
+expectancy is attributable to **exit management**, not entry quality:
+
+> "Applying a mechanical exit policy with a win/loss ratio ≥ 0.81 to the SAME
+> manual entries will produce positive net expectancy."
+
+If true → the edge is in risk management and is automatable. If false → the
+entries themselves have no edge and the gold line can be closed with a number.
+
+## Method (pre-registered)
+
+- **Entries fixed:** each real trade's actual entry time, direction, entry price,
+  volume, and its own SL distance as **1R** (`R = |entry − SL|`). No new entries.
+- **Path:** XAUUSD M5 bars (MT5, read-only) from entry until exit/horizon.
+- **Policies (all evaluated on the identical entry set):**
+  - **P0 — actual** (the operator's real exit) — baseline.
+  - **P1** — 1R SL / 1.5R TP.
+  - **P2** — 1R SL / 2.0R TP.
+  - **P3** — 1R SL / 1.5R TP, move SL to break-even at +1R.
+  - **P4** — 1R SL / 1.0R TP (1:1).
+  - **P5** — 1R SL / 3.0R TP.
+- **Intrabar ambiguity:** if a single M5 bar touches both SL and TP, assume the
+  **SL** fills first (conservative).
+- **Horizon:** if neither barrier is hit within **48h**, exit at market.
+- **Sizing:** contract_size 100 (verified), PnL = points × 100 × volume.
+- **Scope:** XAUUSD trades only (the manual gold book).
+
+## Metrics & decision gate (evaluated once)
+
+Per policy: trade count, net USD, per-trade EV, win%, PF, avg win/loss, max
+consecutive loss. Compare each to the P0 baseline and to the 0.805 breakeven ratio.
+
+- **CONTINUE** → a mechanical policy shows **per-trade EV > 0** on ≥ 100 trades
+  **and** PF ≥ 1.10: the entries carry value under better management; build the
+  automation.
+- **HOLD** → best policy EV within ±$5/trade of zero: inconclusive; refine the
+  policy set once, pre-registered, no test-set reuse.
+- **STOP** → every mechanical policy is negative: the manual entries have no edge;
+  close the gold-automation line.
+
+## Non-goals
+
+No new entries, no ML, no parameter search beyond the five pre-registered
+policies, no change to the live paper systems. Any policy beyond this list is a
+new experiment ID.
+
+## Caveats (stated up front)
+
+- M5 granularity cannot resolve sub-5-min SL/TP ordering; the conservative rule
+  above biases results *against* the policies, which is the safe direction.
+- Real fills differ (spread/slippage not modelled here) — results are an upper
+  bound on tradability, same limitation as every other study in this repo.
+- 139 trades over ~3 weeks is a small sample; a positive result needs the paper
+  window to confirm before any live use.

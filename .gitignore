@@ -23,6 +23,8 @@ frival/execution_bot/data/
 # Gold Rules Engine — runtime artifacts (regenerable; never commit)
 frival/gold_rules/state/
 frival/gold_rules/journal/
+frival/gold_rules/engine_stderr.log
+frival/scheduler_stderr.log
 
 # Kilo local config
 .kilo/

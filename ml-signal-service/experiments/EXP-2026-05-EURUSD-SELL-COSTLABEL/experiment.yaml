@@ -1,0 +1,50 @@
+# Pre-registration manifest — EXP-2026-05 (ROADMAP-2026-Q4 §9 P0.1)
+
+Written BEFORE any code/run. Per Issue A (multiple-testing control), the sealed
+test set is scored exactly once; any re-run with changed assumptions requires a
+new experiment ID (EXP-2026-05b) and a RUN_LOG entry marking this one superseded.
+
+exp_id: EXP-2026-05-EURUSD-SELL-COSTLABEL
+status: hold                    # go | hold | stop (2026-09-21: HOLD, CI too wide)
+scored_at: 2026-09-21
+verdict_evidence: reports/test_metrics.json  # ev=+/-0.032, CI [-0.516, +0.452], n=62
+owner: fx-ml
+
+hypothesis:
+  "Retraining the production EURUSD SELL model on a cost-adjusted label
+   (TP must clear ATR barrier + round-trip friction) keeps the model
+   profitable on the sealed test window, while unadjusted labels
+   overstate net-of-cost EV/R."
+
+primary_metric: test_ev_per_r
+decision_gate:                   # roadmap §9 P0.1, evaluated ONCE
+  go: ev_per_r > 0 AND ev_ci_95_lo > -0.05 AND n_signals >= 30
+  hold: CI straddles zero beyond +-0.05R, or n_signals < 30
+  stop: ev_per_r <= -0.05 AND ci_hi < 0
+variants_tried: []               # append every threshold/cost/feature variant, Issue A
+
+controls:                        # byte-identical to production notebook (NOT changed)
+  base_notebook: notebooks/eurusd/eurusd_sell_improved.ipynb
+  split:
+    train: 2020-06-30 -> 2025-06-30
+    val:   2025-07-01 -> 2025-12-31
+    test:  2026-01-01 -> present
+  label_params:
+    forward_bars: 6
+    atr_period: 14
+    atr_tp_mult: 1.5
+    atr_sl_mult: 1.0
+  calibration: isotonic
+  cv: purged expanding TimeSeriesSplit, PURGE_DAYS=30
+
+changed_variable:                # the ONLY thing that differs from production
+  label: cost_adjusted_v1
+  cost_source: experiments/_core/costs.py (ROUND_TRIP_COST_PIPS)
+  pair: EURUSD
+  session: ALL                   # flat session multiplier (costs.py TODO)
+  slippage: 0.0                  # unmeasured; roadmap §6.1 measurement pending
+
+outputs:
+  model_bundle: models/EURUSD_H1_sell_costlabel_<model>.joblib
+  test_metrics: reports/test_metrics.json
+  test_signals: reports/test_signals.csv

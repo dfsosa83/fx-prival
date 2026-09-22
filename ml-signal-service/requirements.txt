@@ -14,3 +14,6 @@ ta>=0.11.0               # technical indicators library
 scikit-learn>=1.4.0
 xgboost>=2.1.0
 lightgbm>=4.5.0
+
+# ── test (experiments/_core P0.0) ────────────────────────────────────────────
+pytest>=8.0.0

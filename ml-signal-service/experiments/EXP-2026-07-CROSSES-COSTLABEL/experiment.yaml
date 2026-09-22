@@ -1,0 +1,43 @@
+# Pre-registration manifest — EXP-2026-07 (ROADMAP-2026-Q4 §9 P1 "liquid-cross book")
+
+Written BEFORE any model code. Issue A: each pair's sealed test is scored once;
+any re-run with changed assumptions = new experiment ID (EXP-2026-07b) + RUN_LOG.
+
+exp_id: EXP-2026-07-CROSSES-COSTLABEL
+status: aborted_verified-not-asymmetric-tradeable
+        # 2026-09-21: no scoring run. Cost handicap > 0.5R/pair makes the
+        # ATR-triple-barrier cost-adjusted label structurally unviable on
+        # crosses (breakeven precision ~62% vs ~44% EURUSD). See RUN_LOG.
+created: 2026-09-21
+data_source: meta-2026-09-21 MT5 H1 (FPMarketsSC-Demo 7409623)
+
+hypothesis:
+  "EURUSD BUY (STOP) and SELL (HOLD) were both dominated by the USD regime
+   2024-2026. Crosses (EURGBP, GBPJPY, EURJPY) move OFF the USD axis, so a
+   cost-adjusted-label model on a cross can show clean evidence where the
+   USD-major book could not. Diversification first, edge second."
+
+primary_metric: test_ev_per_r
+decision_gate:                  # roadmap §9 P1 (same rule as cross EV/R table,
+                                # EXP-2026-04 §5 where applicable); applied PER PAIR
+  go:   ev_per_r > 0 AND ev_ci_95_lo > -0.05 AND n_signals >= 30
+  hold: CI straddles zero beyond +-0.05R, or n_signals < 30
+  stop: ev_per_r <= -0.05 AND ci_hi < 0
+variants_tried: []              # append per pair per threshold, Issue A
+
+pairs:                          # description -> status
+  EURGBP: {symbol: EURGBP, pip: 1e-4, spread_pips: 4.7,  status: data_acquired}
+  GBPJPY: {symbol: GBPJPY, pip: 1e-2, spread_pips: 13.6, status: data_acquired}
+  EURJPY: {symbol: EURJPY, pip: 1e-2, spread_pips: 10.6, status: data_acquired}
+
+controls:                       # byte-identical to production EURUSD notebook (NOT changed)
+  base_notebook: notebooks/eurusd/eurusd_sell_improved.ipynb
+  label_params: {forward_bars: 6, atr_period: 14, atr_tp_mult: 1.5, atr_sl_mult: 1.0}
+  split: same architecture as production (train except val window, val, test)
+  sequence: SELL first per pair, then BUY — one direction at a time per Issue A
+  cost_source: experiments/_core/costs.py (MEASURED_SPREAD_PIPS 2026-09-21)
+
+outputs:
+  models: models/EURUSD_H1_<pair>_<dir>_costlabel_<model>.joblib   # NEVER production bundle names
+  per_pair_metrics: reports/<pair>_<dir>_test_metrics.json
+  signal_ledgers:  reports/<pair>_<dir>_test_signals.csv

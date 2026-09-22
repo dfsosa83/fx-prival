@@ -1,0 +1,56 @@
+# Pre-registration manifest — EXP-2026-14-VOLATILITY-TIMING
+
+Written BEFORE the analysis, per Issue A. The unseen evaluation window
+(2025-01-01 → present) is judged ONCE. Any material change = new ID.
+
+exp_id: EXP-2026-14-VOLATILITY-TIMING
+status: rejected                # 2026-09-22: CALM pocket real but still negative
+                               #   everywhere (EV -3.3..-3.8bp; VOL -7.5..-10bp).
+                               #   Useful risk fact (avoid expansion regimes), not edge.
+created: 2026-09-22
+hypothesis_family: volatility-regime conditioning (the un-tested B1 candidate)
+
+## Hypothesis
+
+> "The cost-adjusted profitability of a 1.5R-take it / 1R-stop triple-barrier trade
+> is NOT uniform across volatility regime: in CALM regimes (current ATR below its
+> trailing median) the signal-to-cost ratio is better, so a regime-conditional
+> book can be net positive where the unconditional book is not."
+
+This is a **sub-hypothesis** of the (falsified) directional family: it does not
+claim the label has edge overall; it claims the edge, if any, is *pocketed* by
+vol-regime. Public stylized fact backing it: volatility clusters (GARCH), so
+"calm now ⇒ likely still calm for the next few bars" is the most robust finding in
+financial time series.
+
+## Pre-registered specification
+
+- **Universe:** the 4 measured majors with an existing label family: EURUSD,
+  GBPUSD, USDCHF, USDCAD. (JPY/xcross/gold have alternative conventions; holding
+  to the 4 tested pairs keeps costs exact.)
+- **Mechanical trade** (no ML): forward 6 bars, entry `close[t]`, TP
+  entry − 1.5×ATR (SELL), SL entry + 1.0×ATR, cost-adjusted TP by
+  `_core/costs.py` — the exact production label machinery.
+- **Regime split (a-priori, no fitted params):** CALM if `ATR_14(t) <
+  rolling median ATR_14 over the prior 720 bars (~30 days)`, else VOLATILE.
+- **EV/trade:** `p_hit × (TP − cost) − (1 − p_hit) × (SL + cost)` in price
+  terms; net of round-trip cost.
+- **Walk-forward:** regime threshold learned 2019–2024 (rolling median uses only
+  past); EV calculated on **2025-01-01 → present**.
+- **Metrics per (pair × regime):** n bars, base hit%, EV/trade net-of-cost,
+  block-bootstrap 95% CI on EV, and EV(CALM) − EV(VOLATILE).
+
+## Decision gate (evaluated once, unseen window)
+
+- **SUPPORTED (candidate for portfolio):** EV(CALM) > 0 with CI_lo > −0.05
+  **and** EV(CALM) − EV(VOLATILE) > 0.05×TP across ≥ 2 of the 4 pairs.
+- **REJECTED:** otherwise (no regime pocket after costs).
+- This is a *candidate* test — even if supported, it enters the verified-components
+  portfolio as one ingredient, not a standalone GO.
+
+## Honest expectation
+
+Weak improvement at best: the coat-tails of the dose of the public
+"vol-clustering" effect are modest after retail spreads. Prior: low-to-moderate
+for SUPPORTED. The point is to know — it is a 30-minute mechanical check on
+existing data with zero new engineering.

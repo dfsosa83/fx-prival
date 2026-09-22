@@ -22,8 +22,9 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -61,6 +62,79 @@ CURRENCY_LEGS: Dict[str, Dict[str, float]] = {
 
 # engines/comment tags the dashboard attributes PnL to
 GOLD_COMMENTS = ("GOLD_RULES_v1", "GOLD_RULES_C")
+
+# Stage 2 (roadmap §8): per-comment-tag performance lookup window in days.
+# Deals further back than this are ignored by the tag-performance lens so the
+# dashboard stays responsive on the read-only MT5 queries (one connect per call).
+TAG_PERFORMANCE_DAYS = 30
+
+
+def read_deals_ledger(days: int = TAG_PERFORMANCE_DAYS) -> List[Dict[str, Any]]:
+    """Read-only view of recent CLOSED trades (MT5 deal history, no orders).
+
+    Returns one dict per trade-relevant deal carrying the fields the Stage 2
+    tag aggregation needs: symbol, type, volume, price, profit, comment, time.
+    Deposits/withdrawals (DEAL_TYPE_BALANCE) are excluded — same filter as the
+    today-PnL fix (2026-09-18). Never writes, transient-error tolerant.
+    """
+    import MetaTrader5 as mt5
+
+    if not _safe_mt5(lambda: mt5.initialize(path=TERMINAL_PATH)):
+        return []
+
+    try:
+        start = datetime.utcnow() - timedelta(days=days)
+        deals = _safe_mt5(
+            lambda: mt5.history_deals_get(start, datetime.utcnow()), []
+        )
+        if not deals:
+            return []
+        rows = []
+        for d in deals:
+            if getattr(d, "type", -1) not in (0, 1):  # DEAL_TYPE_BUY / SELL only
+                continue
+            rows.append({
+                "symbol": d.symbol,
+                "type": "BUY" if d.type == 0 else "SELL",
+                "volume": float(d.volume),
+                "price": float(d.price),
+                "profit": float(d.profit),
+                "comment": getattr(d, "comment", "") or "",
+                "time": datetime.fromtimestamp(d.time, tz=timezone.utc).isoformat(),
+            })
+        return rows
+    finally:
+        try:
+            mt5.shutdown()
+        except Exception:
+            pass
+
+
+def build_tag_performance(days: int = TAG_PERFORMANCE_DAYS) -> Dict[str, Any]:
+    """Stage 2 — per-comment-tag performance (roadmap §8, retrofitted §9 P0.2).
+
+    Reads the closed-trade ledger (read-only), groups by comment tag, and
+    scores each group with the shared cost-adjusted EV/R + block-bootstrap CI
+    (frival/dashboard/backend/tag_metrics.py -> experiments/_core). EV/R
+    fields are reported only where derivable (backtest-ledger risk distances);
+    PnL/win%/count are always reported. The dashboard never fabricates an R.
+    """
+    # portfolio.py is imported both as a package member (dashboard.backend.*)
+    # and as a bare top-level module (main.py, tests): try both import forms.
+    try:
+        from . import tag_metrics
+    except ImportError:
+        sys.path.insert(0, str(HERE))
+        import tag_metrics
+
+    ledger = read_deals_ledger(days=days)
+    groups = tag_metrics.aggregate_by_tag(ledger)
+    return {
+        "days": days,
+        "tags": groups,
+        "deals_read": len(ledger),
+        "cost_source": "ml-signal-service/experiments/_core/costs.py",
+    }
 
 
 def load_env(path: Path) -> Dict[str, str]:
@@ -324,4 +398,6 @@ def build_book() -> Dict[str, Any]:
         "gold_pnl": gold_pnl,
         "health": engine_health(),
         "combined_today_pnl": round(mt5.get("today_deals_pnl", 0.0), 2),
+        # Stage 2 (roadmap §8): per-comment-tag performance, net-of-cost EV/R + CI.
+        "tag_performance": build_tag_performance(),
     }

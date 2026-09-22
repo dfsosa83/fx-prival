@@ -1,0 +1,74 @@
+# Pre-registration manifest — EXP-2026-13-EVENT-DRIVEN
+
+Written BEFORE any analysis, per Issue A. The unseen evaluation window
+(2025-01-01 → present) is judged ONCE. Any material change (sign rule, window,
+universe, event filter, cost model) = new ID (EXP-2026-13b) + supersede note.
+
+exp_id: EXP-2026-13-EVENT-DRIVEN
+status: hold                    # 2026-09-22: naive gate GO on XAUUSD overridden by audit
+                               #   (effect is 2025-only: +4.89bp CI[+2.3,+7.7] in 2025;
+                               #   +1.06bp CI[-6,+8] in 2026; 24h cells are half trend).
+                               #   FX is a clean null (priced-in within the hour).
+created: 2026-09-22
+hypothesis_family: event-driven macro reaction (scheduled surprise → price)
+
+## Hypothesis
+
+> "Scheduled macro-economic events with a known DEVIATION (actual vs Consensus —
+> the 'surprise') produce a **price reaction in the direction implied by the
+> surprised currency**, and this reaction is tradeable net of cost in the hours
+> after the release."
+
+Why NEW: every prior falsification used *past/own price patterns*. This is the only
+hypothesis driven by **exogenous scheduled information** — the event release time and
+the actual-vs-consensus surprise are known at the instant they occur, not inferred
+from price history. Friction-favourable (event reactions are multi-pip).
+
+## Pre-registered specification (all locked before the run)
+
+- **Universe (6):** the pairs in `frival/data/calendar.py::PAIR_CURRENCIES`
+  (EURUSD, GBPUSD, USDCHF, USDJPY, XAUUSD, USDCAD). Event set = the calendar's
+  per-currency economic events.
+- **Signal — a-priori sign rule (ZERO fitted parameters):**
+  - event currency `C` with `Deviation = Actual − Consensus`.
+  - If `C` is the **base** currency of the pair and Deviation > 0 → **LONG** the
+    pair (positive surprise strengthens base ⇒ pair up).
+  - If `C` is the **base** and Deviation < 0 → **SHORT**.
+  - If `C` is the **quote** currency: invert — Dev > 0 → **SHORT**, Dev < 0 →
+    **LONG** (positive surprise strengthens quote ⇒ pair down).
+  - XAUUSD: only USD events load; the quote rule applies (gold is USD-denominated;
+    Dev > 0 in USD → SHORT gold).
+- **Event filter:** event `Impact` in {HIGH, MEDIUM} AND `Deviation` is not null.
+- **Reaction:** enter at the H1 close at/after `event_dt`; exit at the H1 close
+  at/after `event_dt + window`; window ∈ **{1h, 4h, 24h}**.
+- **Costs:** round-trip spread from `_core/costs.py` per pair, applied once
+  (open+close = one round trip). Slippage = 0 (unmeasured — bias *against* GO).
+- **Position sizing:** one fixed notional (=1) per event; equal weight.
+- **Evaluation:** events with `event_dt >= 2025-01-01` (unseen). No learning split
+  needed — the sign rule is a-priori with no fitted parameters.
+- **Metrics per (pair × window) cell:** n events, net EV per event, win%,
+  profit factor, block-bootstrap 95% CI on EV (`_core/bootstrap.py`, block = 5
+  events), max drawdown of the event-by-event PnL.
+
+## Decision gate (6 pairs × 3 windows = 18 cells; checked ONCE on the unseen window)
+
+- **GO (any cell):** n ≥ 30 AND net EV > 0 AND CI_lo > −0.05 → the surprise-driven
+  reaction is tradeable; proceed to ML/strategy stage (new experiment ID).
+- **STOP (all cells):** every EV ≤ −0.05 with CI_hi < 0.
+- **HOLD:** otherwise (no GO, not all STOP) — record and stop; no grid re-run.
+
+## Non-goals
+
+No ML (mechanical a-priori sign rule only); no look-ahead of post-release prices at
+signal time (we use only the published Deviation at `event_dt`); no deviation-quantile
+search (0.5-quantile split is the a-priori rule — further splits = new ID); no
+intra-hour timing.
+
+## Honest expectation
+
+Event reactions are the textbook "efficiently priced" market; post-release drift is
+well-known to decay quickly and to be heavily arbitraged. Prior: LOW for a large
+net-of-cost GO in any single 18-cell window. The value is (a) it is the ONE
+exogenous-information test we have not run, and (b) it uses only the a-priori sign
+rule — so a clean null is a strong statement that scheduled-macro surprises are
+priced into this universe after costs.

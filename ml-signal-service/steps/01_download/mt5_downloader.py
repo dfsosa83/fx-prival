@@ -36,6 +36,12 @@ ROOT = Path(__file__).resolve().parents[2]
 CONFIG_PAIRS = ROOT / "config" / "pairs.yaml"
 CONFIG_SETTINGS = ROOT / "config" / "settings.yaml"
 ENV_FILE = ROOT / ".env"
+# Fallback: the repo's existing MT5 credentials live in the frival execution-bot
+# config (single source of truth). Avoids duplicating secrets into ml-signal-service/.env.
+CREDENTIALS_FALLBACK = (
+    Path(__file__).resolve().parents[2].parent
+    / "frival" / "execution_bot" / "config" / "credentials.env"
+)
 
 # ── canonical output columns ───────────────────────────────────────────────────
 CANONICAL_COLS = ["datetime", "open", "high", "low", "close", "volume"]
@@ -70,7 +76,11 @@ def load_configs():
 
 
 def connect_mt5(settings: dict) -> bool:
-    load_dotenv(ENV_FILE)
+    env_file = ENV_FILE if ENV_FILE.exists() else CREDENTIALS_FALLBACK
+    if not env_file.exists():
+        print(f"[ERROR] No credentials (.env or {CREDENTIALS_FALLBACK})")
+        return False
+    load_dotenv(env_file)
     mt5_path = os.getenv("MT5_PATH") or settings["mt5"]["terminal_path_default"]
     login = int(os.getenv("MT5_LOGIN", "0"))
     password = os.getenv("MT5_PASSWORD", "")
@@ -110,6 +120,23 @@ def get_from_date(csv_path: Path, start_date: str, tf_name: str) -> datetime:
     return datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=UTC)
 
 
+def get_rates_with_retry(symbol: str, mt5_tf, from_dt: datetime, to_dt: datetime, retries: int = 2):
+    """copy_rates_range with retry.
+
+    Observed behavior (2026-09-21): the FIRST copy_rates_range call immediately
+    after connect sometimes returns empty even for valid symbols/brokers, while
+    a retry succeeds (transient terminal state). Retry twice before treating as
+    a real no-data condition so we don't leave gaps in the H1 store.
+    """
+    for attempt in range(retries + 1):
+        rates = mt5.copy_rates_range(symbol, mt5_tf, from_dt, to_dt)
+        if rates is not None and len(rates) > 0:
+            if attempt > 0:
+                print(f"[RETRY-OK {symbol}] attempt {attempt + 1} returned {len(rates)} bars", end=" ")
+            return rates
+    return rates
+
+
 def download_pair(symbol: str, tf_name: str, settings: dict, start_date: str):
     mt5_tf_attr = MT5_TF_MAP.get(tf_name)
     if mt5_tf_attr is None:
@@ -126,7 +153,7 @@ def download_pair(symbol: str, tf_name: str, settings: dict, start_date: str):
         return
 
     print(f"[FETCH] {symbol} {tf_name}: {from_dt.date()} → {to_dt.date()} ...", end=" ")
-    rates = mt5.copy_rates_range(symbol, mt5_tf, from_dt, to_dt)
+    rates = get_rates_with_retry(symbol, mt5_tf, from_dt, to_dt)
 
     if rates is None or len(rates) == 0:
         print(f"\n[WARN]  {symbol} {tf_name}: MT5 returned no data — check symbol name and broker availability")
@@ -157,6 +184,7 @@ def run(pair_filter: str = None, tf_filter: str = None):
             pairs_cfg["pairs"].get("majors", [])
             + pairs_cfg["pairs"].get("minors", [])
             + pairs_cfg["pairs"].get("commodities", [])
+            + pairs_cfg["pairs"].get("indices", [])
         )
         timeframes = [tf["name"] for tf in pairs_cfg["timeframes"]]
 

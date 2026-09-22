@@ -1,0 +1,57 @@
+# Pre-registration manifest — EXP-2026-09-US30-LABEL-GEOMETRY-REDESIGN
+
+Written BEFORE any code/run, per Issue A. Sealed test scored once; re-run with
+changed assumptions = new experiment ID (EXP-2026-09b) + supersede note.
+
+exp_id: EXP-2026-09-US30-LABEL-GEOMETRY-REDESIGN
+status: stop                    # 2026-09-22: hypothesis FALSIFIED (precision worsened
+                                #  0.329->0.268 while roc_auc improved 0.660->0.687)
+scored_at: 2026-09-22
+verdict_evidence: reports/US30_sell_test_metrics.json  # ev=-0.197, CI [-0.292,-0.093], n=1241
+
+hypothesis:
+  "US30 model ranks trades well (roc_auc 0.66) but precision 0.329 undercuts the
+   0.40 breakeven at the 1.5R/1R triple-barrier label. A WIDER-TP geometry
+   (fewer, higher-quality signals) will shift precision above the cost-adjusted
+   breakeven WITHOUT retraining anything else — same features, model family,
+   split, CV, and calibration; ONLY the ATR TP/SL multipliers change."
+
+primary_metric: test_ev_per_r
+decision_gate:                   # same gate family as all prior experiments
+  go:   ev_per_r > 0 AND ev_ci_95_lo > -0.05 AND n_signals >= 30
+  hold: CI straddles zero beyond +-0.05R, or n_signals < 30
+  stop: ev_per_r <= -0.05 AND ci_hi < 0
+
+controls_untouched:              # byte-identical to eurusd_sell_improved.ipynb
+  features: full production pipeline
+  split: train 2020-06-30..2025-06-30 | val 2025-07-01..2025-12-31 | test 2026-01-01..
+  cv: purged expanding TimeSeriesSplit, PURGE_DAYS=30
+  calibration: isotonic
+  threshold_rule: MIN_VAL_SIGNALS=50, max precision*log(signals)
+  cost_source: experiments/_core/costs.py (US30 spread 320 points = 3.2 px)
+  pair: US30
+
+changed_variables:               # the ONLY things that differ from EXP-2026-08
+  label_geometry: {atr_tp_mult: 2.0, atr_sl_mult: 1.0}   # FROZEN 2026-09-21 by pre-analysis:
+    # - cost-adj label rate 15.6% (inside 15-35% usability zone) vs 22.6% @TP1.5/SL1
+    # - cost-adj breakeven precision 34.6% vs 41.5% @TP1.5/SL1 (-7pt = the margin)
+    # - R:R 2.0 (vs 1.5). Sweep evidence kept as reports/geometry_sweep.csv.
+  label: cost_adjusted_v1 (unchanged cost model)
+
+geometry_preanalysis:            # full sweep (train window, cost-adjusted)
+  tp_sl_candidates_tested: [1.5/1.0, 2.0/1.0, 2.5/1.0, 3.0/1.0, 1.5/0.75, 2.0/0.75,
+                            2.5/0.75, 3.0/0.75, 1.5/1.25, 2.0/1.25, 2.5/1.25, 3.0/1.25]
+  frozen: "TP 2.0 / SL 1.0 — only cell with usable rate AND breakeven <0.35"
+  breakeven_frozen: 0.346
+  label_rate_frozen: 0.156
+
+expected_effect:
+  precision_shift: "wider TP -> lower label rate, but each label-1 requires a
+    LARGER move, so the model only needs to rank the *deepest* de novo trades;
+    historical precision on FX rising with TP width supports this."
+
+outputs:
+  model_bundle: models/EURGBP_H1_sell_costlabel_<model>.joblib  # templated, will be US30
+  geometry_evidence: reports/geometry_sweep.csv
+  test_metrics: reports/US30_sell_test_metrics.json
+  test_signals: reports/US30_sell_test_signals.csv

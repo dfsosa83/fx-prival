@@ -103,13 +103,25 @@ def run_pipeline():
 
 
 def _sleep_until_next_midnight():
-    """Wait until Panama local midnight (00:00), printing a countdown."""
+    """Wait until the next Panama-midnight boundary, then return so the outer
+    loop rebuilds that day's targets.
+
+    Bugfix 2026-09-22 (day-skip): the old version recomputed ``tomorrow`` from
+    ``now`` on EVERY loop pass. Once the intended midnight passed (00:00:01 of
+    day N+1), it re-derived tomorrow = N+2 midnight and kept sleeping — skipping
+    day N+1 entirely (symptom: "[WAITING] Next day starts in ~1019 min" while it
+    was already 07:01 local, and today never fired).
+
+    Fix: capture the rollover boundary ONCE at entry, then sleep until it
+    passes. The boundary is strictly the next 00:00 local regardless of when
+    we're entered (works whether entered at 19:00, 23:59, or 00:00:30).
+    """
+    now = now_local()
+    # Next 00:00 local AFTER the current instant (tomorrow's midnight):
+    midnight = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
     while True:
-        now = now_local()
-        tomorrow = now.date() + timedelta(days=1)
-        midnight = datetime(tomorrow.year, tomorrow.month, tomorrow.day, 0, 0, 0)
-        wait = (midnight - now).total_seconds()
-        if wait <= 0:
+        wait = (midnight - now_local()).total_seconds()
+        if wait <= 0.0:
             break
         sys.stdout.write(f"\r[WAITING] Next day starts in {int(wait)//60:>3d} min "
                          f"(at 12:00 AM local)   ")
