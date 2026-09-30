@@ -1,0 +1,34 @@
+source,file_path,file_size_bytes,sha256,first_ts,last_ts,rows
+mt5_h1_cache,ml-signal-service\data\raw\mt5\H1\EURGBP_H1.csv,2755310,8b3e101797afcbf1debcada8b9474cb121609716afadc6290351e774f5aaf9ba,2019-01-02 06:00:00,2026-09-21 20:00:00,48020.0
+mt5_h1_cache,ml-signal-service\data\raw\mt5\H1\EURJPY_H1.csv,2768325,886f6a3d9ea708fa665680624bad1d4091618846e9dadca7f036066840e4cffe,2019-01-02 06:00:00,2026-09-21 21:00:00,48021.0
+mt5_h1_cache,ml-signal-service\data\raw\mt5\H1\EURUSD_H1.csv,2859262,25a4abd84d6de4cd3b3932a081dbe51d9225eefa4297f95ab540748789fa2928,2019-01-02 00:00:00,2026-09-24 14:00:00,48112.0
+mt5_h1_cache,ml-signal-service\data\raw\mt5\H1\GBPJPY_H1.csv,2770147,026256c5f8b9104c4591f51e628711e91b318f9a0761301a3e7c1df91c0ee979,2019-01-02 06:00:00,2026-09-21 21:00:00,48021.0
+mt5_h1_cache,ml-signal-service\data\raw\mt5\H1\GBPUSD_H1.csv,2864555,d776d529074263bbb70615521db293f30d411a17984af5377cdc9c416dda4762,2019-01-02 00:00:00,2026-09-24 14:00:00,48112.0
+mt5_h1_cache,ml-signal-service\data\raw\mt5\H1\US30_H1.csv,2333365,1a41889c6f8e0fb39fda60e1fd209650ac82459b5bf90b8ce059cbcd542beaed,2020-02-28 01:00:00,2026-09-21 22:00:00,38731.0
+mt5_h1_cache,ml-signal-service\data\raw\mt5\H1\USDCAD_H1.csv,2856416,f1b0e683696d98619188ef2009260f6a4e12d9bffe06354e122b1198ed6d02a6,2019-01-02 07:00:00,2026-09-24 14:00:00,48083.0
+mt5_h1_cache,ml-signal-service\data\raw\mt5\H1\USDCHF_H1.csv,2857472,d49e47a618e19af709bcfc8b7354d0997136770a47de61251af6188aad2b6776,2019-01-02 00:00:00,2026-09-24 14:00:00,48112.0
+mt5_h1_cache,ml-signal-service\data\raw\mt5\H1\USDJPY_H1.csv,2712515,bf92ff4077425e9dc903a1d9d3dc5f847a8f3fed49958aa4b44cfc1c640a4cbc,2019-01-02 00:00:00,2026-07-30 14:00:00,47152.0
+mt5_h1_cache,ml-signal-service\data\raw\mt5\H1\USDX_H1.csv,1838267,4257777bd0b1d4d3d363e0db7126af6611ee7280f8316d735b21f0e7ff4cfe46,2019-01-02 00:00:00,2026-08-17 21:00:00,33934.0
+mt5_h1_cache,ml-signal-service\data\raw\mt5\H1\WTI_H1.csv,2263692,f4f389424a96d7eda8947f3688a591a817a565cff93d734d5e69bb542dd186e7,2019-01-02 01:00:00,2026-08-17 21:00:00,45097.0
+mt5_h1_cache,ml-signal-service\data\raw\mt5\H1\XAUUSD_H1.csv,2610992,a36f2e2331b38e72a6d2874b625db981aed92220499204d18e8ce58d71332cfa,2019-01-02 01:00:00,2026-08-17 16:00:00,45077.0
+gold_m5,ml-signal-service\experiments\EXP-2026-10-GOLD-EXIT-MANAGEMENT\data\gold_manual_trades.csv,15731,40487516258546c37f76321490ab1f6df2b74367e0aefbe807390e6b830f0cc9,,,
+gold_m5,ml-signal-service\experiments\EXP-2026-10-GOLD-EXIT-MANAGEMENT\data\xauusd_m5.csv,274290,446501aa79e806be3f53090dc0aeb372bcab5cb88e698f8a29c652c29f533c63,,,
+yahoo_daily,quant-personal-fund\data\raw\yahoo\daily\1343.T_daily.parquet,146289,dd7da2dc69304f2ff65677d1e2005a97fb3937cd6e1601b0119c11efda2cb0ec,,,2882.0
+yahoo_daily,quant-personal-fund\data\raw\yahoo\daily\2644.T_daily.parquet,63482,a5b6a1e5d8bf6ee31cba75c37df3c8701e0545bab425fcf613ab4d6ea331f2ad,,,1222.0
+yahoo_daily,quant-personal-fund\data\raw\yahoo\daily\^GSPC_daily.parquet,137502,be4da41ae32bc02639ad5b3420f87c9bc2f3172560e0a473c993e79514aaf9d0,,,2947.0
+yahoo_daily,quant-personal-fund\data\raw\yahoo\daily\^N225_daily.parquet,123195,161f3192499d18dd46afdb582c7069c5b793c7609ef2374b8f26a455dbed3a41,,,2863.0
+yahoo_daily,quant-personal-fund\data\raw\yahoo\daily\^NDX_daily.parquet,138779,8e87f51d8ad350d715f62cba503bc952eaa997412f84d7f218158ae33d571f31,,,2947.0
+yahoo_daily,quant-personal-fund\data\raw\yahoo\daily\^STOXX50E_daily.parquet,135759,5f89a5c0a8157426d5635ba67bccb0f732df55f02be2f4e58652a75620dbc44d,,,2944.0
+yahoo_daily,quant-personal-fund\data\raw\yahoo\daily\^TNX_daily.parquet,92734,b45ad9b98eb0d7c01e3a3af65d5f7a6810a6b3f0deaa2055c13ca6b3c1beb202,,,2945.0
+yahoo_daily,quant-personal-fund\data\raw\yahoo\daily\AUDUSD=X_daily.parquet,109307,d9a4e2a4b7f9925d69d62ab0b0ea6aef25a597889a5a7a9e9d6f1f16bb83d3fe,,,3051.0
+yahoo_daily,quant-personal-fund\data\raw\yahoo\daily\CL=F_daily.parquet,121416,8a18467300b22d145cef9e4347382cfce26eeb542199cf3d8dc55196d71545f8,,,2947.0
+yahoo_daily,quant-personal-fund\data\raw\yahoo\daily\EURJPY=X_daily.parquet,114617,8831ccf5994514c30cbbd82001775f46986e4d64e982a7e1e5addbb2420a0841,,,3052.0
+yahoo_daily,quant-personal-fund\data\raw\yahoo\daily\EURUSD=X_daily.parquet,107302,777a213ec9080d2d3c0036a110a0759d2b0c3b4ed3d88b06d56fe9fff4a6cb28,,,3051.0
+yahoo_daily,quant-personal-fund\data\raw\yahoo\daily\GBPUSD=X_daily.parquet,109003,9ba03f4c8292f0cc358b2ac0d364d77e82f2169e547739e2e0c7e9fa0637169a,,,3051.0
+yahoo_daily,quant-personal-fund\data\raw\yahoo\daily\GC=F_daily.parquet,119131,6fa71794186a0d5b75e235e8a5732c571ee1073d36578947d468929b3f8cc113,,,2947.0
+yahoo_daily,quant-personal-fund\data\raw\yahoo\daily\HG=F_daily.parquet,110090,06ff64bbf54363c946e4ccbf004263f998351d7a3540f0aebf1fdbb55f474753,,,2947.0
+yahoo_daily,quant-personal-fund\data\raw\yahoo\daily\IGLT.L_daily.parquet,150200,cdab4ec39b886f172fdb2c9d573d0294ffe8a7d8b37f4ef09506345bed339a9a,,,2961.0
+yahoo_daily,quant-personal-fund\data\raw\yahoo\daily\NZDUSD=X_daily.parquet,111581,16b98c6c00018a33ed92120ad0f2b134226f1dac815a44c8f6bf88507002c9d2,,,3051.0
+yahoo_daily,quant-personal-fund\data\raw\yahoo\daily\USDCAD=X_daily.parquet,109120,c7954a810affb1374348b4a137f43c859e812cba5b1eaab4fe7e441a235c96d6,,,3051.0
+yahoo_daily,quant-personal-fund\data\raw\yahoo\daily\USDCHF=X_daily.parquet,107896,e5702a6c1e98d6a85808aef46a4fb4b7098376e77d8e0890c394f24a54239fb7,,,3051.0
+yahoo_daily,quant-personal-fund\data\raw\yahoo\daily\USDJPY=X_daily.parquet,114637,c5477a0cee5634f14b612e4097556c90c38fee7fd33a1646f7c9f056b916a42a,,,3051.0

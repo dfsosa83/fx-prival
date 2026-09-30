@@ -117,6 +117,17 @@ class OrderBot:
         Returns True if signal was handled (executed or intentionally skipped),
         False if there was a transient error (retry on next poll).
         """
+        # EXEC-D1 delegation (authorized 2026-09-29): with `execution.enabled`
+        # the EXEC-D1 terminal runner (run_exec_d1_terminal.py) is the ONLY
+        # entry path. The legacy paper-simulation path must not double-consume.
+        try:
+            from core.exec_d1_terminal import exec_d1_enabled
+            if exec_d1_enabled():
+                print(f"[OrderBot] EXEC-D1 active — delegated to "
+                      f"run_exec_d1_terminal.py (skip {signal.get('signal_id')})")
+                return True
+        except Exception:
+            pass  # settings unreadable -> keep legacy behavior
         if EMERGENCY_STOP.exists():
             print("[OrderBot] Emergency stop — signal rejected")
             return True

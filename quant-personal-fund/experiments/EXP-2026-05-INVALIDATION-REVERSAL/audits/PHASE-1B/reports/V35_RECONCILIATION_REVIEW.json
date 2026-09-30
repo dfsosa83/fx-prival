@@ -1,0 +1,87 @@
+{
+  "csv_rows": 5225,
+  "overall": {
+    "rows": 5225,
+    "unique_idx": 5225,
+    "rows_minus_unique_idx": 0,
+    "windows": {
+      "development": 2650,
+      "research_grade_oos": 2575
+    }
+  },
+  "development": {
+    "rows": 2650,
+    "unique_idx": 2650,
+    "duplicate_idx_within_window": 0,
+    "rows_minus_unique": 0,
+    "reason_counts": {
+      "no_c1": 1462,
+      "no_invalidation_within_observation_window": 446,
+      "c1_triggered": 359,
+      "conservative_observed_window_exclusion_not_broker_confirmed": 324,
+      "rollover_ineligible": 42,
+      "missing_bar": 17
+    },
+    "eligible_avsb": 1863,
+    "eligible_components": {
+      "c1_triggered": 359,
+      "no_c1": 1462,
+      "rollover_ineligible": 42
+    },
+    "exclusions": {
+      "no_invalidation_within_observation_window": 446,
+      "conservative_observed_window_exclusion_not_broker_confirmed": 324,
+      "missing_bar": 17
+    },
+    "sum_reason_counts": 2650,
+    "reconciles": true
+  },
+  "research_grade_oos": {
+    "rows": 2575,
+    "unique_idx": 2575,
+    "duplicate_idx_within_window": 0,
+    "rows_minus_unique": 0,
+    "reason_counts": {
+      "no_c1": 1270,
+      "no_invalidation_within_observation_window": 562,
+      "c1_triggered": 382,
+      "conservative_observed_window_exclusion_not_broker_confirmed": 281,
+      "rollover_ineligible": 40,
+      "right_censored_at_data_end": 21,
+      "missing_bar": 19
+    },
+    "eligible_avsb": 1692,
+    "eligible_components": {
+      "c1_triggered": 382,
+      "no_c1": 1270,
+      "rollover_ineligible": 40
+    },
+    "exclusions": {
+      "no_invalidation_within_observation_window": 562,
+      "conservative_observed_window_exclusion_not_broker_confirmed": 281,
+      "right_censored_at_data_end": 21,
+      "missing_bar": 19
+    },
+    "sum_reason_counts": 2575,
+    "reconciles": true
+  },
+  "reason": {
+    "null_reason_rows": 0,
+    "value_counts": {
+      "no_c1": 2732,
+      "no_invalidation_within_observation_window": 1008,
+      "c1_triggered": 741,
+      "conservative_observed_window_exclusion_not_broker_confirmed": 605,
+      "rollover_ineligible": 82,
+      "missing_bar": 36,
+      "right_censored_at_data_end": 21
+    },
+    "reason_not_in_frozen_set": []
+  },
+  "combined": {
+    "dev_plus_oos_rows": 5225,
+    "csv_rows": 5225,
+    "matches": true,
+    "combined_eligible_avsb": 3555
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "experiment": "EXP-2026-05-INVALIDATION-REVERSAL",
+  "phase": "v3.6 short-stop fix + re-scoring",
+  "generated_at": "2026-09-25",
+  "seeds": {
+    "bootstrap_seed": 42,
+    "n_replications": 10000
+  },
+  "software": {
+    "python": "3.11.11",
+    "numpy": "2.0.2",
+    "pandas": "2.2.2",
+    "scipy": "1.15.2",
+    "platform": "Windows-10-10.0.26200-SP0"
+  },
+  "input_hashes": {
+    "v3.5_manifest": "a1a9a990eabe4cbabc42b669e88d8486e0c1e7001794c6052e0cf3d5ac4c3f5d",
+    "v3.6_manifest": "e0445ad25287c59c44cb60c76db941a1a16268bafa5be3255b71f52b6354e0b1",
+    "v3.5_ledger": "df7a98b6125a9097182dc192907bc2475ce7bdbe1ec642cad4cadc7f20e7d645",
+    "engine_v36": "2fe9893f0d3a8f189038d16d737aba4ae9bbe522604b3712e3f6435053c3100b",
+    "score_engine": "aba67ee36f748c5bb70ba16b077b94bb3a2ccebb0c07f4458198e8495d56f97e",
+    "bootstrap_inference": "8594fe5e395efe635a81e845dcb4d401408ae78cdc623828c5f05c816b49474a",
+    "m15_data": "3087b019bbbcb4260cee869d502ecd12deb071a95e609d459c5992b913900a36",
+    "h1_data": "ebd172ebeef25c4ff29d86f01765996b36fb6d016e2483fb39b8f369c12656fb"
+  }
+}

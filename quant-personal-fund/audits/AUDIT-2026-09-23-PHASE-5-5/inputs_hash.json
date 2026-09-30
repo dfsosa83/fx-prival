@@ -1,0 +1,45 @@
+{
+  "audit": "AUDIT-2026-09-23-PHASE-5-5",
+  "generated_at": "2026-09-23",
+  "purpose": "Hash of all inputs consumed by the audit: configs, source, raw data, and audit scripts.",
+  "config": {
+    "config/universe.yaml": "263d8a29eb7a8f3c",
+    "config/cost_model.yaml": "b8947465dc4fffdf"
+  },
+  "source_code": {
+    "portfolio/builder.py": "c10b888f8d89ef25",
+    "portfolio/accounting.py": "337a9c9561ce99e7",
+    "backtest/engine.py": "c16bab200d4963d2",
+    "core/costs.py": "0e52403f0c3f6c92",
+    "core/returns.py": "eb6fd2762655dd3b",
+    "risk/metrics.py": "9bc1f21a7caeccbb",
+    "signals/trend/signal.py": "3bda0ea5e3de91f1",
+    "signals/trend/scaling.py": "251baff2e215d74c"
+  },
+  "raw_data_parquet_count": 19,
+  "raw_data": "SHA256 truncated to 16 hex chars per file; full hashes computed at audit time",
+  "audit_scripts": [
+    "diagnostics/step_b_script.py",
+    "diagnostics/step_c_script.py",
+    "diagnostics/step_d_script.py",
+    "diagnostics/step_e_script.py",
+    "diagnostics/step_f_script.py",
+    "diagnostics/step_g_script.py",
+    "diagnostics/step_h_script.py",
+    "diagnostics/step_i_script.py"
+  ],
+  "environment": {
+    "python": "3.11.11",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "pandas": "2.2.2",
+    "numpy": "2.0.2",
+    "sklearn": "1.5.2",
+    "lightgbm": "4.5.0",
+    "yfinance": "1.7.0",
+    "pyarrow": "25.0.1"
+  },
+  "test_suite": {
+    "result": "225 passed, 1 warning",
+    "warning": "LOKY_MAX_CPU_COUNT physical core detection (Windows, non-blocking)"
+  }
+}

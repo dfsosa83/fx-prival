@@ -1,0 +1,76 @@
+experiment: "EXP-2026-09-XAUUSD-V1-FUNNEL-DIAGNOSTIC"
+stage: "XAUUSD_RULE_ENGINE_V1_OFFLINE_FUNNEL_DIAGNOSTIC"
+date: "2026-09-30"
+mode: "offline_read_only_replay"
+production_touched: false
+mt5_used: false
+network_used: false
+orders_placed: false
+pnl_or_performance_computed: false
+
+replay_harness:
+  path: "ml-signal-service/docs/experiments/EXP-2026-09-XAUUSD-V1-FUNNEL-DIAGNOSTIC/replay_v1_funnel.py"
+  imports_frozen_modules: true
+  imports:
+    - "frival/gold_rules/engine.py"
+    - "frival/gold_rules/bias.py"
+    - "frival/gold_rules/levels.py"
+  reads_frozen_config: "frival/gold_rules/config.yaml"
+  modifications_to_frozen_code: "none (levels.build_active_levels is memoized in-memory for speed; results identical)"
+
+frozen_source_sha256:
+  engine.py: "9653ae906d30583493a49a478ca123b6a190ac16b93b3fd4f9a2ccdd4b2357e8"
+  bias.py: "106999937cfc810c88e58dccf9476ec63ff998d2cdf08a4bfe43dcd259f8362f"
+  levels.py: "63442ebbadaf059b816e49f9fdb28d71471ca4e7c5c98c8c3fe997674e0e49d5"
+  config.yaml: "055430e4772d3c01d396fad386b78681cae3db7fa469bf638c6f835dbc92520a"
+
+data_sources:
+  - role: "M15 decision bars"
+    instrument: "XAUUSD"
+    path: "quant-personal-fund/experiments/EXP-2026-05-INVALIDATION-REVERSAL/audits/PHASE-1B/data/processed/XAUUSD_M15_processed.parquet"
+    format: "parquet"
+    columns: ["time", "open", "high", "low", "close", "tick_volume", "spread", "real_volume", "time_utc"]
+    rows: 155252
+    first_timestamp_utc: "2020-02-28 01:00:00"
+    last_timestamp_utc: "2026-09-23 23:45:00"
+    coverage_days: 2399
+    timezone_interpretation: "UTC (epoch `time` seconds converted with unit='s', tz-naive; `time_utc` confirms UTC)"
+    duplicate_timestamps: 0
+    gap_summary: "1700 intervals > 15m: 1310 of 1-2h (daily maintenance halt), 43 of 2-24h, 333 of 1-3d (weekends/holidays), 14 > 3d; missing_slots=75144 vs wall-clock span (market closures)"
+    sha256: "3087b019bbbcb4260cee869d502ecd12deb071a95e609d459c5992b913900a36"
+  - role: "H1 bias bars"
+    instrument: "XAUUSD"
+    path: "quant-personal-fund/experiments/EXP-2026-05-INVALIDATION-REVERSAL/audits/PHASE-1B/data/processed/XAUUSD_H1_processed.parquet"
+    format: "parquet"
+    columns: ["time", "open", "high", "low", "close", "tick_volume", "spread", "real_volume", "time_utc"]
+    rows: 38837
+    first_timestamp_utc: "2020-02-28 01:00:00"
+    last_timestamp_utc: "2026-09-23 23:00:00"
+    timezone_interpretation: "UTC (epoch `time` seconds)"
+    duplicate_timestamps: 0
+    gap_summary: "1695 intervals > 1h: 1348 of 2-24h, 333 of 1-3d, 14 > 3d (market closures)"
+    sha256: "ebd172ebeef25c4ff29d86f01765996b36fb6d016e2483fb39b8f369c12656fb"
+  - role: "M30 structural levels (DERIVED, not broker-native)"
+    instrument: "XAUUSD"
+    method: "deterministic OHLC aggregation of M15 into 30-minute UTC buckets (open=first, high=max, low=min, close=last, volume=sum); only COMPLETE buckets with exactly two M15 bars are kept"
+    rows: 77608
+    first_timestamp_utc: "2020-02-28 01:00:00"
+    last_timestamp_utc: "2026-09-23 23:30:00"
+    note: "No local native XAUUSD M30 file exists; the derivation is loss-free for OHLC and introduces no interpolation/fill. All A/B replay results therefore depend on this derived M30 set."
+
+missing_historical_data:
+  bid_ask_spread_history: "NOT AVAILABLE locally"
+  handling: "closed-bar reference used (bid = ask = last closed M15 close) for state diagnostics; no entry price was synthesized from live data"
+  execution_dependent_gate_fidelity: "NOT_EVALUATED (location/RR/risk gates are computed on the closed-bar reference, not a historical bid/ask)"
+  concurrency_and_daily_loss: "neutral non-price placeholders used (open_positions=0, today_realized_pnl=0.0) as permitted"
+
+causality_parameters:
+  decision_offset_minutes: 16
+  visible_m15: "open <= T (bar under evaluation)"
+  visible_m30: "open + 30m <= T + 16m"
+  visible_h1: "open + 60m <= T + 16m"
+  fractal_confirmation: "wing=2; a pivot is only materialised once its two later M30 bars have closed (enforced by truncating M30 to closed bars)"
+  window_caps: {m15: 460, m30: 200, h1: 200}
+  window_equivalence_note: "m15 cap 460 reproduces the production cap 1000 exactly on tested segments (identical funnel counts)"
+
+no_fetch_attestation: "No MT5/broker/API/web/calendar/news/external source was contacted. Only already-local parquet files were read."

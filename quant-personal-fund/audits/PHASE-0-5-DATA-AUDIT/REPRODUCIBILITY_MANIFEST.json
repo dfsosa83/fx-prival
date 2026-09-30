@@ -1,0 +1,15 @@
+{
+  "audit": "PHASE-0-5-DATA-AUDIT",
+  "generated_at": "2026-09-24",
+  "mt5_query_status": "STOPPED",
+  "mt5_stop_reason": "Active terminal64 (FPMarkets MT5) process detected. MT5 Python API is single-terminal IPC; cannot guarantee an isolated read-only connection without risking disturbance of the active session. Per approved safeguard #2, stopped before any MT5 query.",
+  "terminal_maxbars_setting": "NOT READ (MT5 query not run; would require terminal inspection)",
+  "local_files_inventoried": 33,
+  "source_origin_policy": "No MT5 queries run; all data rows marked 'MT5 QUERY NOT RUN'. server_retention_verified=False everywhere.",
+  "instrument_timeframe_cells": 36,
+  "contract_metadata_source": "XAUUSD: verified live pre-flight (gold_rules v1.3). FX: research instrument master/cost model \u2014 PROVISIONAL, not broker-confirmed.",
+  "python": "3.11.11",
+  "audit_scripts": [
+    "local_inventory.py"
+  ]
+}

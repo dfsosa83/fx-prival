@@ -1,0 +1,135 @@
+{
+  "script_version": "g1r3-1",
+  "script_hash16": "13556cbc7098530d",
+  "read_only": true,
+  "errors": [],
+  "symbols": {
+    "EURUSD": {
+      "canonical_symbol": "EURUSD",
+      "symbol_as_received_present": true,
+      "symbol_as_received_matches_exact": true,
+      "h1_group": {
+        "system_utc_before": "2026-09-29T20:24:35.338736+00:00",
+        "system_utc_after": "2026-09-29T20:24:35.338736+00:00",
+        "system_utc_before_epoch": 1790713475.338736,
+        "observed_order_note": "copy_rates_from_pos returned oldest->newest (result_index 0 = POSITION_0)",
+        "bars": [
+          {
+            "result_index": 0,
+            "position_label": "POSITION_0",
+            "raw_time_epoch": 1790719200,
+            "class": "CURRENT_OR_POSSIBLY_FORMING",
+            "conv": {
+              "utc_fromtimestamp_iso": "2026-09-29T22:00:00+00:00",
+              "utc_utcfromtimestamp_iso": "2026-09-29T22:00:00+00:00",
+              "local_time_diagnostic_only": "2026-09-29T17:00:00"
+            }
+          },
+          {
+            "result_index": 1,
+            "position_label": "POSITION_1",
+            "raw_time_epoch": 1790722800,
+            "class": "PRIOR_COMPLETED_CANDIDATE",
+            "conv": {
+              "utc_fromtimestamp_iso": "2026-09-29T23:00:00+00:00",
+              "utc_utcfromtimestamp_iso": "2026-09-29T23:00:00+00:00",
+              "local_time_diagnostic_only": "2026-09-29T18:00:00"
+            }
+          }
+        ],
+        "h1_position0_offset_vs_utc_hour_floor_s": 7200
+      },
+      "tick": {
+        "system_utc_before": "2026-09-29T20:24:35.338736+00:00",
+        "system_utc_after": "2026-09-29T20:24:35.338736+00:00",
+        "bid_field_present": true,
+        "ask_field_present": true,
+        "raw_time_epoch": 1790724264,
+        "time_msc_present": true,
+        "conv": {
+          "utc_fromtimestamp_iso": "2026-09-29T23:24:24+00:00",
+          "utc_utcfromtimestamp_iso": "2026-09-29T23:24:24+00:00",
+          "local_time_diagnostic_only": "2026-09-29T18:24:24"
+        },
+        "tick_minus_query_epoch_s": 10788,
+        "freshness": "STALE_OR_NOT_COMPARABLE"
+      },
+      "recent_ticks": {
+        "query_utc_before": "2026-09-29T20:24:35.338736+00:00",
+        "window_from_utc": "2026-09-29T20:19:35.338736+00:00",
+        "count": 50,
+        "first_raw_epoch": 1790713177,
+        "last_raw_epoch": 1790713224,
+        "last_minus_query_epoch_s": -251,
+        "freshness": "STALE_OR_NOT_COMPARABLE"
+      }
+    },
+    "GBPUSD": {
+      "canonical_symbol": "GBPUSD",
+      "symbol_as_received_present": true,
+      "symbol_as_received_matches_exact": true,
+      "h1_group": {
+        "system_utc_before": "2026-09-29T20:24:35.338736+00:00",
+        "system_utc_after": "2026-09-29T20:24:35.338736+00:00",
+        "system_utc_before_epoch": 1790713475.338736,
+        "observed_order_note": "copy_rates_from_pos returned oldest->newest (result_index 0 = POSITION_0)",
+        "bars": [
+          {
+            "result_index": 0,
+            "position_label": "POSITION_0",
+            "raw_time_epoch": 1790719200,
+            "class": "CURRENT_OR_POSSIBLY_FORMING",
+            "conv": {
+              "utc_fromtimestamp_iso": "2026-09-29T22:00:00+00:00",
+              "utc_utcfromtimestamp_iso": "2026-09-29T22:00:00+00:00",
+              "local_time_diagnostic_only": "2026-09-29T17:00:00"
+            }
+          },
+          {
+            "result_index": 1,
+            "position_label": "POSITION_1",
+            "raw_time_epoch": 1790722800,
+            "class": "PRIOR_COMPLETED_CANDIDATE",
+            "conv": {
+              "utc_fromtimestamp_iso": "2026-09-29T23:00:00+00:00",
+              "utc_utcfromtimestamp_iso": "2026-09-29T23:00:00+00:00",
+              "local_time_diagnostic_only": "2026-09-29T18:00:00"
+            }
+          }
+        ],
+        "h1_position0_offset_vs_utc_hour_floor_s": 7200
+      },
+      "tick": {
+        "system_utc_before": "2026-09-29T20:24:35.338736+00:00",
+        "system_utc_after": "2026-09-29T20:24:35.338736+00:00",
+        "bid_field_present": true,
+        "ask_field_present": true,
+        "raw_time_epoch": 1790724269,
+        "time_msc_present": true,
+        "conv": {
+          "utc_fromtimestamp_iso": "2026-09-29T23:24:29+00:00",
+          "utc_utcfromtimestamp_iso": "2026-09-29T23:24:29+00:00",
+          "local_time_diagnostic_only": "2026-09-29T18:24:29"
+        },
+        "tick_minus_query_epoch_s": 10793,
+        "freshness": "STALE_OR_NOT_COMPARABLE"
+      },
+      "recent_ticks": {
+        "query_utc_before": "2026-09-29T20:24:35.338736+00:00",
+        "window_from_utc": "2026-09-29T20:19:35.338736+00:00",
+        "count": 50,
+        "first_raw_epoch": 1790713175,
+        "last_raw_epoch": 1790713233,
+        "last_minus_query_epoch_s": -242,
+        "freshness": "STALE_OR_NOT_COMPARABLE"
+      }
+    }
+  },
+  "mt5_initialized": true,
+  "terminal": {
+    "connected": true,
+    "build": 6230
+  },
+  "outcome_classification": "BROKER_OR_TERMINAL_TIME_ANOMALY_UNRESOLVED",
+  "official_doc_claim": "MT5 Python data time is UTC (MQL5 copy_rates_from doc)"
+}

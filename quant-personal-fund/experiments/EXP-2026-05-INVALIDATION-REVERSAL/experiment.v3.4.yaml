@@ -1,0 +1,105 @@
+# Experiment Manifest — EXP-2026-05-INVALIDATION-REVERSAL (v3.4)
+# Status: VERSIONED REVISION (ledger-classification / engine-validation update)
+# Created: 2026-09-24
+# Basis:
+#   v3.2 frozen (experiment.yaml, SHA-256 f3b1cea932...) — UNCHANGED
+#   v3.3 (experiment.v3.3.yaml, SHA-256 6627de4c87a2...) — UNCHANGED
+# This v3.4 corrects the invalidation observation window and reason-code set.
+# NO performance scoring authorized.
+
+experiment:
+  id: "EXP-2026-05-INVALIDATION-REVERSAL"
+  version: "v3.4"
+  status: "frozen_v3.4"
+  created: "2026-09-24"
+  researcher: "quant-fund"
+  design_version: "v3.4"
+  scope: "LEDGER-RECLASSIFICATION AND ENGINE-VALIDATION ONLY — no PnL/EV/R/PF/win-rate/drawdown/CI"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# OBSERVATION WINDOW (v3.4 — frozen correction to the v3.3 implementation cap)
+# ═══════════════════════════════════════════════════════════════════════════
+observation_window:
+  rule: >
+    Each original long episode begins at the already-defined next-bar-open
+    long fill. Observe the episode for a MAXIMUM OF 20 CALENDAR DAYS after
+    that entry timestamp.
+  invalidation_definition: >
+    A completed M15 solid-body close below the frozen support_at_entry.
+  if_no_invalidation_within_20d: >
+    Record reason code 'no_invalidation_within_observation_window'. Keep the
+    episode in the complete ledger and report its count/rate by period. It is
+    OUTSIDE the invalidation-conditioned A-vs-B population because no
+    invalidation event occurred.
+  prohibitions:
+    - "Do not scan for, substitute, or use a later invalidation or C1."
+    - "Do not tune or compare alternative observation-window lengths."
+    - "Do not infer an outcome from this rule; episode-definition boundary only."
+  timing_basis: "20 calendar days measured from ACTUAL ENTRY TIMESTAMP, not bar count"
+  boundary_inclusion: "invalidation exactly at or before the 20-day boundary is INCLUDED"
+  boundary_exclusion: "invalidation after the 20-day boundary is EXCLUDED and logged only as no_invalidation_within_observation_window"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# REASON CODES (v3.4 — mutually exclusive and exhaustive)
+# ═══════════════════════════════════════════════════════════════════════════
+reason_codes_v34:
+  - "c1_triggered"                                  # invalidated, C1 met, short opened
+  - "no_c1"                                         # invalidated, C1 NOT met -> flat (in A-vs-B denominator)
+  - "no_invalidation_within_observation_window"      # no invalidation in 20 calendar days -> OUTSIDE A-vs-B
+  - "conservative_observed_window_exclusion_not_broker_confirmed"  # episode touches 22:30-02:00 UTC
+  - "missing_bar_calendar_exclusion"                 # pre-registered missing-bar/gap rule exclusion
+  - "rollover_ineligible"                            # C1 met but short entry ineligible (in denominator, flat)
+  - "other_pre_registered"                           # any other pre-registered exclusion (coded explicitly)
+
+reason_code_notes:
+  obsolete_500bar: "no_invalidation_within_unfrozen_scan_cap"
+  obsolete_500bar_handling: >
+    The v3.3 implementation's 500-bar scan cap was NOT pre-registered and is
+    REPLACED by the 20-calendar-day observation window. Episodes previously
+    classified under the 500-bar cap are reclassified under v3.4 codes.
+    The old label is preserved for traceability only.
+
+# ═══════════════════════════════════════════════════════════════════════════
+# POPULATION DEFINITION (v3.4)
+# ═══════════════════════════════════════════════════════════════════════════
+population:
+  complete_ledger: "all original long episodes (every next-bar-open long fill)"
+  avsb_eligible: "invalidated episodes ONLY (invalidation within 20d, not excluded by session/missing-bar rules)"
+  avsb_denominator: "avsb_eligible episodes: c1_triggered + no_c1 + rollover_ineligible"
+  outside_avsb: "no_invalidation_within_observation_window (no invalidation occurred)"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ALL OTHER FROZEN RULES (UNCHANGED — inherited from v3.3)
+# ═══════════════════════════════════════════════════════════════════════════
+inherited_from_v33:
+  structure: "XAUUSD M15 primary; EURUSD/GBPUSD confirmatory (not run); exploratory no verdict"
+  long_generator: "H1 EMA(20)>EMA(50) & close>EMA(50); M15 support/resistance from preceding 20 completed bars excluding signal bar; frozen at entry; bullish solid-body close above resistance"
+  invalidation: "completed solid-body M15 close below frozen support"
+  c1: "immediately next completed solid-body M15 close below invalidation-bar low"
+  policies: "A exit-and-flat; B same-long-exit then short after C1; one reversal max"
+  execution: "signals after completed bars; fills at next-bar open; no same-close fills; adverse modeled costs"
+  volatility: "continuous Wilder ATR(14), prior bars only"
+  short: "stop = max(high_inv, high_conf) + 0.5*ATR(14); time exit 12 bars; forced pre-window; no TP"
+  cost: "spread_price = spread_points * point; buy/cover = P+S/2+L; sell/short = P-S/2-L; L=0.5*S; stress 2x/2x/combined"
+  timeline: "2020-2023 development; 2024+ research-grade OOS (NOT sealed); forward validation only GO source"
+  feasibility: ">=100 dev episodes else HOLD/NEEDS DATA"
+  decision_gate: "forward-only GO; EV/R>0 CI excl 0; PF>=1.10; >=100 forward eps; robustness; replication agreement"
+  ml_llm: "no ML signal; no LLM authority; no orders"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# RESTRICTIONS (v3.4)
+# ═══════════════════════════════════════════════════════════════════════════
+restrictions:
+  - "No new MT5 retrieval (use stored bars only)"
+  - "No broker/account calls, no login(), no terminal/process/settings changes"
+  - "No changes under frival/"
+  - "No historical performance scoring or backtest outputs"
+  - "No PnL, EV/R, PF, win rate, drawdown, or CI computation"
+  - "No selection among windows, parameters, filters, or variants"
+  - "No orders"
+
+inputs:
+  data: "already-stored Phase 1B bars (no new retrieval)"
+  prior_manifests: ["experiment.yaml (v3.2)", "experiment.v3.3.yaml"]
+  config_snapshot: ""
+  inputs_hash: ""

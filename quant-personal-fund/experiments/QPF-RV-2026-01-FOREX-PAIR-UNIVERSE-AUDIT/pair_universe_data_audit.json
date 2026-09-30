@@ -1,0 +1,292 @@
+{
+  "stage": "PAIR_UNIVERSE_DATA_AVAILABILITY_AUDIT",
+  "downloader": "ml-signal-service/steps/01_download/mt5_downloader.py",
+  "candidate_universe": [
+    "AUDUSD",
+    "NZDUSD",
+    "EURUSD",
+    "USDCHF",
+    "USDCAD",
+    "EURGBP"
+  ],
+  "symbols": {
+    "AUDUSD": {
+      "resolved_path": "ml-signal-service/data/raw/mt5/H1/AUDUSD_H1.csv",
+      "existed_before_stage": false,
+      "schema": [
+        "datetime",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume"
+      ],
+      "rows": 48116,
+      "first_label": "2019-01-02 00:00:00",
+      "last_label": "2026-09-24 18:00:00",
+      "sha256": "0BF89F684D31DA032EB3B7D93713E45C7D8D1E8ADBF9A033D53311AE8A110A66",
+      "validation": {
+        "no_nulls": true,
+        "no_duplicates": true,
+        "monotonic": true,
+        "finite_values": true,
+        "close_strictly_positive": true
+      },
+      "status": "DOWNLOADED_VALID",
+      "requested_symbol": "AUDUSD",
+      "downloaded_this_stage": true,
+      "download_tool": "ml-signal-service/steps/01_download/mt5_downloader.py"
+    },
+    "NZDUSD": {
+      "resolved_path": "ml-signal-service/data/raw/mt5/H1/NZDUSD_H1.csv",
+      "existed_before_stage": false,
+      "schema": [
+        "datetime",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume"
+      ],
+      "rows": 48087,
+      "first_label": "2019-01-02 07:00:00",
+      "last_label": "2026-09-24 18:00:00",
+      "sha256": "9707F4D0066248440A97FD93B4CFAACE9D5A3F9D350171298F7EC695A97A85E9",
+      "validation": {
+        "no_nulls": true,
+        "no_duplicates": true,
+        "monotonic": true,
+        "finite_values": true,
+        "close_strictly_positive": true
+      },
+      "status": "DOWNLOADED_VALID",
+      "requested_symbol": "NZDUSD",
+      "downloaded_this_stage": true,
+      "download_tool": "ml-signal-service/steps/01_download/mt5_downloader.py"
+    },
+    "EURUSD": {
+      "resolved_path": "ml-signal-service/data/raw/mt5/H1/EURUSD_H1.csv",
+      "existed_before_stage": true,
+      "schema": [
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "datetime"
+      ],
+      "rows": 48186,
+      "first_label": "2019-01-02 00:00:00",
+      "last_label": "2026-09-29 21:00:00",
+      "sha256": "8161B866D6CFE233B5361A51DE09ACFE9E9B8926D400EE09751DA8E65CA6550B",
+      "validation": {
+        "no_nulls": true,
+        "no_duplicates": true,
+        "monotonic": true,
+        "finite_values": true,
+        "close_strictly_positive": true
+      },
+      "status": "AVAILABLE_VALID",
+      "requested_symbol": "EURUSD",
+      "downloaded_this_stage": false
+    },
+    "USDCHF": {
+      "resolved_path": "ml-signal-service/data/raw/mt5/H1/USDCHF_H1.csv",
+      "existed_before_stage": true,
+      "schema": [
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "datetime"
+      ],
+      "rows": 48191,
+      "first_label": "2019-01-02 00:00:00",
+      "last_label": "2026-09-29 21:00:00",
+      "sha256": "A25CBF3D0BF96C0A16FF41E9B157BBFFB1F94D8F268A16E5DD797D98F7134DFB",
+      "validation": {
+        "no_nulls": true,
+        "no_duplicates": true,
+        "monotonic": true,
+        "finite_values": true,
+        "close_strictly_positive": true
+      },
+      "status": "AVAILABLE_VALID",
+      "requested_symbol": "USDCHF",
+      "downloaded_this_stage": false
+    },
+    "USDCAD": {
+      "resolved_path": "ml-signal-service/data/raw/mt5/H1/USDCAD_H1.csv",
+      "existed_before_stage": true,
+      "schema": [
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "datetime"
+      ],
+      "rows": 48161,
+      "first_label": "2019-01-02 07:00:00",
+      "last_label": "2026-09-29 20:00:00",
+      "sha256": "B21F200A9EA8F8AE0468658EC2D65266F56FFE2604FEBF321CAF1BD0B39C5F11",
+      "validation": {
+        "no_nulls": true,
+        "no_duplicates": true,
+        "monotonic": true,
+        "finite_values": true,
+        "close_strictly_positive": true
+      },
+      "status": "AVAILABLE_VALID",
+      "requested_symbol": "USDCAD",
+      "downloaded_this_stage": false
+    },
+    "EURGBP": {
+      "resolved_path": "ml-signal-service/data/raw/mt5/H1/EURGBP_H1.csv",
+      "existed_before_stage": true,
+      "schema": [
+        "datetime",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume"
+      ],
+      "rows": 48020,
+      "first_label": "2019-01-02 06:00:00",
+      "last_label": "2026-09-21 20:00:00",
+      "sha256": "8B3E101797AFCBF1DEBCADA8B9474CB121609716AFADC6290351E774F5AAF9BA",
+      "validation": {
+        "no_nulls": true,
+        "no_duplicates": true,
+        "monotonic": true,
+        "finite_values": true,
+        "close_strictly_positive": true
+      },
+      "status": "AVAILABLE_VALID",
+      "requested_symbol": "EURGBP",
+      "downloaded_this_stage": false
+    }
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "ordered_symbols": [
+        "AUDUSD",
+        "NZDUSD"
+      ],
+      "both_sources_valid": true,
+      "left_label_range": [
+        "2019-01-02 00:00:00",
+        "2026-09-24 18:00:00"
+      ],
+      "right_label_range": [
+        "2019-01-02 07:00:00",
+        "2026-09-24 18:00:00"
+      ],
+      "common_label_count": 48030,
+      "first_common_label": "2019-01-02 07:00:00",
+      "last_common_label": "2026-09-24 18:00:00",
+      "left_only_count": 86,
+      "right_only_count": 57,
+      "at_least_30000_common": true,
+      "status": "ELIGIBLE_FOR_FUTURE_G3_FREEZE"
+    },
+    {
+      "candidate_id": "C2",
+      "ordered_symbols": [
+        "EURUSD",
+        "USDCHF"
+      ],
+      "both_sources_valid": true,
+      "left_label_range": [
+        "2019-01-02 00:00:00",
+        "2026-09-29 21:00:00"
+      ],
+      "right_label_range": [
+        "2019-01-02 00:00:00",
+        "2026-09-29 21:00:00"
+      ],
+      "common_label_count": 48186,
+      "first_common_label": "2019-01-02 00:00:00",
+      "last_common_label": "2026-09-29 21:00:00",
+      "left_only_count": 0,
+      "right_only_count": 5,
+      "at_least_30000_common": true,
+      "status": "ELIGIBLE_FOR_FUTURE_G3_FREEZE"
+    },
+    {
+      "candidate_id": "C3",
+      "ordered_symbols": [
+        "AUDUSD",
+        "USDCAD"
+      ],
+      "both_sources_valid": true,
+      "left_label_range": [
+        "2019-01-02 00:00:00",
+        "2026-09-24 18:00:00"
+      ],
+      "right_label_range": [
+        "2019-01-02 07:00:00",
+        "2026-09-29 20:00:00"
+      ],
+      "common_label_count": 48030,
+      "first_common_label": "2019-01-02 07:00:00",
+      "last_common_label": "2026-09-24 18:00:00",
+      "left_only_count": 86,
+      "right_only_count": 131,
+      "at_least_30000_common": true,
+      "status": "ELIGIBLE_FOR_FUTURE_G3_FREEZE"
+    },
+    {
+      "candidate_id": "C4",
+      "ordered_symbols": [
+        "EURGBP",
+        "EURUSD"
+      ],
+      "both_sources_valid": true,
+      "left_label_range": [
+        "2019-01-02 06:00:00",
+        "2026-09-21 20:00:00"
+      ],
+      "right_label_range": [
+        "2019-01-02 00:00:00",
+        "2026-09-29 21:00:00"
+      ],
+      "common_label_count": 48020,
+      "first_common_label": "2019-01-02 06:00:00",
+      "last_common_label": "2026-09-21 20:00:00",
+      "left_only_count": 0,
+      "right_only_count": 166,
+      "at_least_30000_common": true,
+      "status": "ELIGIBLE_FOR_FUTURE_G3_FREEZE"
+    },
+    {
+      "candidate_id": "C5",
+      "ordered_symbols": [
+        "NZDUSD",
+        "USDCAD"
+      ],
+      "both_sources_valid": true,
+      "left_label_range": [
+        "2019-01-02 07:00:00",
+        "2026-09-24 18:00:00"
+      ],
+      "right_label_range": [
+        "2019-01-02 07:00:00",
+        "2026-09-29 20:00:00"
+      ],
+      "common_label_count": 48086,
+      "first_common_label": "2019-01-02 07:00:00",
+      "last_common_label": "2026-09-24 18:00:00",
+      "left_only_count": 1,
+      "right_only_count": 75,
+      "at_least_30000_common": true,
+      "status": "ELIGIBLE_FOR_FUTURE_G3_FREEZE"
+    }
+  ],
+  "acquisition_decision": "AUDIT_COMPLETE_PRIMARY_PAIR_READY",
+  "statistical_only": false,
+  "no_market_statistics_calculated": true
+}

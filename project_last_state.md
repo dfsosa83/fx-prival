@@ -1,7 +1,9 @@
 # Project Last State — Frival Trading System
 
-**Last updated:** 2026-09-18
-**Status:** **DEMO MODE (paper)** — All engines pointed at **FPMarketsSC-Demo / account 7409623 / $5,000 paper** per operator decision 2026-09-18 (experiment phase; live book 81486396 parked). Verified read-only: config chain (FX fetcher, execution bot, gold engine) all connect as 7409623, $5,000/$5,000, leverage 30. Demo password confirmed == live password. `run_daily.bat` (FX) + `run_gold_rules.bat` (gold) launch the same scripts; only configs changed (credentials.env files are gitignored/local; `trading.mode: demo` in both settings.yaml is committed). EURUSD-FX backtest study (EXP-2026-04) completed: EV/R EURUSD −0.174, GBPUSD −0.170, USDCAD −0.175, USDJPY −0.392 → **no pair qualifies for Claim-D live transfer**; USDJPY = STOP. Gold engine (A/B+C) previously live; now demo. **Research roadmap documented 2026-09-18** — see `ml-signal-service/docs/experiments/ROADMAPS/ROADMAP-2026-Q4-RESEARCH.md` (baseline ML methodology verified & approved; 3 additive corrections; prioritized backlog: cost-adjusted label P0, liquid-cross book + equity-index P1; dashboard Stage 2 = per-comment-tag metrics).
+**Last updated:** 2026-09-29
+**Status:** **DEMO TERMINAL EXECUTION (authorized)** — Real orders now execute on **FPMarketsSC-Demo / account 7409623 / $5,000 paper**, per operator decision **2026-09-29**: all four FX pairs to test, with EXEC-D1 entry semantics (in-zone quote → market now; otherwise pending up to 10 min from signal time; no touch → EXPIRED_UNFILLED, no order). Live book 81486396 remains parked. Legacy paper-virtual path is **delegated/skipped** (`execution.enabled: true`); the new `run_exec_d1_terminal.bat` + `execution_bot/run_exec_d1_terminal.py` monitor is the only entry path. Verified running 2026-09-29 ≈14:43Z: `demo env OK (7409623, FPMarketsSC-Demo, balance≈5007.83)`; **0 fills so far** (all 09-29 FIRED signals of the morning were past their 10-min window → EXPIRED; the 14:00Z/15:00Z sweeps produced no FIRED among the four pairs; EURUSD_AGNOSTIC stays SHADOW — suppressed by design, EV unproven). Gold engine continues **WATCH_ZONE** (watching swing_high 4160.34). The 2026-09-28/29 audit cycle (EXEC-D1 lifecycle, review fixes, MT5 metadata validation) is documented in §12.
+
+Background still valid: **research roadmap documented 2026-09-18** — `ml-signal-service/docs/experiments/ROADMAPS/ROADMAP-2026-Q4-RESEARCH.md` (baseline ML methodology verified & approved; 3 additive corrections; prioritized backlog: cost-adjusted label P0, liquid-cross book + equity-index P1; dashboard Stage 2 = per-comment-tag metrics). EURUSD-FX backtest study (EXP-2026-04): EV/R EURUSD −0.174, GBPUSD −0.170, USDCAD −0.175, USDJPY −0.392 → **no pair qualifies for Claim-D live transfer**; USDJPY = STOP.
 
 ---
 
@@ -36,10 +38,10 @@
 
 ### 1.3 Execution Bot (`frival/execution_bot/`)
 
-- **Mode:** LIVE (`settings.yaml`: `trading.mode: live`).
-- **Risk:** max_daily_loss $200 (raised 50→200 on 2026-09-15 per operator request; **flagged as 37.6% of the current ~$536 balance** — see §10.9), max 1 position per pair, max 5 total positions, deviation_points=5.
-- **Break-even monitor (NEW):** After order placement, polls MT5 every 30s. When price covers 50% of distance from entry to TP1, moves SL to break-even. Max 10 min. Toggled via `settings.yaml` → `break_even.enabled`.
-- **Safety:** `confirm_live_orders: true` (manual confirmation each trade). Emergency stop file at `frival/data/emergency_stop.txt`.
+- **Mode:** legacy `trading.mode: demo` (paper, **no** `order_send`) — **superseded 2026-09-29** by the EXEC-D1 demo-terminal runner (§12): with `execution.enabled: true` the legacy watcher/order bot **delegates and skips** (no more phantom virtual fills). Real orders now go via `core/exec_d1_terminal.py`.
+- **EXEC-D1 terminal executor risk config (actual, 2026-09-29):** default_lot 0.08; lots per pair EURUSD 0.08, GBPUSD 0.08, USDCHF 0.04, USDCAD 0.08; max_daily_loss **$100** (2% of the $5,000 demo), max 1 position per pair, max 4 total; deviation_points 5; `execution.terminal_scope: demo`; `execution.confirm_orders: false` (automated demo testing, owner decision 2026-09-29).
+- **Break-even monitor:** `break_even.enabled: true` (legacy; terminal-side SL/TP manage exits; EXEC-D1 v1 relies on broker SL/TP + 6 h horizon close).
+- **Safety:** emergency stop file at `frival/data/emergency_stop.txt` (checked by the EXEC-D1 runner each second); demo-env guard (login + trade_mode==0) before any send; idempotency per `signal_id`; legacy `confirm_live_orders: true` kept for the (now inactive) legacy path.
 
 ### 1.4 MERG — Macro Event Response Gate
 
@@ -95,7 +97,15 @@ After execution bot places a trade, polls current price every 30s for up to 10 m
 | `frival/run_daily.bat` | Double-click launcher for daily scheduler |
 | `frival/run_daily_scheduler.py` | Scheduler loop: :01 executions, countdown, 5 pairs |
 | `frival/DAILY_ROUTINE.md` | Documentation — all commands + gates + thresholds |
-| `frival/execution_bot/` | Execution bot (watcher + order bot + MT5 + **break-even monitor**) |
+| `frival/execution_bot/` | Execution (legacy watcher/order bot, **delegated/skipped**) + **EXEC-D1 terminal executor** (see §12) |
+| `frival/execution_bot/core/lifecycle.py` | EXEC-D1 decision engine — zone/10-min semantics, claims, adverse-gap fills, frozen SL/TP (EXEC-D1 v2.0.0) |
+| `frival/execution_bot/core/lifecycle_store.py` | Append-only event store + snapshots + startup reconcile + cross-process claims |
+| `frival/execution_bot/core/exec_d1_terminal.py` | EXEC-D1 → MT5 terminal transport (`TerminalExecutor`, proven `order_send` shape, guards, executions log) |
+| `frival/execution_bot/run_exec_d1_terminal.py` | Supervised 1 s monitor (new signals → engine → fills; pending ticks; 6 h horizon close) |
+| `frival/execution_bot/run_exec_d1_terminal.bat` (**NEW**) | Third launcher — real demo-terminal execution (run alongside `run_daily.bat`) |
+| `frival/execution_bot/core/broker_constraints.py` | MT5 field-mapping audit (`trade_stops_level` etc.) + fail-closed gate (offline-verified) |
+| `frival/execution_bot/core/invalid_fills.py` + `data/invalid_signal_ids.json` | D-9 exclusion manifest (2026-09-28 invalid fills) |
+| `frival/execution_bot/reports/` | Audit/review/fix/test/integrity/validation reports (2026-09-28/29) |
 | `ml-signal-service/models_bin/` | All model bundles (7 sell + MERG Stage 1 + agnostic) |
 | `ml-signal-service/notebooks/agnostic/` | Direction-agnostic training notebook |
 | `ml-signal-service/notebooks/merg/` | MERG Stage 1 + H1-direction experiment notebooks |
@@ -207,7 +217,7 @@ USDX was insufficient for gold. The model **did select** USDX features (ranked #
 - **Calendar name normalisation:** live calendar `Name` vs dataset names. Best-effort normalisation in place; ~133/183 exact match.
 - **Bundle threshold mismatch:** MERG bundle stores `threshold=0.2809` (F1-optimal), runtime uses hardcoded `REACTION_THRESHOLD=0.60`.
 - **USDCAD EV borderline:** −0.114R is close to zero but still negative. Monitor closely in live mode.
-- **Agnostic model in shadow:** 1-week validation in progress. Need 10–15 directional predictions to assess live accuracy before flipping to live.
+- **Agnostic model in shadow:** 1-week validation initially; **retained in shadow as of 2026-09-29** (EV unproven). On 09-29 its probability crossed the 0.5 decision boundary on several bars (0.5026–0.5154); agents rejected most, three were confirmed → **SHADOW_FIRED (suppressed)**. Not connected to any execution path.
 - **ML `max_daily_loss: 200.0` is ~37.6% of the current ~$536 balance** (was ~6% at $3,287). See §10.9 — recommendation to lower to $50 pending operator decision.
 - **Gold engine Step 11 (first live trade) + Step 12 (20–30 trade review):** pending; see §10.6–§10.8.
 
@@ -320,6 +330,7 @@ Reused from the existing execution bot (`frival/execution_bot/`): `MT5Connector`
 - **v1.4 (2026-09-16): Claim C — breakout-continuation variant LIVE.** Second engine trigger: solid M15 close through a structural level in the H1-bias direction → market entry immediately, just-broken level as invalidation (SL = level + buffer, ~1R failure risk). Same atomics as A/B; separate comment `GOLD_RULES_C` for PnL attribution. **Shadow rejected by operator — live directly.** 6 new unit tests (31 total).
 - **Step 11 (LIVE directly): in progress** — engine running live; first A/B or C trade completes it.
 - **Step 12 (review): pending** — acceptance review after 20–30 trades (A/B) + 20 (C).
+- **Operational state 2026-09-28/29:** engine healthy (60 s loop, journal + state fresh). Still **WATCH_ZONE** — watching swing_high **4160.34** (pivot 09-28 server 16:30 / confirmed 17:30). On 09-29 the setup cycled 21× CONFIRM ("rejection wick") + 25× DROP ("extreme not broken in time" / retest timeout 21 bars) + 4× WATCH, re-arming through levels 4140.29 → 4141.57 → 4147.89 → 4160.34 (gold grinding up; sell confirmations keep lapsing). **0 entries, 0 errors, no anomaly** (the 09-28 spurious extreme 4274.80 did not recur).
 
 ### 10.7 Verification evidence
 
@@ -338,7 +349,7 @@ Reused from the existing execution bot (`frival/execution_bot/`): `MT5Connector`
 
 ### 10.9 Known couplings & open flags (operator decisions pending)
 
-1. **`max_daily_loss: 200.0` in `frival/execution_bot/config/settings.yaml`** — calibrated for the old ~$3,287 balance (~6%); on the current ~$536 balance it is **~37.6%/day** for the ML pipeline alone. Gold + ML worst case ≈ 47% of equity in one day. **Recommendation: lower to ~$50 (~9.4%). NOT changed without explicit operator approval.**
+1. **`max_daily_loss: 200.0` in `frival/execution_bot/config/settings.yaml`** — calibrated for the old ~$3,287 balance (~6%); on the current ~$536 balance it is **~37.6%/day** for the ML pipeline alone. Gold + ML worst case ≈ 47% of equity in one day. **Recommendation: lower to ~$50 (~9.4%). NOT changed without explicit operator approval.** *(Updated 2026-09-29: the EXEC-D1 demo executor applies a **$100/day cap — 2% of the $5,000 demo**; the legacy $200 figure above remains documented for the parked live book.)*
 2. **Account-wide daily-loss check in the ML pipeline** (§2.4.3 of design doc): gold losses will still throttle ML pipeline trades on the same account (observed 2026-09-10 with manual gold losses: `daily loss limit: $-152.12`).
 3. **Balance fluctuation:** pre-flight $531.78 → $550.02 → $536.36 across sessions (ML pipeline trades). The engine's own caps are dollar-based, so this is absorbed; the $50/day cap is ~9% of current equity.
 4. **Three MT5 terminals on this machine** (FPMarkets, FXChoice, RoboForex) — the gold engine pins the FPMarkets path explicitly and has a **login-mismatch guard (R4)**: refuses to trade if the connected account ≠ configured `MT5_LOGIN`.
@@ -356,11 +367,59 @@ Reused from the existing execution bot (`frival/execution_bot/`): `MT5Connector`
 ## 11. Environment
 
 - **Python:** `C:\Users\david\anaconda3\Library\envs\deaf_agent\python.exe` (conda `deaf_agent`)
-- **Key packages:** pandas, numpy, scikit-learn 1.5.2, xgboost, lightgbm, joblib, MetaTrader5, openai, openpyxl, yaml
-- **MT5:** Account 81486396, Server FPMarketsSC-Live, LIVE mode active (~$536 balance as of 2026-09-15 20:40 UTC — was $3,287 on 09-09; funds moved to a $500-scale risk envelope per operator decision)
-- **MT5 terminal:** `C:\Program Files\FPMarkets MT5 Terminal\terminal64.exe` (the only one the gold engine uses; FXChoice and RoboForex terminals also exist on this machine — three total)
+- **Key packages:** pandas, numpy, scikit-learn 1.5.2, xgboost, lightgbm, joblib, MetaTrader5 5.0.4874, openai, openpyxl, yaml
+- **MT5 demo (active for execution 2026-09-29):** Account 7409623, Server **FPMarketsSC-Demo**, **$5,000 paper** (balance ≈ **5007.83** at 09-29 14:43Z). Demo terminal at `C:\Program Files\FPMarkets MT5 Terminal\terminal64.exe`. Credentials in `execution_bot/config/credentials.env` (operator-confirmed; gitignored/local).
+- **MT5 live (parked):** Account 81486396, Server FPMarketsSC-Live — not used in the demo-test phase (~$536 as of 2026-09-15; §10.9).
+- **MT5 terminals on this machine:** FPMarkets, FXChoice, RoboForex — the engines pin the FPMarkets path explicitly (gold R4 login guard; EXEC-D1 demo-env guard).
 - **API keys:** OpenRouter + Perplexity in `frival/config/.env` (gitignored)
 - **Model storage:** `.joblib` files under `ml-signal-service/models_bin/`
+
+---
+
+## 12. EXEC-D1 Demo-Execution & Validation Cycle (2026-09-28 → 09-29)
+
+### 12.1 What EXEC-D1 is
+
+Entry-zone / 10-minute-expiry execution lifecycle for FX FIRED signals, built as a **decision + transport + audit** layer, deliberately decoupled from strategy (labels, models, thresholds, agents, TP/SL, risk sizing untouched):
+
+- **Entry semantics (owner-approved 2026-09-29):** executable quote inside the entry zone (±2 pips of the H1 close, inclusive) at processing → **market entry immediately**; otherwise the signal stays **PENDING up to 10 minutes from T0**; a qualifying touch fills at the first observable (conservative) quote; no touch by `T0+10min` → **EXPIRED_UNFILLED** (no trade, no loss). SELL `bid < E−Z` / BUY `ask > E+Z` → **NO_VALID_PENDING** (never an order — no chasing).
+- **Adverse gaps (corrected):** stop fills use the triggering quote (fill at the worse observed bid/ask), never an optimistic level.
+- **Frozen SL/TP from the signal; risk/PnL/effective R:R computed from the ACTUAL fill price.**
+- **Audit/vocabulary:** `SIGNAL_RECEIVED → ENTRY_PENDING | MARKET_FILLED | PENDING_TRIGGERED | VIRTUAL_OPEN (single authoritative fill+open event) | EXPIRED_UNFILLED | NO_VALID_PENDING | CLOSED_TP/SL/TIMEOUT | EXTERNAL_STATE_CONFLICT` (never `CLOSED_MANUAL`).
+
+### 12.2 Implementation status
+
+| Piece | Status |
+|---|---|
+| `core/lifecycle.py` + `core/lifecycle_store.py` (decision engine + append-only store) | ✅ implemented; **81 offline tests OK** |
+| Independent review (2026-09-28) | ✅ findings: C-1 (no cross-process idempotency), M-1 (fill write-window), M-2 (no pending continuation), M-3 (no auto-reconcile), Fix-5 (MT5 field map) |
+| Review fixes | ✅ **C-1** O_EXCL claims + `refresh()` inside the decision; **M-1** single authoritative `VIRTUAL_OPEN` (crash-safe replay); **M-2** `advance_pending()` with quote watermark; **M-3** automatic startup reconcile; **Fix-5** real `SymbolInfo` fields (`trade_stops_level`, `trade_freeze_level`, `filling_mode`, `expiration_mode`, `order_mode`; `margin_stop`/`margin_freeze`/`fill_mode` classified **NOT_AN_MT5_FIELD**) + fail-closed broker gate |
+| `core/exec_d1_terminal.py` (transport) | ✅ real `order_send` to the DEMO terminal (proven request shape, SL/TP mandatory, comment tagged `D1-<signal_id>`), guards: emergency stop, demo-env (login + trade_mode==0), 1 position/pair, $100/day cap, idempotency; **12 offline tests OK** |
+| `run_exec_d1_terminal.py` + `run_exec_d1_terminal.bat` | ✅ supervised 1 s monitor (new signals → engine → route fills; pending ticks; horizon close); launcher in CRLF fixing the LF/pipe issues of 2026-09-29 |
+| Legacy path | ✅ delegation gate: with `execution.enabled: true` the legacy order bot skips (no phantom paper fills) |
+| D-9 migration | ✅ 2026-09-28 two synthetic fills → `INVALID_SYNTHETIC_FILL_NO_OUTCOME` (excluded from all metrics, never reconstructed) |
+
+### 12.3 MT5 metadata validation cycle (2026-09-28/29)
+
+- Attempt 1 (09-28, frival/config/.env + credentials): `mt5.initialize(path, login, password, server)` → `(-2, 'Invalid "login" argument')` — **root cause UNKNOWN** (login is a valid 7-digit numeric; NOT concluded the credentials file is wrong).
+- Offline diagnosis + correction: `symbol_info` is the real metadata API (verified via module import of SDK 5.0.4874; `symbol_info_get` does **not** exist in this build); path-only attach is the production pattern.
+- Verified end-to-end (09-28): **path-only `mt5.initialize(path=…)` succeeds** (INIT_OK) against the already-logged-in demo terminal; shutdown OK. The `-2` error was specific to passing login (string) in the launch-with-credentials pattern.
+- **Broker field-mapping (Fix-5) corrected** from assumed `margin_*` names to the documented interface above; gate fails closed on missing/malformed metadata. Live `symbol_info` field *values* read-out remains pending a separate authorization (not performed).
+
+### 12.4 Demo-execution activation (owner decision 2026-09-29)
+
+- Authorized: real orders on the demo terminal 7409623 ($5,000 paper) for **EURUSD, GBPUSD, USDCHF, USDCAD**; entry = in-zone immediate / pending 10 min.
+- Operational model: **three windows** — `run_daily.bat` (signals), `run_exec_d1_terminal.bat` (execution; NEW), `run_gold_rules.bat` (gold, optional).
+- State 2026-09-29 ≈15:45Z: monitor live (`demo env OK… monitoring…`); **0 orders placed** (nothing FIRED in-window yet; morning FIRED were EXPIRED by design; 14:00Z/15:00Z sweeps → all SHELVED; AGNOSTIC → SHADOW_FIRED suppressed). Executions logged to `execution_bot/data/exec_d1_executions.jsonl`.
+
+### 12.5 Known open items (unchanged or new)
+
+- **B-1 (integration blocker):** serializing the discovery-cursor (`watcher_state.json` `last_signal_id`) behind a single-writer worker before any concurrent `--once` runs.
+- **B-3 (research):** Y1 label models immediate entry at H1 close vs the conditional 10-min zone-touch execution — documented mismatch, separate research decision.
+- **Cooldown disabled** (`COOLDOWN_BARS = 0`): repeated hourly same-symbol entries are allowed by design; the terminal `max 1 position/pair` gate binds once a real position is open.
+- **Candle-close gate fail-open** (M15 data unavailable, all sessions): unchanged policy.
+- **USDCHF/USDCAD** legacy config comments still carry negative-EV notes; demo-test iteration is precisely to measure realized burn/hold on the demo account.
+- **Probe pending:** authorized read-only `symbol_info` field-values capture not yet run (awaits separate explicit authorization).
 
 ---
 

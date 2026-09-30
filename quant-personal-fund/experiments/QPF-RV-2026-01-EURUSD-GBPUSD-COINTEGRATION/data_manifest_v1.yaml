@@ -1,0 +1,301 @@
+# Data Manifest v1 — QPF-RV-2026-01-EURUSD-GBPUSD-COINTEGRATION
+# Instantiated from DATA_MANIFEST_TEMPLATE.yaml using only the recorded descriptive G1 facts.
+# Descriptive audit artifact. Contains only file metadata and checksums — no credential,
+# account, secret, cost, statistical, trading, or computed price-series content.
+
+manifest:
+  manifest_id: "QPF-RV-2026-01-DATA-MANIFEST-V1"
+  experiment_id: "QPF-RV-2026-01-EURUSD-GBPUSD-COINTEGRATION"
+  program_scope: "FUTURE_QPF"
+  manifest_version: "v1"
+  created_by: "G1_DATA_AUDIT"
+  extraction_timestamp_utc: ""        # no extraction occurred in this phase
+
+dataset:
+  instrument: "EURUSD;GBPUSD"
+  broker_or_vendor: "UNAVAILABLE"
+  source_type: "UNAVAILABLE"
+  symbol_as_received: "UNAVAILABLE"
+  canonical_symbol: "EURUSD;GBPUSD"
+  asset_class: "FX"
+  timeframe: "H1 (observed file frequency only; not a selected operational frequency)"
+  requested_date_range:
+    start: ""
+    end: ""
+  received_date_range:
+    start: "2019-01-02 00:00"
+    end: "2026-09-29 19:00"
+  source_file_path_or_uri: "UNAVAILABLE (local files; see files[])"
+  file_format: "CSV"
+  row_count: null
+  source_limitations: "No manifest/provenance; naive timestamps; unknown price semantics; no bid/ask/spread."
+  access_scope: "read_only"
+  field_definitions: "see top-level field_definitions"
+
+instruments:
+  - canonical_symbol: "EURUSD"
+    symbol_as_received: "UNAVAILABLE"
+    role: "leg_1"
+    availability: "OBSERVED"
+    rows: 48184
+    coverage: "2019-01-02 00:00 .. 2026-09-29 19:00"
+    checksum_sha256: "AFC3109108AE64E59800F99D4B87A11B58B26EDE5185DCBD3B132422E4F3DA5F"
+  - canonical_symbol: "GBPUSD"
+    symbol_as_received: "UNAVAILABLE"
+    role: "leg_2"
+    availability: "OBSERVED"
+    rows: 48189
+    coverage: "2019-01-02 00:00 .. 2026-09-29 19:00"
+    checksum_sha256: "11D9D435C1DDBC4A797BDF236ED3F3F13765338D2AD21870268016F76FD24CB7"
+
+time_contract:
+  canonical_timezone: "UTC"
+  timezone_as_received: "UNAVAILABLE"
+  server_time_identified: "NOT_RUN"
+  utc_offset_history: "NOT_RUN"
+  dst_convention: "NOT_RUN"
+  conversion_method: ""
+  raw_timestamp_field: "datetime"
+  canonical_timestamp_field: "timestamp_utc"
+  bar_completion_semantics: "UNAVAILABLE"
+  alignment_basis: "completed_bars_only"
+  utc_conversion: "NOT_RUN"
+
+source:
+  source_hierarchy_tier: ""
+  source_selected: false
+  source_approved: false
+  provenance_notes: "No manifest, README, or extraction metadata found under the authorized locations."
+
+files:
+  - file_id: "EURUSD_H1"
+    source_file_path_or_uri: "ml-signal-service\\data\\raw\\mt5\\H1\\EURUSD_H1.csv"
+    file_format: "CSV"
+    checksum_sha256: "AFC3109108AE64E59800F99D4B87A11B58B26EDE5185DCBD3B132422E4F3DA5F"
+    checksum_status: "RECORDED"
+    row_count: 48184
+    checksum_reproducible: "NOT_RUN"
+  - file_id: "GBPUSD_H1"
+    source_file_path_or_uri: "ml-signal-service\\data\\raw\\mt5\\H1\\GBPUSD_H1.csv"
+    file_format: "CSV"
+    checksum_sha256: "11D9D435C1DDBC4A797BDF236ED3F3F13765338D2AD21870268016F76FD24CB7"
+    checksum_status: "RECORDED"
+    row_count: 48189
+    checksum_reproducible: "NOT_RUN"
+
+field_definitions:
+  timestamp: {field: "datetime", available: "AVAILABLE", semantic: "naive local timestamp; timezone UNAVAILABLE"}
+  open: {available: "AVAILABLE", semantic: "price type UNAVAILABLE (undeclared)"}
+  high: {available: "AVAILABLE", semantic: "price type UNAVAILABLE"}
+  low: {available: "AVAILABLE", semantic: "price type UNAVAILABLE"}
+  close: {available: "AVAILABLE", semantic: "price type UNAVAILABLE"}
+  tick_volume_or_volume: {field: "volume", available: "AVAILABLE", semantic: "tick-volume"}
+  bid_open: {available: "UNAVAILABLE"}
+  bid_high: {available: "UNAVAILABLE"}
+  bid_low: {available: "UNAVAILABLE"}
+  bid_close: {available: "UNAVAILABLE"}
+  ask_open: {available: "UNAVAILABLE"}
+  ask_high: {available: "UNAVAILABLE"}
+  ask_low: {available: "UNAVAILABLE"}
+  ask_close: {available: "UNAVAILABLE"}
+  spread_points_or_spread_price: {available: "UNAVAILABLE"}
+  price_semantics: "UNKNOWN (bid|ask|mid|last not declared)"
+  bid_ask_availability: "UNAVAILABLE"
+
+quality_audit:
+  overall_result: "PAUSE"
+  checks:
+    schema_validation: "PASS"
+    monotonic_timestamps: "PASS"
+    duplicate_timestamps: "PASS"
+    null_fields: "PASS"
+    ohlc_integrity: "PASS"
+    volume_nonzero: "PASS"
+    intraday_gaps: "PASS"
+    long_gap_classification: "PASS_EXPECTED"
+    price_semantics: "UNRESOLVED"
+    bid_ask_availability: "UNAVAILABLE"
+    timezone_evidence: "UNRESOLVED"
+    bar_completion_semantics: "UNAVAILABLE"
+    provenance_manifest: "MISSING"
+    source_symbol_mapping: "UNAVAILABLE"
+    alignment_utc: "STRUCTURAL_ONLY"
+    raw_file_checksum: "PASS"
+    source_limitations: "UNAVAILABLE"
+  findings_detail: "data_quality_checks.csv"
+  severity_summary: {"HIGH": 4, "MEDIUM": 4, "LOW": 1, "INFO": 19}
+
+alignment:
+  basis: "canonical_utc_completed_bars"
+  overlap_start: "2019-01-02 00:00"
+  overlap_end: "2026-09-29 19:00"
+  union_timestamps: 48189
+  intersection_timestamps: 48184
+  eurusd_only: 0
+  gbpusd_only: 5
+  gbpusd_only_times: "2026-09-25 19:00 .. 2026-09-25 23:00"
+  utc_alignment_rate: null
+  alignment_status: "STRUCTURAL_ONLY (UTC conversion NOT_RUN)"
+  notes: "Exclude the 5 unmatched GBPUSD Friday-evening bars; do not fill or interpolate."
+
+g2_cost_evidence_status:
+  status: "NOT_RUN"
+  spread_or_bid_ask_evidence: "NOT_RUN"
+  commission_schedule: "NOT_RUN"
+  slippage_model: "NOT_RUN"
+  swap_rollover_long_short: "NOT_RUN"
+  rollover_day_convention: "NOT_RUN"
+  contract_size_and_pip: "NOT_RUN"
+  min_lot_and_margin: "NOT_RUN"
+  order_type_and_fill_assumptions: "NOT_RUN"
+  session_sensitivity: "NOT_RUN"
+  account_currency_conversion: "NOT_RUN"
+  entry_and_exit_costs_both_legs: "NOT_RUN"
+
+stage_status:
+  G0_EXECUTION_ISOLATION: "PASS"
+  G1_DATA_AUDIT: "PAUSE"
+  G2_COST_EVIDENCE: "NOT_RUN"
+  G3_COINTEGRATION_STATIONARITY: "NOT_RUN"
+  G4_MEAN_REVERSION: "NOT_RUN"
+  G5_ECONOMIC_VIABILITY: "NOT_RUN"
+  G6_COST_AWARE_BACKTEST: "NOT_RUN"
+
+traceability:
+  design_spec: "G0_G1_DESIGN_SPEC.md"
+  experiment_manifest: "experiment.yaml"
+  readme: "README.md"
+  run_log: "RUN_LOG.md"
+  data_audit_report: "data_audit_report.md"
+  data_quality_checks: "data_quality_checks.csv"
+  g1_decision: "G1_DECISION.md"
+  lineage_references:
+    - "docs/falsification_ledger/no_edge_map.md"
+    - "docs/falsification_ledger/LEGACY_INDEX.md"
+    - "experiments/REGISTRY.md"
+    - "experiments/REGISTRY.yaml"
+  g1_decision_recommendation: "G1_PAUSE"
+
+# ── G1-R remediation evidence (2026-09-29) ───────────────────────────────────
+# Added by the read-only G1-R MT5 metadata/provenance task. Original G1 findings
+# and file hashes above are preserved unchanged. No secrets/account IDs/server
+# IDs/terminal paths are stored here.
+historical_csv_price_semantics: "CONSISTENT_WITH_CURRENT_MT5_SEMANTICS (exact bid/mid not formally declared)"
+mt5_sample_price_semantics: "MT5 rates OHLC + spread(points); ticks expose bid/ask/last"
+historical_export_semantics_status: "CONSISTENT_WITH_CURRENT_MT5_SEMANTICS"
+current_mt5_symbol_mapping:
+  EURUSD: "CONFIRMED_FOR_CURRENT_MT5_SAMPLE"
+  GBPUSD: "CONFIRMED_FOR_CURRENT_MT5_SAMPLE"
+mt5_timezone_evidence:
+  server_timezone_status: "UNRESOLVED"
+  offset_or_dst_exposed_by_api: false
+  latest_completed_h1_bar_server_label: "2026-09-29 21:00:00"
+  system_utc_now_at_retrieval: "2026-09-29T19:57:11Z"
+  note: "server clock ahead of UTC is apparent but the offset is not identifiable from the API"
+mt5_bar_completion_evidence: "copy_rates_from_pos(start_pos=1) excludes the forming bar; 500 completed H1 bars sampled"
+mt5_tick_field_availability: {time: true, time_msc: true, bid: true, ask: true, last: true, volume: true, volume_real: true, flags: true}
+mt5_symbol_metadata_redacted: "audit_mt5_symbol_metadata_redacted.json"
+mt5_h1_sample_files:
+  - "audit_mt5_h1_sample_EURUSD.csv"
+  - "audit_mt5_h1_sample_GBPUSD.csv"
+mt5_tick_sample_file: "audit_mt5_tick_sample_redacted.csv"
+g1r_decision: "G1_PAUSE"
+g1_limitation_status:
+  broker_symbol_mapping: "RESOLVED"
+  symbol_contract_metadata: "RESOLVED"
+  bid_ask_and_spread_availability: "PARTIALLY_RESOLVED"
+  completed_bar_semantics: "RESOLVED"
+  historical_csv_vs_mt5_consistency: "PARTIALLY_RESOLVED"
+  provenance: "PARTIALLY_RESOLVED"
+  source_server_timezone_utc_conversion: "UNRESOLVED"
+
+# ── G1-R2 timezone provenance (2026-09-29) ──────────────────────────────────
+# Added by the read-only G1-R2 timezone-provenance task. Existing evidence and
+# hashes above are preserved. No secrets/account IDs/server IDs/terminal paths.
+timezone_provenance:
+  historical_csv_timestamp_basis: "raw MT5 bar-open time; exporter-declared UTC; tz stripped"
+  historical_csv_timestamp_basis_status: "CONSISTENT_WITH_EVIDENCE"
+  historical_export_code_evidence:
+    - "ml-signal-service/steps/01_download/mt5_downloader.py: output data/raw/mt5/{TF}/{SYMBOL}_{TF}.csv; copy_rates_range; line 163 pd.to_datetime(unit='s', utc=True); line 166 strftime strips tz; docstring declares datetime UTC"
+  current_mt5_timestamp_basis: "vendor doc (MQL5) states UTC; empirical bar label ~1h ahead of machine UTC"
+  current_mt5_timestamp_basis_status: "INCONSISTENT"
+  broker_server_timezone_rule: ""
+  broker_server_timezone_rule_status: "UNRESOLVED"
+  utc_offset_history: "UNRESOLVED"
+  dst_convention: "UNRESOLVED"
+  conversion_function_declaration: ""
+  conversion_valid_coverage: ""
+  completed_bar_evidence: "current sample: copy_rates_from_pos(start_pos=1) excludes forming bar; historical CSV: no completion marker (CONSISTENT_WITH_CURRENT_MT5_SEMANTICS)"
+  external_alignment_constraints:
+    - "absolute UTC offset undocumented"
+    - "session/event and cross-vendor alignment unsafe until offset resolved"
+  public_documentation_used: true
+  public_documentation_note: "MQL5 copy_rates_from doc (MetaQuotes) states MT5 Python data has UTC time; FP Markets trading-hours page returned HTTP 403"
+  historical_export_semantics_status: "CONSISTENT_WITH_CURRENT_MT5_SEMANTICS"
+  g1r3_probe_outcome: "BROKER_OR_TERMINAL_TIME_ANOMALY_UNRESOLVED"
+  g1r3_current_mt5_tick_epoch_status: "raw symbol_info_tick epoch ~+3h vs system UTC (server time); not UTC"
+  g1r3_current_mt5_h1_epoch_status: "raw copy_rates_from_pos H1 epochs ~+2..+3h vs system UTC; current forming bar aligns with a server clock"
+  g1r3_prior_discrepancy_explanation: "partly explained: raw epochs are server-time, not UTC; cross-query inconsistency and possible local clock skew remain"
+  g1r3_current_api_utc_evidence: "inconsistent: symbol_info_tick/rates ahead of system UTC; copy_ticks_from UTC-window-consistent; UTC NOT confirmed"
+g1r2_decision: "G1_PAUSE"
+
+# ── Internal-clock-only research amendment (2026-09-29) ─────────────────────
+# Owner-approved governance amendment. Original G1 remains PAUSE; this is NOT
+# G1_PASS. No data work is authorized by the amendment itself. stage_status and
+# all prior evidence/hashes above are unchanged.
+internal_clock_only_amendment:
+  decision: "APPROVED_FOR_STATISTICAL_SCREENING_ONLY"
+  date: "2026-09-29"
+  status_context: "Original G1 remains PAUSE; this is not G1_PASS."
+  clock_definition: "Ordinal k over strict chronological intersection of EURUSD and GBPUSD completed H1 bars."
+  absolute_time_status: "UNRESOLVED; not UTC-aligned."
+  allowed_future_scope:
+    - "G3-Internal statistical viability screening only, after a separate task-level authorization."
+    - "Build a synchronized intersection dataset from the two existing local CSVs."
+    - "Preserve only common completed-bar observations."
+    - "Chronological train/validation/sealed-test partitions based on observation order k."
+    - "Estimate a hedge ratio using training-past observations only."
+    - "Test Engle-Granger/ADF, Johansen where appropriate, variance ratio, half-life, rolling stability."
+    - "Calculate only research-statistical quantities necessary for these tests."
+    - "Block bootstrap and subperiod robustness checks."
+    - "Produce an APPROVE/REJECT/PAUSE recommendation for statistical viability only."
+  prohibited_scope:
+    - "Interpreting timestamps as UTC/broker-local/London/New York/Asia/any named session."
+    - "Joining macro/news/MERG/FRED/economic/event/public/external datasets."
+    - "Creating time-of-day/day-of-week/session/calendar/event features."
+    - "Swaps by calendar day, rollover-day labels, session-sensitive spreads, intraday execution timing."
+    - "Comparing or aligning to a non-MT5 provider."
+    - "Asserting absolute event timing, session timing, or UTC conversion."
+    - "G2 cost evidence; cost/EV/PnL/order simulation/trade sizing/executable-strategy conclusions."
+    - "G4 mean-reversion follow-up; G5 economic viability; G6 cost-aware backtesting."
+    - "ML, LLM, signals, execution, shadow, demo, or live trading."
+  preconditions:
+    - "A new task-level prompt explicitly authorizes data parsing and computation."
+    - "The synchronized dataset must use the strict EURUSD/GBPUSD timestamp intersection only."
+    - "Any current/final forming bar must be excluded under the documented completed-bar rule."
+    - "The five unmatched GBPUSD Friday-evening observations identified in G1 must be excluded without imputation."
+    - "Dataset hashes from data_manifest_v1.yaml must be re-verified before use."
+    - "No external data joins or absolute-time features may be introduced."
+    - "Split design, embargo rule, and statistical acceptance/rejection thresholds must be fixed before the sealed test is inspected."
+    - "The output must state statistical viability only and must not claim tradability, economic viability, or deployment readiness."
+  artifact: "INTERNAL_CLOCK_ONLY_RESEARCH_AMENDMENT.md"
+
+# ── G3-Internal statistical viability screening (2026-09-29) ────────────────
+# Internal clock only. Fail-closed at the input hash gate; no statistical test
+# executed. G1 stays PAUSE; G4-G6 stay NOT_RUN. All prior evidence/hashes above
+# are unchanged.
+g3_internal_screening:
+  protocol_artifact: "G3_INTERNAL_STATISTICAL_PROTOCOL.md"
+  report_artifact: "G3_INTERNAL_STATISTICAL_REPORT.md"
+  decision_artifact: "G3_INTERNAL_DECISION.md"
+  results_artifact: "G3_INTERNAL_RESULTS.json"
+  input_hash_verification: "FAILED"
+  input_hashes_observed:
+    "ml-signal-service/data/raw/mt5/H1/EURUSD_H1.csv": "56E72E231DF53BAD0743940D2F21C5FA678EAE2CC47B02D82C7152DCE73A67FE"
+    "ml-signal-service/data/raw/mt5/H1/GBPUSD_H1.csv": "D175138CFA33F377071FAF2C9DC84F8D7FD35383D3778829476015A99F4DE6D2"
+  internal_clock_dataset_counts: "NOT_RUN (fail-closed at the hash gate; no data parsed)"
+  split_configuration: "train 60% / validation 20% / sealed 20% with 30-bar embargoes (frozen; not computed)"
+  final_decision: "PAUSE_STATISTICAL_VIABILITY"
+  statistical_only: true
+  not_economic_or_tradable: true
+  note: "Input CSVs changed since G1 (incremental downloader appended bars); remediation = re-freeze inputs + new manifest version + re-verify, then a new explicit run. No retry performed."

@@ -1,0 +1,18 @@
+experiment_id: QPF-RV-2026-10-H5-V2-MULTI-PAIR-USD-MOMENTUM
+parent_design: QPF-RV-2026-05-H5-MULTI-PAIR-USD-MOMENTUM
+predecessor_snapshot: QPF-RV-2026-06-H5-V1-MULTI-PAIR-USD-MOMENTUM
+predecessor_status: FROZEN_UNUSED_USDJPY_STALE
+stage: H5_V2_IMMUTABLE_MULTISERIES_SNAPSHOT_FREEZE
+timeframe: H1
+clock: INTERNAL_ORDINAL_NOT_UTC
+mandatory_instruments:
+  - EURUSD
+  - GBPUSD
+  - USDJPY
+  - USDCHF
+  - USDCAD
+  - AUDUSD
+  - NZDUSD
+status: SNAPSHOT_V2_FROZEN_PENDING_H5_V2_SCREEN
+profitability_claim: false
+trading_authorization: false

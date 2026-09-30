@@ -1,0 +1,20 @@
+# Data Manifest Template
+# One manifest per raw data file.
+# Committed to Git alongside the data pipeline.
+# The raw data file itself is gitignored — this manifest is the auditable record.
+
+source: ""                      # Data vendor: yahoo_finance, fred, mt5, etc.
+ticker: ""                      # Standardized ticker from instrument master
+frequency: ""                   # daily, weekly, monthly
+acquisition_date: ""            # ISO date when data was downloaded
+acquisition_method: ""          # Script path, e.g. data/pipelines/download.py
+date_range:
+  start: ""                     # YYYY-MM-DD
+  end: ""                       # YYYY-MM-DD
+row_count: 0
+column_count: 0
+columns: []                     # List of column names in order
+missing_pct: 0.0                # Fraction of missing values
+sha256: ""                      # SHA256 hash of the raw data file
+validation_errors: 0            # Number of validation failures
+notes: ""                       # Free-text notes: adjustments, known gaps, caveats

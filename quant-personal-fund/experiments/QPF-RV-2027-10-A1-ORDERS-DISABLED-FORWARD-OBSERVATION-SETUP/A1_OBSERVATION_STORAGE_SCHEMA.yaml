@@ -1,0 +1,77 @@
+schema_version: "1.0"
+session_metadata:
+  required:
+    - session_id
+    - mode
+    - a1_rule_version_id
+    - event_schema_version
+    - contains_broker_or_source_price_data
+    - observation_window_target
+    - orders_disabled
+  invariants:
+    - "mode must equal OBSERVATION_ONLY"
+    - "contains_broker_or_source_price_data must be false"
+    - "orders_disabled must be true"
+event_record:
+  required:
+    - event_id
+    - rule_version_id
+    - instrument
+    - timeframe
+    - timestamp_label_internal_or_source_timestamp
+    - mode
+    - market_data_input_identity
+    - rule_state_before
+    - rule_state_after
+    - candidate_signal_direction
+    - setup_type
+    - structural_level_fields
+    - entry_zone
+    - stop_level
+    - target_level
+    - risk_cap_fields
+    - pending_entry_status
+    - pending_expiry_time
+    - accept_reject_reason
+    - lifecycle_status
+    - error_status
+  sequence_field: sequence_id
+  null_policy: "required fields must be present; explicit null when not applicable"
+allowed_lifecycle_states:
+  - NO_SETUP
+  - SETUP_DETECTED
+  - SIGNAL_ACCEPTED
+  - ENTRY_PENDING
+  - EXPIRED_UNFILLED
+  - NO_VALID_PENDING
+  - RULE_REJECTED
+  - OBSERVATION_ERROR
+reserved_execution_states:
+  prohibited: true
+  values:
+    - MARKET_FILLED
+    - PENDING_TRIGGERED
+    - VIRTUAL_OPEN
+    - CLOSED_TP
+    - CLOSED_SL
+    - CLOSED_TIMEOUT
+    - EXTERNAL_STATE_CONFLICT
+prohibited_fields:
+  - order_id
+  - fill_price
+  - fill_time
+  - realized_pnl
+  - unrealized_pnl
+  - account_balance
+  - position_size
+  - broker_response
+append_only_invariants:
+  - "records are appended only; never rewritten or deleted"
+  - "sequence_id is monotonic and gap-free"
+  - "encoding UTF-8; newline \\n"
+  - "writes occur only under the caller-supplied root"
+observation_window:
+  min_calendar_days: 30
+  min_completed_cycles: 50
+  complete_status: OBSERVATION_WINDOW_COMPLETE
+  incomplete_status: OBSERVATION_WINDOW_INCOMPLETE

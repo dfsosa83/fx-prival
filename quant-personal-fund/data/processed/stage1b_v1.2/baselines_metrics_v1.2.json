@@ -1,0 +1,83 @@
+{
+  "spec_revision": "docs/governance/STAGE_1B_DESIGN_SPEC_v1.2.md",
+  "label": "PORTFOLIO BASELINE \u2014 NOT ALPHA EVIDENCE",
+  "data_start": "2020-02-28",
+  "warmup_only_period": "2020-02-28 to 2020-06-30",
+  "first_eligible_rebalance": "2020-06-30",
+  "performance_evaluation_start": "2020-06-30",
+  "performance_evaluation_end": "2026-09-23",
+  "covid_window": "NOT EVALUABLE (precedes first eligible rebalance)",
+  "universe": [
+    "AUDUSD",
+    "COPPER",
+    "EURJPY",
+    "EURUSD",
+    "GBPUSD",
+    "NDX",
+    "NKY",
+    "NZDUSD",
+    "SPX",
+    "SX5E",
+    "USDCAD",
+    "USDCHF",
+    "USDJPY",
+    "WTI",
+    "XAUUSD"
+  ],
+  "baselines": {
+    "equal": {
+      "metrics": {
+        "annualized_return": 0.05354610123133696,
+        "annualized_volatility": 0.064124866705282,
+        "sharpe": 0.8442855452787731,
+        "sortino": 1.1030251120973298,
+        "calmar": 0.342367390575796,
+        "max_drawdown": -0.15639953659512587,
+        "drawdown_duration_days": 185,
+        "turnover": 1.5712112003105487,
+        "total_cost": 0.07010625182306048,
+        "gross_pnl": 0.4190065281594454,
+        "cost_to_gross": 0.16731541661418411,
+        "n_drawdown_episodes": 14,
+        "cumulative_return": 0.3992638445836798,
+        "n_days": 1624
+      }
+    },
+    "inverse_vol": {
+      "metrics": {
+        "annualized_return": 0.029554135027239914,
+        "annualized_volatility": 0.03944225415243917,
+        "sharpe": 0.7567883931117049,
+        "sortino": 1.0248402994944468,
+        "calmar": 0.2776483311422934,
+        "max_drawdown": -0.10644449007004318,
+        "drawdown_duration_days": 483,
+        "turnover": 2.115821824452122,
+        "total_cost": 0.04272698964617674,
+        "gross_pnl": 0.23509004833086772,
+        "cost_to_gross": 0.1817473344768827,
+        "n_drawdown_episodes": 5,
+        "cumulative_return": 0.2063318352350434,
+        "n_days": 1624
+      }
+    },
+    "risk_parity": {
+      "metrics": {
+        "annualized_return": 0.01935167481524469,
+        "annualized_volatility": 0.02727440521942797,
+        "sharpe": 0.715971521831402,
+        "sortino": 0.9726232424789149,
+        "calmar": 0.5030015718248846,
+        "max_drawdown": -0.03847239432083087,
+        "drawdown_duration_days": 53,
+        "turnover": 14.19510884874406,
+        "total_cost": 0.028228407429609324,
+        "gross_pnl": 0.15407356852916598,
+        "cost_to_gross": 0.18321382245563886,
+        "n_drawdown_episodes": 6,
+        "cumulative_return": 0.1313859641935735,
+        "n_days": 1624
+      }
+    }
+  }
+}

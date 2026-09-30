@@ -1,0 +1,28 @@
+date,calendar,description
+2026-01-01,FX_global,New Year's Day
+2026-01-01,NYSE,New Year's Day
+2026-01-01,LSE,New Year's Day
+2026-01-01,TSE,New Year's Day
+2026-01-01,EUREX,New Year's Day
+2026-01-02,TSE,New Year's Holiday
+2026-01-19,NYSE,Martin Luther King Jr. Day
+2026-02-16,NYSE,Presidents' Day
+2026-04-03,LSE,Good Friday
+2026-04-03,EUREX,Good Friday
+2026-04-06,LSE,Easter Monday
+2026-04-06,EUREX,Easter Monday
+2026-05-04,LSE,Early May Bank Holiday
+2026-05-25,LSE,Spring Bank Holiday
+2026-05-25,NYSE,Memorial Day
+2026-07-03,NYSE,Independence Day (observed)
+2026-08-31,LSE,Summer Bank Holiday
+2026-09-07,NYSE,Labor Day
+2026-11-26,NYSE,Thanksgiving Day
+2026-12-24,NYSE,Christmas Eve (early close)
+2026-12-25,FX_global,Christmas Day
+2026-12-25,NYSE,Christmas Day
+2026-12-25,LSE,Christmas Day
+2026-12-25,TSE,Christmas Day
+2026-12-25,EUREX,Christmas Day
+2026-12-26,LSE,Boxing Day
+2026-12-31,EUREX,New Year's Eve

@@ -1,0 +1,38 @@
+# Audit Manifest — AUDIT-2026-09-28-FRIVAL-SHADOWRUN-CROSSCHECK
+
+audit:
+  id: "AUDIT-2026-09-28-FRIVAL-SHADOWRUN-CROSSCHECK"
+  type: "analysis-only"
+  invasiveness: "non-invasive"
+  policy: "append-only"
+  created: "2026-09-28"
+  approver: "user"
+  status: "complete"
+
+objective: >
+  Cross-check the 2026-09-28 legacy ML shadow-run signal evidence
+  (frival/output/signals/2026-09/2026-09-28.jsonl) against execution
+  records (frival/execution_bot/data/execution_log.jsonl,
+  frival/execution_bot/data/demo_trades_ledger.jsonl) to determine
+  whether the operational record provides any evidence of edge for the
+  legacy H1 directional ML pipeline (Family 1, CLOSED).
+
+# ── Scope constraints ───────────────────────────────────────────────────────
+scope:
+  - "Analysis-only. No source code, configs, strategy parameters, raw data, or legacy logs modified."
+  - "Legacy protected workflows untouched: frival/run_daily.bat, frival/run_gold_rules.bat."
+  - "All diagnostic output lives ONLY under audits/AUDIT-2026-09-28-FRIVAL-SHADOWRUN-CROSSCHECK/."
+
+# ── Evidence sources (read-only) ─────────────────────────────────────────────
+evidence_sources:
+  - "frival/output/signals/2026-09/2026-09-28.jsonl"
+  - "frival/execution_bot/data/execution_log.jsonl"
+  - "frival/execution_bot/data/demo_trades_ledger.jsonl"
+  - "frival/signal_gate.py (gate semantics, BORDERLINE_THRESHOLD=0.20)"
+  - "frival/agents/senior.py (synthesize_borderline: both agents must confirm)"
+
+# ── Decision standard ────────────────────────────────────────────────────────
+decision_standard:
+  - "CONFIRMED: operational record contains evidence of edge for the legacy pipeline"
+  - "NOT CONFIRMED: operational record contains no usable outcome evidence of edge"
+  - "prohibited: any strategy recommendation, parameter change, or reopening of Family 1"

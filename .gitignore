@@ -37,3 +37,12 @@ to_agents/
 
 # Generated PDFs (regenerable from .md)
 *.pdf
+
+# Model binaries (large; keep out of git — use OneDrive/external)
+ml-signal-service/models_bin/
+
+# Runtime stderr logs
+*_stderr.log
+
+# Test caches
+.pytest_cache/

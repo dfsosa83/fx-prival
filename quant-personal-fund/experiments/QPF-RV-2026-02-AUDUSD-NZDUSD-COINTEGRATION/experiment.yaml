@@ -1,0 +1,11 @@
+experiment:
+  id: "QPF-RV-2026-02-AUDUSD-NZDUSD-COINTEGRATION"
+  candidate_id: "C1"
+  instruments: ["AUDUSD", "NZDUSD"]
+  timeframe: "H1"
+  clock: "INTERNAL_ORDINAL_NOT_UTC"
+  status: "G1_SNAPSHOT_FROZEN_PENDING_G3"
+  created: "2026-09-29"
+  research_question: "Whether a train-fitted AUDUSD/NZDUSD log-price residual exhibits robust out-of-sample mean reversion under a fixed statistical protocol."
+  profitability_claim: false
+  trading_authorized: false

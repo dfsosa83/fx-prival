@@ -1,0 +1,880 @@
+{
+  "scenarios": {
+    "base": {
+      "windows": {
+        "development": {
+          "n_eligible_denominator": 1863,
+          "c1_triggered": 359,
+          "no_c1": 1462,
+          "rollover_ineligible": 42,
+          "mean_delta_R": -0.0031961410033200127,
+          "median_delta_R": 0.0,
+          "pct_positive": 9.822866344605476,
+          "avg_positive_delta_R": 0.3463195928463906,
+          "avg_negative_delta_R": -0.39392554647769695,
+          "profit_factor_diagnostic": 0.9141160576704553,
+          "max_drawdown_contribution": -22.012389112070352,
+          "top5_positive": [
+            {
+              "idx": 2161,
+              "delta_R": 1.5789473684210613,
+              "entry_time": "2023-04-13 09:30:00+00:00"
+            },
+            {
+              "idx": 694,
+              "delta_R": 1.4948240165631752,
+              "entry_time": "2021-02-24 03:15:00+00:00"
+            },
+            {
+              "idx": 613,
+              "delta_R": 1.4084158415841845,
+              "entry_time": "2020-12-30 03:15:00+00:00"
+            },
+            {
+              "idx": 634,
+              "delta_R": 1.3078101071975041,
+              "entry_time": "2021-01-04 10:15:00+00:00"
+            },
+            {
+              "idx": 1082,
+              "delta_R": 1.1628352490421274,
+              "entry_time": "2021-08-31 08:30:00+00:00"
+            }
+          ],
+          "top5_negative": [
+            {
+              "idx": 1358,
+              "delta_R": -3.101960784313813,
+              "entry_time": "2022-02-04 06:45:00+00:00"
+            },
+            {
+              "idx": 523,
+              "delta_R": -2.393129770992442,
+              "entry_time": "2020-11-09 01:15:00+00:00"
+            },
+            {
+              "idx": 1359,
+              "delta_R": -2.3061224489797256,
+              "entry_time": "2022-02-04 10:45:00+00:00"
+            },
+            {
+              "idx": 1360,
+              "delta_R": -1.826789838337232,
+              "entry_time": "2022-02-04 12:00:00+00:00"
+            },
+            {
+              "idx": 283,
+              "delta_R": -1.460937500000005,
+              "entry_time": "2020-07-27 01:15:00+00:00"
+            }
+          ],
+          "bootstrap_6h": {
+            "block_hours": 6,
+            "n_blocks": 684,
+            "n_episodes": 1863,
+            "observed_mean_delta_R": -0.0031961410033200127,
+            "ci_lower": -0.01870516008656254,
+            "ci_upper": 0.013281477961197826,
+            "prob_mean_delta_R_gt_0": 0.3586,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_3h": {
+            "block_hours": 3,
+            "n_blocks": 735,
+            "n_episodes": 1863,
+            "observed_mean_delta_R": -0.0031961410033200127,
+            "ci_lower": -0.018918236659299564,
+            "ci_upper": 0.013375133576682382,
+            "prob_mean_delta_R_gt_0": 0.3504,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_12h": {
+            "block_hours": 12,
+            "n_blocks": 592,
+            "n_episodes": 1863,
+            "observed_mean_delta_R": -0.0031961410033200127,
+            "ci_lower": -0.019346887798705352,
+            "ci_upper": 0.01287208211001156,
+            "prob_mean_delta_R_gt_0": 0.3524,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "iid_diagnostic_only": {
+            "n": 1863,
+            "mean": -0.0031961410033200127,
+            "t_stat": -0.5866605825905238,
+            "p_value": 0.5575028018208052,
+            "label": "DIAGNOSTIC ONLY \u2014 not primary inference"
+          }
+        },
+        "research_grade_oos": {
+          "n_eligible_denominator": 1692,
+          "c1_triggered": 382,
+          "no_c1": 1270,
+          "rollover_ineligible": 40,
+          "mean_delta_R": -0.011279343752640673,
+          "median_delta_R": 0.0,
+          "pct_positive": 8.865248226950355,
+          "avg_positive_delta_R": 0.3641893539070868,
+          "avg_negative_delta_R": -0.3177286754979786,
+          "profit_factor_diagnostic": 0.7410953837020108,
+          "max_drawdown_contribution": -22.71238288265837,
+          "top5_positive": [
+            {
+              "idx": 3374,
+              "delta_R": 2.7600732600732716,
+              "entry_time": "2024-10-18 03:15:00+00:00"
+            },
+            {
+              "idx": 3375,
+              "delta_R": 2.180897250361864,
+              "entry_time": "2024-10-18 04:15:00+00:00"
+            },
+            {
+              "idx": 3376,
+              "delta_R": 2.0120160213618963,
+              "entry_time": "2024-10-18 04:30:00+00:00"
+            },
+            {
+              "idx": 3169,
+              "delta_R": 1.8799999999999655,
+              "entry_time": "2024-08-02 15:45:00+00:00"
+            },
+            {
+              "idx": 3377,
+              "delta_R": 1.5456410256410424,
+              "entry_time": "2024-10-18 04:45:00+00:00"
+            }
+          ],
+          "top5_negative": [
+            {
+              "idx": 4850,
+              "delta_R": -1.8770464416972852,
+              "entry_time": "2026-02-11 07:45:00+00:00"
+            },
+            {
+              "idx": 4851,
+              "delta_R": -1.7931694861155576,
+              "entry_time": "2026-02-11 09:00:00+00:00"
+            },
+            {
+              "idx": 3495,
+              "delta_R": -1.6972477064220834,
+              "entry_time": "2024-12-04 04:15:00+00:00"
+            },
+            {
+              "idx": 4472,
+              "delta_R": -1.4133635334088643,
+              "entry_time": "2025-10-15 09:45:00+00:00"
+            },
+            {
+              "idx": 4849,
+              "delta_R": -1.395083188477767,
+              "entry_time": "2026-02-11 01:30:00+00:00"
+            }
+          ],
+          "bootstrap_6h": {
+            "block_hours": 6,
+            "n_blocks": 523,
+            "n_episodes": 1692,
+            "observed_mean_delta_R": -0.011279343752640673,
+            "ci_lower": -0.0296874943301673,
+            "ci_upper": 0.007589016089503098,
+            "prob_mean_delta_R_gt_0": 0.1204,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_3h": {
+            "block_hours": 3,
+            "n_blocks": 584,
+            "n_episodes": 1692,
+            "observed_mean_delta_R": -0.011279343752640673,
+            "ci_lower": -0.029433180320268267,
+            "ci_upper": 0.007459935352358353,
+            "prob_mean_delta_R_gt_0": 0.1198,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_12h": {
+            "block_hours": 12,
+            "n_blocks": 449,
+            "n_episodes": 1692,
+            "observed_mean_delta_R": -0.011279343752640673,
+            "ci_lower": -0.029619391408906744,
+            "ci_upper": 0.0069955577262113345,
+            "prob_mean_delta_R_gt_0": 0.1218,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "iid_diagnostic_only": {
+            "n": 1692,
+            "mean": -0.011279343752640673,
+            "t_stat": -1.9744409797225273,
+            "p_value": 0.04849410688892868,
+            "label": "DIAGNOSTIC ONLY \u2014 not primary inference"
+          }
+        }
+      }
+    },
+    "2x_spread": {
+      "windows": {
+        "development": {
+          "n_eligible_denominator": 1863,
+          "c1_triggered": 359,
+          "no_c1": 1462,
+          "rollover_ineligible": 42,
+          "mean_delta_R": -0.005626299890556354,
+          "median_delta_R": 0.0,
+          "pct_positive": 9.554482018250134,
+          "avg_positive_delta_R": 0.3448887549138788,
+          "avg_negative_delta_R": -0.3970828456949001,
+          "profit_factor_diagnostic": 0.8541602096089806,
+          "max_drawdown_contribution": -25.526828299592616,
+          "top5_positive": [
+            {
+              "idx": 2161,
+              "delta_R": 1.5741626794258503,
+              "entry_time": "2023-04-13 09:30:00+00:00"
+            },
+            {
+              "idx": 694,
+              "delta_R": 1.4948240165631752,
+              "entry_time": "2021-02-24 03:15:00+00:00"
+            },
+            {
+              "idx": 613,
+              "delta_R": 1.4084158415841845,
+              "entry_time": "2020-12-30 03:15:00+00:00"
+            },
+            {
+              "idx": 634,
+              "delta_R": 1.3078101071975041,
+              "entry_time": "2021-01-04 10:15:00+00:00"
+            },
+            {
+              "idx": 1082,
+              "delta_R": 1.1628352490421274,
+              "entry_time": "2021-08-31 08:30:00+00:00"
+            }
+          ],
+          "top5_negative": [
+            {
+              "idx": 1358,
+              "delta_R": -3.1372549019609295,
+              "entry_time": "2022-02-04 06:45:00+00:00"
+            },
+            {
+              "idx": 523,
+              "delta_R": -2.394083969465702,
+              "entry_time": "2020-11-09 01:15:00+00:00"
+            },
+            {
+              "idx": 1359,
+              "delta_R": -2.332361516035163,
+              "entry_time": "2022-02-04 10:45:00+00:00"
+            },
+            {
+              "idx": 1360,
+              "delta_R": -1.8475750577368042,
+              "entry_time": "2022-02-04 12:00:00+00:00"
+            },
+            {
+              "idx": 283,
+              "delta_R": -1.507812500000082,
+              "entry_time": "2020-07-27 01:15:00+00:00"
+            }
+          ],
+          "bootstrap_6h": {
+            "block_hours": 6,
+            "n_blocks": 684,
+            "n_episodes": 1863,
+            "observed_mean_delta_R": -0.005626299890556354,
+            "ci_lower": -0.021255070374822257,
+            "ci_upper": 0.010951898623142865,
+            "prob_mean_delta_R_gt_0": 0.2611,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_3h": {
+            "block_hours": 3,
+            "n_blocks": 735,
+            "n_episodes": 1863,
+            "observed_mean_delta_R": -0.005626299890556354,
+            "ci_lower": -0.021355036864408837,
+            "ci_upper": 0.011023046335192865,
+            "prob_mean_delta_R_gt_0": 0.2522,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_12h": {
+            "block_hours": 12,
+            "n_blocks": 592,
+            "n_episodes": 1863,
+            "observed_mean_delta_R": -0.005626299890556354,
+            "ci_lower": -0.02185053195575489,
+            "ci_upper": 0.010551728785845786,
+            "prob_mean_delta_R_gt_0": 0.2532,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "iid_diagnostic_only": {
+            "n": 1863,
+            "mean": -0.005626299890556354,
+            "t_stat": -1.026683541311843,
+            "p_value": 0.3047028553070858,
+            "label": "DIAGNOSTIC ONLY \u2014 not primary inference"
+          }
+        },
+        "research_grade_oos": {
+          "n_eligible_denominator": 1692,
+          "c1_triggered": 382,
+          "no_c1": 1270,
+          "rollover_ineligible": 40,
+          "mean_delta_R": -0.013519983735116498,
+          "median_delta_R": 0.0,
+          "pct_positive": 8.747044917257684,
+          "avg_positive_delta_R": 0.36028348052255593,
+          "avg_negative_delta_R": -0.32563148545792897,
+          "profit_factor_diagnostic": 0.6997836918168309,
+          "max_drawdown_contribution": -26.337281310907652,
+          "top5_positive": [
+            {
+              "idx": 3374,
+              "delta_R": 2.729853479853498,
+              "entry_time": "2024-10-18 03:15:00+00:00"
+            },
+            {
+              "idx": 3375,
+              "delta_R": 2.157018813314112,
+              "entry_time": "2024-10-18 04:15:00+00:00"
+            },
+            {
+              "idx": 3376,
+              "delta_R": 1.9899866488652382,
+              "entry_time": "2024-10-18 04:30:00+00:00"
+            },
+            {
+              "idx": 3169,
+              "delta_R": 1.8652631578947636,
+              "entry_time": "2024-08-02 15:45:00+00:00"
+            },
+            {
+              "idx": 3377,
+              "delta_R": 1.5287179487179692,
+              "entry_time": "2024-10-18 04:45:00+00:00"
+            }
+          ],
+          "top5_negative": [
+            {
+              "idx": 4850,
+              "delta_R": -1.883060474440362,
+              "entry_time": "2026-02-11 07:45:00+00:00"
+            },
+            {
+              "idx": 4851,
+              "delta_R": -1.798914778167913,
+              "entry_time": "2026-02-11 09:00:00+00:00"
+            },
+            {
+              "idx": 3495,
+              "delta_R": -1.7255351681957756,
+              "entry_time": "2024-12-04 04:15:00+00:00"
+            },
+            {
+              "idx": 4472,
+              "delta_R": -1.4201585503964178,
+              "entry_time": "2025-10-15 09:45:00+00:00"
+            },
+            {
+              "idx": 4849,
+              "delta_R": -1.3995530171343424,
+              "entry_time": "2026-02-11 01:30:00+00:00"
+            }
+          ],
+          "bootstrap_6h": {
+            "block_hours": 6,
+            "n_blocks": 523,
+            "n_episodes": 1692,
+            "observed_mean_delta_R": -0.013519983735116498,
+            "ci_lower": -0.03196758628981952,
+            "ci_upper": 0.005395390113766006,
+            "prob_mean_delta_R_gt_0": 0.0799,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_3h": {
+            "block_hours": 3,
+            "n_blocks": 584,
+            "n_episodes": 1692,
+            "observed_mean_delta_R": -0.013519983735116498,
+            "ci_lower": -0.03172964447547529,
+            "ci_upper": 0.005260292321180947,
+            "prob_mean_delta_R_gt_0": 0.085,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_12h": {
+            "block_hours": 12,
+            "n_blocks": 449,
+            "n_episodes": 1692,
+            "observed_mean_delta_R": -0.013519983735116498,
+            "ci_lower": -0.03186974495377184,
+            "ci_upper": 0.0048164931756792635,
+            "prob_mean_delta_R_gt_0": 0.0787,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "iid_diagnostic_only": {
+            "n": 1692,
+            "mean": -0.013519983735116498,
+            "t_stat": -2.361777470102725,
+            "p_value": 0.018300344275891636,
+            "label": "DIAGNOSTIC ONLY \u2014 not primary inference"
+          }
+        }
+      }
+    },
+    "2x_slippage": {
+      "windows": {
+        "development": {
+          "n_eligible_denominator": 1863,
+          "c1_triggered": 359,
+          "no_c1": 1462,
+          "rollover_ineligible": 42,
+          "mean_delta_R": -0.004411220446931842,
+          "median_delta_R": 0.0,
+          "pct_positive": 9.71551261406334,
+          "avg_positive_delta_R": 0.3445348019203377,
+          "avg_negative_delta_R": -0.39651069011356815,
+          "profit_factor_diagnostic": 0.8835614700438299,
+          "max_drawdown_contribution": -23.76960870582283,
+          "top5_positive": [
+            {
+              "idx": 2161,
+              "delta_R": 1.5765550239235102,
+              "entry_time": "2023-04-13 09:30:00+00:00"
+            },
+            {
+              "idx": 694,
+              "delta_R": 1.4948240165631752,
+              "entry_time": "2021-02-24 03:15:00+00:00"
+            },
+            {
+              "idx": 613,
+              "delta_R": 1.4084158415841845,
+              "entry_time": "2020-12-30 03:15:00+00:00"
+            },
+            {
+              "idx": 634,
+              "delta_R": 1.3078101071975041,
+              "entry_time": "2021-01-04 10:15:00+00:00"
+            },
+            {
+              "idx": 1082,
+              "delta_R": 1.1628352490421274,
+              "entry_time": "2021-08-31 08:30:00+00:00"
+            }
+          ],
+          "top5_negative": [
+            {
+              "idx": 1358,
+              "delta_R": -3.119607843137282,
+              "entry_time": "2022-02-04 06:45:00+00:00"
+            },
+            {
+              "idx": 523,
+              "delta_R": -2.393606870229094,
+              "entry_time": "2020-11-09 01:15:00+00:00"
+            },
+            {
+              "idx": 1359,
+              "delta_R": -2.319241982507378,
+              "entry_time": "2022-02-04 10:45:00+00:00"
+            },
+            {
+              "idx": 1360,
+              "delta_R": -1.8371824480369656,
+              "entry_time": "2022-02-04 12:00:00+00:00"
+            },
+            {
+              "idx": 283,
+              "delta_R": -1.484374999999925,
+              "entry_time": "2020-07-27 01:15:00+00:00"
+            }
+          ],
+          "bootstrap_6h": {
+            "block_hours": 6,
+            "n_blocks": 684,
+            "n_episodes": 1863,
+            "observed_mean_delta_R": -0.004411220446931842,
+            "ci_lower": -0.019999082454995484,
+            "ci_upper": 0.01208670268766764,
+            "prob_mean_delta_R_gt_0": 0.3087,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_3h": {
+            "block_hours": 3,
+            "n_blocks": 735,
+            "n_episodes": 1863,
+            "observed_mean_delta_R": -0.004411220446931842,
+            "ci_lower": -0.020130242547172324,
+            "ci_upper": 0.012243720746566968,
+            "prob_mean_delta_R_gt_0": 0.2964,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_12h": {
+            "block_hours": 12,
+            "n_blocks": 592,
+            "n_episodes": 1863,
+            "observed_mean_delta_R": -0.004411220446931842,
+            "ci_lower": -0.02060219702981062,
+            "ci_upper": 0.011712343155086484,
+            "prob_mean_delta_R_gt_0": 0.3022,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "iid_diagnostic_only": {
+            "n": 1863,
+            "mean": -0.004411220446931842,
+            "t_stat": -0.8074270455786732,
+            "p_value": 0.4195236194349704,
+            "label": "DIAGNOSTIC ONLY \u2014 not primary inference"
+          }
+        },
+        "research_grade_oos": {
+          "n_eligible_denominator": 1692,
+          "c1_triggered": 382,
+          "no_c1": 1270,
+          "rollover_ineligible": 40,
+          "mean_delta_R": -0.012399663743880364,
+          "median_delta_R": 0.0,
+          "pct_positive": 8.747044917257684,
+          "avg_positive_delta_R": 0.36468336802464124,
+          "avg_negative_delta_R": -0.32031354496706194,
+          "profit_factor_diagnostic": 0.7200895545008729,
+          "max_drawdown_contribution": -24.524832096785833,
+          "top5_positive": [
+            {
+              "idx": 3374,
+              "delta_R": 2.744963369963385,
+              "entry_time": "2024-10-18 03:15:00+00:00"
+            },
+            {
+              "idx": 3375,
+              "delta_R": 2.168958031837988,
+              "entry_time": "2024-10-18 04:15:00+00:00"
+            },
+            {
+              "idx": 3376,
+              "delta_R": 2.001001335113567,
+              "entry_time": "2024-10-18 04:30:00+00:00"
+            },
+            {
+              "idx": 3169,
+              "delta_R": 1.872631578947269,
+              "entry_time": "2024-08-02 15:45:00+00:00"
+            },
+            {
+              "idx": 3377,
+              "delta_R": 1.537179487179506,
+              "entry_time": "2024-10-18 04:45:00+00:00"
+            }
+          ],
+          "top5_negative": [
+            {
+              "idx": 4850,
+              "delta_R": -1.8800534580688235,
+              "entry_time": "2026-02-11 07:45:00+00:00"
+            },
+            {
+              "idx": 4851,
+              "delta_R": -1.7960421321417352,
+              "entry_time": "2026-02-11 09:00:00+00:00"
+            },
+            {
+              "idx": 3495,
+              "delta_R": -1.7113914373088948,
+              "entry_time": "2024-12-04 04:15:00+00:00"
+            },
+            {
+              "idx": 4472,
+              "delta_R": -1.416761041902641,
+              "entry_time": "2025-10-15 09:45:00+00:00"
+            },
+            {
+              "idx": 4849,
+              "delta_R": -1.3973181028060548,
+              "entry_time": "2026-02-11 01:30:00+00:00"
+            }
+          ],
+          "bootstrap_6h": {
+            "block_hours": 6,
+            "n_blocks": 523,
+            "n_episodes": 1692,
+            "observed_mean_delta_R": -0.012399663743880364,
+            "ci_lower": -0.030822809973665002,
+            "ci_upper": 0.006488554640781665,
+            "prob_mean_delta_R_gt_0": 0.0963,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_3h": {
+            "block_hours": 3,
+            "n_blocks": 584,
+            "n_episodes": 1692,
+            "observed_mean_delta_R": -0.012399663743880364,
+            "ci_lower": -0.030562148308359634,
+            "ci_upper": 0.006363576134022925,
+            "prob_mean_delta_R_gt_0": 0.1007,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_12h": {
+            "block_hours": 12,
+            "n_blocks": 449,
+            "n_episodes": 1692,
+            "observed_mean_delta_R": -0.012399663743880364,
+            "ci_lower": -0.030741881786880563,
+            "ci_upper": 0.005934772666698334,
+            "prob_mean_delta_R_gt_0": 0.0984,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "iid_diagnostic_only": {
+            "n": 1692,
+            "mean": -0.012399663743880364,
+            "t_stat": -2.168449843762579,
+            "p_value": 0.03026350626100831,
+            "label": "DIAGNOSTIC ONLY \u2014 not primary inference"
+          }
+        }
+      }
+    },
+    "combined": {
+      "windows": {
+        "development": {
+          "n_eligible_denominator": 1863,
+          "c1_triggered": 359,
+          "no_c1": 1462,
+          "rollover_ineligible": 42,
+          "mean_delta_R": -0.006841379334168183,
+          "median_delta_R": 0.0,
+          "pct_positive": 9.554482018250134,
+          "avg_positive_delta_R": 0.33976033575140363,
+          "avg_negative_delta_R": -0.4045460191342827,
+          "profit_factor_diagnostic": 0.8259355751071791,
+          "max_drawdown_contribution": -27.284047893345072,
+          "top5_positive": [
+            {
+              "idx": 2161,
+              "delta_R": 1.5717703349282992,
+              "entry_time": "2023-04-13 09:30:00+00:00"
+            },
+            {
+              "idx": 694,
+              "delta_R": 1.4948240165631752,
+              "entry_time": "2021-02-24 03:15:00+00:00"
+            },
+            {
+              "idx": 613,
+              "delta_R": 1.4084158415841845,
+              "entry_time": "2020-12-30 03:15:00+00:00"
+            },
+            {
+              "idx": 634,
+              "delta_R": 1.3078101071975041,
+              "entry_time": "2021-01-04 10:15:00+00:00"
+            },
+            {
+              "idx": 1082,
+              "delta_R": 1.1628352490421274,
+              "entry_time": "2021-08-31 08:30:00+00:00"
+            }
+          ],
+          "top5_negative": [
+            {
+              "idx": 1358,
+              "delta_R": -3.1549019607843984,
+              "entry_time": "2022-02-04 06:45:00+00:00"
+            },
+            {
+              "idx": 523,
+              "delta_R": -2.3945610687023535,
+              "entry_time": "2020-11-09 01:15:00+00:00"
+            },
+            {
+              "idx": 1359,
+              "delta_R": -2.3454810495628156,
+              "entry_time": "2022-02-04 10:45:00+00:00"
+            },
+            {
+              "idx": 1360,
+              "delta_R": -1.8579676674365377,
+              "entry_time": "2022-02-04 12:00:00+00:00"
+            },
+            {
+              "idx": 283,
+              "delta_R": -1.5312500000000018,
+              "entry_time": "2020-07-27 01:15:00+00:00"
+            }
+          ],
+          "bootstrap_6h": {
+            "block_hours": 6,
+            "n_blocks": 684,
+            "n_episodes": 1863,
+            "observed_mean_delta_R": -0.006841379334168183,
+            "ci_lower": -0.022528524287402447,
+            "ci_upper": 0.00983734758637409,
+            "prob_mean_delta_R_gt_0": 0.2193,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_3h": {
+            "block_hours": 3,
+            "n_blocks": 735,
+            "n_episodes": 1863,
+            "observed_mean_delta_R": -0.006841379334168183,
+            "ci_lower": -0.022575836629127058,
+            "ci_upper": 0.009868551357073933,
+            "prob_mean_delta_R_gt_0": 0.2124,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_12h": {
+            "block_hours": 12,
+            "n_blocks": 592,
+            "n_episodes": 1863,
+            "observed_mean_delta_R": -0.006841379334168183,
+            "ci_lower": -0.023064147152273878,
+            "ci_upper": 0.009417285352164703,
+            "prob_mean_delta_R_gt_0": 0.2101,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "iid_diagnostic_only": {
+            "n": 1863,
+            "mean": -0.006841379334168183,
+            "t_stat": -1.2442692232972203,
+            "p_value": 0.21355709644880588,
+            "label": "DIAGNOSTIC ONLY \u2014 not primary inference"
+          }
+        },
+        "research_grade_oos": {
+          "n_eligible_denominator": 1692,
+          "c1_triggered": 382,
+          "no_c1": 1270,
+          "rollover_ineligible": 40,
+          "mean_delta_R": -0.01464030372635619,
+          "median_delta_R": 0.0,
+          "pct_positive": 8.747044917257684,
+          "avg_positive_delta_R": 0.35588359302045763,
+          "avg_negative_delta_R": -0.3309494259488137,
+          "profit_factor_diagnostic": 0.6801304084146518,
+          "max_drawdown_contribution": -28.149730525035128,
+          "top5_positive": [
+            {
+              "idx": 3374,
+              "delta_R": 2.7147435897436116,
+              "entry_time": "2024-10-18 03:15:00+00:00"
+            },
+            {
+              "idx": 3375,
+              "delta_R": 2.145079594790236,
+              "entry_time": "2024-10-18 04:15:00+00:00"
+            },
+            {
+              "idx": 3376,
+              "delta_R": 1.9789719626169093,
+              "entry_time": "2024-10-18 04:30:00+00:00"
+            },
+            {
+              "idx": 3169,
+              "delta_R": 1.857894736842067,
+              "entry_time": "2024-08-02 15:45:00+00:00"
+            },
+            {
+              "idx": 3377,
+              "delta_R": 1.5202564102564327,
+              "entry_time": "2024-10-18 04:45:00+00:00"
+            }
+          ],
+          "top5_negative": [
+            {
+              "idx": 4850,
+              "delta_R": -1.8860674908119004,
+              "entry_time": "2026-02-11 07:45:00+00:00"
+            },
+            {
+              "idx": 4851,
+              "delta_R": -1.8017874241940905,
+              "entry_time": "2026-02-11 09:00:00+00:00"
+            },
+            {
+              "idx": 3495,
+              "delta_R": -1.7396788990825869,
+              "entry_time": "2024-12-04 04:15:00+00:00"
+            },
+            {
+              "idx": 4472,
+              "delta_R": -1.4235560588901948,
+              "entry_time": "2025-10-15 09:45:00+00:00"
+            },
+            {
+              "idx": 4849,
+              "delta_R": -1.40178793146263,
+              "entry_time": "2026-02-11 01:30:00+00:00"
+            }
+          ],
+          "bootstrap_6h": {
+            "block_hours": 6,
+            "n_blocks": 523,
+            "n_episodes": 1692,
+            "observed_mean_delta_R": -0.01464030372635619,
+            "ci_lower": -0.033078109459795405,
+            "ci_upper": 0.00431586854300509,
+            "prob_mean_delta_R_gt_0": 0.0655,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_3h": {
+            "block_hours": 3,
+            "n_blocks": 584,
+            "n_episodes": 1692,
+            "observed_mean_delta_R": -0.01464030372635619,
+            "ci_lower": -0.03289022610254664,
+            "ci_upper": 0.004195026662635953,
+            "prob_mean_delta_R_gt_0": 0.0662,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_12h": {
+            "block_hours": 12,
+            "n_blocks": 449,
+            "n_episodes": 1692,
+            "observed_mean_delta_R": -0.01464030372635619,
+            "ci_lower": -0.03305012784664971,
+            "ci_upper": 0.0036910659254110706,
+            "prob_mean_delta_R_gt_0": 0.0637,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "iid_diagnostic_only": {
+            "n": 1692,
+            "mean": -0.01464030372635619,
+            "t_stat": -2.5543521952108423,
+            "p_value": 0.010725533280577404,
+            "label": "DIAGNOSTIC ONLY \u2014 not primary inference"
+          }
+        }
+      }
+    }
+  },
+  "seeds": {
+    "bootstrap_seed": 42,
+    "n_replications": 10000
+  }
+}

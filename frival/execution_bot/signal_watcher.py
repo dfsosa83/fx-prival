@@ -31,10 +31,33 @@ def load_state() -> Dict[str, Any]:
 
 
 def save_state(state: Dict[str, Any]):
-    """Persist watcher state to disk."""
+    """Persist watcher state to disk (atomic: temp file + os.replace).
+
+    EXEC-D1 review C-1 follow-up: the previous write was in-place, so a crash
+    mid-write could corrupt the pointer file. The remaining read-modify-write
+    of `last_signal_id` (discovery cursor advance) is STILL only safe under a
+    single writer: two simultaneous `--once` processes can both read the same
+    cursor and both advance past it. The lifecycle store's cross-process claims
+    protect decision rights for lifecycle events but DO NOT replace this
+    discovery-cursor; serializing the cursor advance belongs to the integration
+    layer (single-writer worker) and is an explicit integration blocker until
+    that worker in wired.
+    """
+    import tempfile as _tempfile
     os.makedirs(STATE_FILE.parent, exist_ok=True)
-    with open(STATE_FILE, "w", encoding="utf-8") as f:
-        json.dump(state, f, indent=2, default=str)
+    fd, tmp = _tempfile.mkstemp(dir=str(STATE_FILE.parent), suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2, default=str)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, STATE_FILE)
+    except Exception:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        raise
 
 
 def _parse_signal_ts(ts: str) -> Optional[datetime]:

@@ -1,0 +1,7 @@
+{
+  "annualization": "252_consistent",
+  "rf_annual": 0.0,
+  "bootstrap_ci_reported": false,
+  "bootstrap_ci_widens_with_block": true,
+  "metrics_recomputation_matches": true
+}

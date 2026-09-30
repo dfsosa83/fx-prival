@@ -1,0 +1,132 @@
+# Cost Model Configuration
+# Conservative cost assumptions per instrument.
+# Source: point-in-time measurements (legacy), broker specs, and conservative defaults.
+# All values are initial assumptions until replaced by empirical measurements.
+# Update measurement dates whenever refreshed.
+
+defaults:
+  slippage_pips_fx: 0.5
+  slippage_equity_pct: 0.0005
+  slippage_bond_pct: 0.0005
+  slippage_commodity_pct: 0.0005
+  session_multiplier: 1.0  # Flat until session-conditioned data exists
+
+instruments:
+  # --- G10 FX Majors ---
+  EURUSD:
+    spread_pips: 1.8
+    spread_source: "Legacy measurement 2026-09-18 * 1.5 conservative multiplier"
+    commission_per_lot: 0.0
+    swap_long_points: 0.0
+    swap_short_points: 0.0
+    swap_note: "To be populated from broker swap table"
+
+  USDJPY:
+    spread_pips: 2.0
+    spread_source: "Legacy measurement 2026-09-18 * 1.5 conservative multiplier"
+    commission_per_lot: 0.0
+    swap_long_points: 0.0
+    swap_short_points: 0.0
+
+  GBPUSD:
+    spread_pips: 2.4
+    spread_source: "Legacy measurement 2026-09-18 * 1.5 conservative multiplier"
+    commission_per_lot: 0.0
+    swap_long_points: 0.0
+    swap_short_points: 0.0
+
+  AUDUSD:
+    spread_pips: 2.3
+    spread_source: "Conservative estimate (2~3 pip range for AUDUSD)"
+    commission_per_lot: 0.0
+    swap_long_points: 0.0
+    swap_short_points: 0.0
+
+  USDCAD:
+    spread_pips: 2.3
+    spread_source: "Legacy measurement 2026-09-18 * 1.5 conservative multiplier"
+    commission_per_lot: 0.0
+    swap_long_points: 0.0
+    swap_short_points: 0.0
+
+  USDCHF:
+    spread_pips: 2.3
+    spread_source: "Legacy measurement 2026-09-18 * 1.5 conservative multiplier"
+    commission_per_lot: 0.0
+    swap_long_points: 0.0
+    swap_short_points: 0.0
+
+  NZDUSD:
+    spread_pips: 3.0
+    spread_source: "Conservative estimate (wider spread for NZDUSD)"
+    commission_per_lot: 0.0
+    swap_long_points: 0.0
+    swap_short_points: 0.0
+
+  EURJPY:
+    spread_pips: 3.0
+    spread_source: "Conservative estimate (cross spread)"
+    commission_per_lot: 0.0
+    swap_long_points: 0.0
+    swap_short_points: 0.0
+
+  # --- Equity Indices ---
+  SPX:
+    spread_pips: 0.0
+    spread_source: "Equity indices use percentage-based costs"
+    commission_pct: 0.0005
+    financing_annual_pct: 0.05
+    dividend_note: "S&P 500 total return index or adjusted close handles dividends"
+
+  NDX:
+    spread_pips: 0.0
+    commission_pct: 0.0005
+    financing_annual_pct: 0.05
+
+  SX5E:
+    spread_pips: 0.0
+    commission_pct: 0.0005
+    financing_annual_pct: 0.04
+
+  NKY:
+    spread_pips: 0.0
+    commission_pct: 0.0008
+    financing_annual_pct: 0.02
+
+  # --- Government Bonds ---
+  US10Y:
+    spread_pips: 0.0
+    spread_source: "Yield-based instruments"
+    commission_pct: 0.001
+    financing_annual_pct: 0.04
+    notes: "10Y Treasury yield; requires conversion to bond return proxy"
+
+  BUND:
+    spread_pips: 0.0
+    commission_pct: 0.001
+    financing_annual_pct: 0.03
+
+  JGB:
+    spread_pips: 0.0
+    commission_pct: 0.001
+    financing_annual_pct: 0.01
+
+  # --- Commodities ---
+  XAUUSD:
+    spread_pips: 0.0
+    spread_source: "Futures-based: use percentage cost"
+    commission_pct: 0.0005
+    roll_cost_annual_pct: 0.01
+    financing_annual_pct: 0.0
+
+  WTI:
+    spread_pips: 0.0
+    commission_pct: 0.0005
+    roll_cost_annual_pct: 0.02
+    financing_annual_pct: 0.0
+
+  COPPER:
+    spread_pips: 0.0
+    commission_pct: 0.0005
+    roll_cost_annual_pct: 0.02
+    financing_annual_pct: 0.0

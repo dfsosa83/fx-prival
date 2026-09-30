@@ -1,0 +1,103 @@
+manifest:
+  manifest_id: "QPF-RV-2027-03-H6-SNAPSHOT-MANIFEST"
+  experiment_id: "QPF-RV-2027-03-H6-SINGLE-INSTRUMENT-SNAPSHOT-FREEZE"
+  parent_design: "QPF-RV-2026-11-H6-FAILED-BREAKOUT-INVALIDATION"
+  created: "2026-09-30"
+  clock: "INTERNAL_ORDINAL_NOT_UTC"
+  banner: "# INTERNAL_CLOCK_ONLY; NOT_UTC; SINGLE_INSTRUMENT; EXCLUDE_MAX_AVAILABLE_LABEL; NO_COSTS; NO_TRADING_USE"
+  rule: "single-instrument close-only snapshot; exclude exactly the maximum available label; no imputation/interpolation/resampling/transformation/external joins"
+  separate_strata: true
+
+instruments:
+  - symbol: "EURUSD"
+    raw_path: "ml-signal-service/data/raw/mt5/H1/EURUSD_H1.csv"
+    raw_schema: "legacy"
+    raw_sha256: "2F7B0630EDCD6CE0D162992393996E0248E51280EB58798C1313A91D0FFAA7AE"
+    raw_rows: 48204
+    excluded_max_available_label: "2026-09-30 15:00:00"
+    snapshot_path: "snapshots/EURUSD/eurusd_h1_internal_snapshot_v1.csv"
+    snapshot_columns: ["internal_index_k", "timestamp_label_internal", "eurusd_close"]
+    snapshot_rows: 48203
+    first_label: "2019-01-02 00:00:00"
+    last_retained_label: "2026-09-30 14:00:00"
+    snapshot_sha256: "425EAB8EE05208051CE34C59B534E0AE84994312A585DE4FDB4877E40B89BA60"
+  - symbol: "USDJPY"
+    raw_path: "ml-signal-service/data/raw/mt5/H1/USDJPY_H1.csv"
+    raw_schema: "canonical"
+    raw_sha256: "810F789A7271E9861010B4A0A21987F96905AB9FF83C3449E625FD90416A5858"
+    raw_rows: 48191
+    excluded_max_available_label: "2026-09-29 21:00:00"
+    snapshot_path: "snapshots/USDJPY/usdjpy_h1_internal_snapshot_v1.csv"
+    snapshot_columns: ["internal_index_k", "timestamp_label_internal", "usdjpy_close"]
+    snapshot_rows: 48190
+    first_label: "2019-01-02 00:00:00"
+    last_retained_label: "2026-09-29 20:00:00"
+    snapshot_sha256: "543C4FC7CB8AD995099EDD1417EF6189A431098E8C632093A4E81FAAF523E6F0"
+  - symbol: "USDCHF"
+    raw_path: "ml-signal-service/data/raw/mt5/H1/USDCHF_H1.csv"
+    raw_schema: "legacy"
+    raw_sha256: "E87554BC919CED237E62B993AC612DD53FA9F583A07CCE81797CFB6B455DC9EB"
+    raw_rows: 48209
+    excluded_max_available_label: "2026-09-30 15:00:00"
+    snapshot_path: "snapshots/USDCHF/usdchf_h1_internal_snapshot_v1.csv"
+    snapshot_columns: ["internal_index_k", "timestamp_label_internal", "usdchf_close"]
+    snapshot_rows: 48208
+    first_label: "2019-01-02 00:00:00"
+    last_retained_label: "2026-09-30 14:00:00"
+    snapshot_sha256: "9D57303C8F6A45B896540B761692AFBFEE0BF7424CE8BA853D03CDAA06221847"
+  - symbol: "USDCAD"
+    raw_path: "ml-signal-service/data/raw/mt5/H1/USDCAD_H1.csv"
+    raw_schema: "legacy"
+    raw_sha256: "50A6B0465274F9711BF40194383E1913B2C8D2E54CDEF0BF4B1B6BF104333E6E"
+    raw_rows: 48180
+    excluded_max_available_label: "2026-09-30 15:00:00"
+    snapshot_path: "snapshots/USDCAD/usdcad_h1_internal_snapshot_v1.csv"
+    snapshot_columns: ["internal_index_k", "timestamp_label_internal", "usdcad_close"]
+    snapshot_rows: 48179
+    first_label: "2019-01-02 07:00:00"
+    last_retained_label: "2026-09-30 14:00:00"
+    snapshot_sha256: "68BFAA1366B2D2B92B214BC99FC8CF8E59E4330CFEB57C9748E109C6040EEADB"
+  - symbol: "AUDUSD"
+    raw_path: "ml-signal-service/data/raw/mt5/H1/AUDUSD_H1.csv"
+    raw_schema: "canonical"
+    raw_sha256: "0BF89F684D31DA032EB3B7D93713E45C7D8D1E8ADBF9A033D53311AE8A110A66"
+    raw_rows: 48116
+    excluded_max_available_label: "2026-09-24 18:00:00"
+    snapshot_path: "snapshots/AUDUSD/audusd_h1_internal_snapshot_v1.csv"
+    snapshot_columns: ["internal_index_k", "timestamp_label_internal", "audusd_close"]
+    snapshot_rows: 48115
+    first_label: "2019-01-02 00:00:00"
+    last_retained_label: "2026-09-24 17:00:00"
+    snapshot_sha256: "52B4E3BE59058882E73081509E7A3B9FBE4CF68A37A0E366137B8EC968E54931"
+  - symbol: "NZDUSD"
+    raw_path: "ml-signal-service/data/raw/mt5/H1/NZDUSD_H1.csv"
+    raw_schema: "canonical"
+    raw_sha256: "9707F4D0066248440A97FD93B4CFAACE9D5A3F9D350171298F7EC695A97A85E9"
+    raw_rows: 48087
+    excluded_max_available_label: "2026-09-24 18:00:00"
+    snapshot_path: "snapshots/NZDUSD/nzdusd_h1_internal_snapshot_v1.csv"
+    snapshot_columns: ["internal_index_k", "timestamp_label_internal", "nzdusd_close"]
+    snapshot_rows: 48086
+    first_label: "2019-01-02 07:00:00"
+    last_retained_label: "2026-09-24 17:00:00"
+    snapshot_sha256: "652997D6CEB409D97AC151BD470AA61DC7538D9EA8C099E81C18703909CD799B"
+  - symbol: "XAUUSD"
+    raw_path: "ml-signal-service/data/raw/mt5/H1/XAUUSD_H1.csv"
+    raw_schema: "canonical"
+    raw_sha256: "6DB76DE379FCF0EF65E60597B1A14AC3DD5E3466E01216D7386702CB14FB7F36"
+    raw_rows: 45809
+    excluded_max_available_label: "2026-09-30 14:00:00"
+    snapshot_path: "snapshots/XAUUSD/xauusd_h1_internal_snapshot_v1.csv"
+    snapshot_columns: ["internal_index_k", "timestamp_label_internal", "xauusd_close"]
+    snapshot_rows: 45808
+    first_label: "2019-01-02 01:00:00"
+    last_retained_label: "2026-09-30 13:00:00"
+    snapshot_sha256: "3DB0C3CCEB25823CC11F655AE5690C1697E263A918F40CB4A29DBA0CB8067F0D"
+
+governance:
+  h6_statistical_screen: "NOT_RUN"
+  h6_events_calculated: false
+  costs_pnl_backtest_trading: false
+  fx_xauusd_pooled: false
+
+decision: "H6_SNAPSHOTS_FROZEN_PENDING_SEPARATE_H6_SCREEN"

@@ -1,0 +1,27 @@
+{
+  "quarterly": {
+    "equal": {
+      "sharpe": 0.8224943350993287
+    },
+    "inverse_vol": {
+      "sharpe": 0.761710320336984
+    },
+    "risk_parity": {
+      "sharpe": 0.6910791346574411
+    }
+  },
+  "cost_stress_risk_parity": {
+    "base": {
+      "sharpe": 0.7311735702445602
+    },
+    "2x_spread": {
+      "sharpe": 0.6997265690521682
+    },
+    "2x_slippage": {
+      "sharpe": 0.6997265690521682
+    },
+    "combined": {
+      "sharpe": 0.6682267092439264
+    }
+  }
+}

@@ -1,0 +1,78 @@
+# Experiment Manifest — EXP-2026-05-INVALIDATION-REVERSAL (v3.6)
+# Status: VERSIONED REVISION (short-stop bug fix + re-scoring)
+# Created: 2026-09-25
+# Basis: v3.5 (experiment.v3.5.yaml, SHA-256 a1a9a990...) — UNCHANGED
+# This v3.6 corrects ONLY the short-stop condition for shorts:
+#   v3.5 BUG: if bar["low"] <= short_stop
+#   v3.6 FIX: if bar["high"] >= short_stop
+# Plus the specified gap handling. Episode population, ledger, sample, reason
+# codes, cost model, and all other rules are IDENTICAL to v3.5.
+# NO strategy GO; no trading recommendation.
+
+experiment:
+  id: "EXP-2026-05-INVALIDATION-REVERSAL"
+  version: "v3.6"
+  status: "frozen_v3.6"
+  created: "2026-09-25"
+  researcher: "quant-fund"
+  design_version: "v3.6"
+  scope: "SHORT-STOP BUG FIX + RE-SCORING ONLY"
+
+short_stop_fix:
+  v35_bug: "if bar['low'] <= short_stop  (fires on nearly every bar; short exits on bar 1)"
+  v36_fix: "if bar['high'] >= short_stop  (short stopped when price RISES to the stop above)"
+  gap_handling: >
+    - If the bar OPENS at or above the short stop (open >= stop), model the
+      stop exit at the ADVERSE OPEN (cover fill at open).
+    - Otherwise, if the bar's high reaches/exceeds the stop, model the stop
+      exit AT THE STOP PRICE, with frozen adverse costs.
+    - Cost convention applied exactly once per fill; no double-count.
+  preserved_exactly: ["stop level", "next-bar execution", "gap handling",
+                      "time exit (12 bars)", "forced-session exit", "cost model",
+                      "episode definitions", "sample", "reason codes",
+                      "block-bootstrap design", "4 cost scenarios"]
+
+scoring:
+  invalidated_prior: >
+    The prior scoring output (SCORING_REPORT.md, SCORING_RESULTS.json) is
+    INVALID due to the v3.5 short-stop defect and must remain labeled
+    'INVALID — short-stop condition defect'. It is not evidence for or
+    against the reversal hypothesis.
+  re_scope: "XAUUSD M15 only; Development and research-grade OOS separately; same 4 scenarios; same frozen bootstrap"
+  no_tuning: "no parameter tuning, variant selection, or bootstrap rule changes"
+
+# ── Inherited frozen rules (identical to v3.5) ──────────────────────────────
+inherited_from_v35:
+  structure: "XAUUSD M15 primary; EURUSD/GBPUSD confirmatory (not run)"
+  long_generator: "H1 EMA(20)>EMA(50) & close>EMA(50); M15 support/resistance from preceding 20 completed bars excluding signal bar; frozen at entry; bullish solid-body close above resistance"
+  assignment: "entry_timestamp_assignment_with_cross_boundary_outcome_resolution"
+  right_censoring: "20-day window past last_available_bar_time -> right_censored_at_data_end"
+  invalidation: "completed solid-body M15 close below frozen support"
+  c1: "immediately next completed solid-body M15 close below invalidation-bar low"
+  policies: "A exit-and-flat; B same-long-exit then short after C1; one reversal max"
+  execution: "signals after completed bars; fills at next-bar open; no same-close fills; adverse modeled costs"
+  volatility: "continuous Wilder ATR(14), prior bars only"
+  short: "stop = max(high_inv, high_conf) + 0.5*ATR(14); time exit 12 bars; forced pre-window; no TP"
+  cost: "spread_price = spread_points * point; buy/cover = P+S/2+L; sell/short = P-S/2-L; L=0.5*S; scenarios base/2x_spread/2x_slippage/combined"
+  reason_codes: ["c1_triggered", "no_c1", "rollover_ineligible",
+                 "conservative_observed_window_exclusion_not_broker_confirmed",
+                 "missing_bar", "no_invalidation_within_observation_window",
+                 "right_censored_at_data_end"]
+  timeline: "2020-2023 development; 2024+ research-grade OOS (NOT sealed); forward validation only GO source"
+  decision_gate: "forward-only GO; EV/R>0 CI excl 0; PF>=1.10; >=100 forward eps; robustness; replication agreement"
+
+# ── Restrictions (v3.6) ─────────────────────────────────────────────────────
+restrictions:
+  - "No MT5 retrieval, broker/account calls, login(), orders"
+  - "No terminal/process/settings changes; no frival/ modifications"
+  - "No changes to the v3.5 manifest, ledger, or prior scoring artifacts"
+  - "No new signal rules, thresholds, filters, or strategy variants"
+  - "No claim of strategy GO; no live/demo trading recommendation"
+
+inputs:
+  data: "already-stored Phase 1B bars (no new retrieval)"
+  ledger: "episode_ledger_v35.csv (UNCHANGED — v3.6 uses identical episode population)"
+  prior_manifests: ["experiment.yaml (v3.2)", "experiment.v3.3.yaml",
+                    "experiment.v3.4.yaml", "experiment.v3.5.yaml"]
+  config_snapshot: ""
+  inputs_hash: ""

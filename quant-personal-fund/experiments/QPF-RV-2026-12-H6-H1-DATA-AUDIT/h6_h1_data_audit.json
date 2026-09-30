@@ -1,0 +1,164 @@
+{
+  "stage": "H6_H1_DATA_AVAILABILITY_AUDIT",
+  "universe": [
+    "EURUSD",
+    "USDJPY",
+    "USDCHF",
+    "USDCAD",
+    "AUDUSD",
+    "NZDUSD",
+    "XAUUSD"
+  ],
+  "fx_instruments": [
+    "EURUSD",
+    "USDJPY",
+    "USDCHF",
+    "USDCAD",
+    "AUDUSD",
+    "NZDUSD"
+  ],
+  "separate_stratum": "XAUUSD",
+  "primary_multiplicity_family": "7 instruments x 3 N x 3 M x 3 H x 2 event classes = 378",
+  "threshold_final_label": "2026-09-24 18:00:00",
+  "min_rows": 30000,
+  "note": "XAUUSD remains a separate snapshot/result stratum; not pooled with FX",
+  "instruments": {
+    "EURUSD": {
+      "symbol": "EURUSD",
+      "expected_path": "ml-signal-service/data/raw/mt5/H1/EURUSD_H1.csv",
+      "existed_before": true,
+      "downloaded_this_stage": false,
+      "sha256": "18F6135044EA42D81D575122B63F614F47BEF0EC100E68970096A7FE8204A507",
+      "schema": "legacy",
+      "rows": 48203,
+      "first_label": "2019-01-02 00:00:00",
+      "final_label": "2026-09-30 14:00:00",
+      "validation": {
+        "at_least_two_rows": true,
+        "no_null_datetime": true,
+        "no_duplicate_datetime": true,
+        "strict_ascending": true,
+        "close_finite_positive": true
+      },
+      "status": "H6_DATA_ELIGIBLE"
+    },
+    "USDJPY": {
+      "symbol": "USDJPY",
+      "expected_path": "ml-signal-service/data/raw/mt5/H1/USDJPY_H1.csv",
+      "existed_before": true,
+      "downloaded_this_stage": false,
+      "sha256": "810F789A7271E9861010B4A0A21987F96905AB9FF83C3449E625FD90416A5858",
+      "schema": "canonical",
+      "rows": 48191,
+      "first_label": "2019-01-02 00:00:00",
+      "final_label": "2026-09-29 21:00:00",
+      "validation": {
+        "at_least_two_rows": true,
+        "no_null_datetime": true,
+        "no_duplicate_datetime": true,
+        "strict_ascending": true,
+        "close_finite_positive": true
+      },
+      "status": "H6_DATA_ELIGIBLE"
+    },
+    "USDCHF": {
+      "symbol": "USDCHF",
+      "expected_path": "ml-signal-service/data/raw/mt5/H1/USDCHF_H1.csv",
+      "existed_before": true,
+      "downloaded_this_stage": false,
+      "sha256": "3DF2043951102C70DF97661C28A76715C291FF6121C8144A719CF5E6BAE5C715",
+      "schema": "legacy",
+      "rows": 48208,
+      "first_label": "2019-01-02 00:00:00",
+      "final_label": "2026-09-30 14:00:00",
+      "validation": {
+        "at_least_two_rows": true,
+        "no_null_datetime": true,
+        "no_duplicate_datetime": true,
+        "strict_ascending": true,
+        "close_finite_positive": true
+      },
+      "status": "H6_DATA_ELIGIBLE"
+    },
+    "USDCAD": {
+      "symbol": "USDCAD",
+      "expected_path": "ml-signal-service/data/raw/mt5/H1/USDCAD_H1.csv",
+      "existed_before": true,
+      "downloaded_this_stage": false,
+      "sha256": "8AECF7FE947BBB340469BC739AB7B93ED0EEA44E89984A31D3ED6178A8C39B53",
+      "schema": "legacy",
+      "rows": 48179,
+      "first_label": "2019-01-02 07:00:00",
+      "final_label": "2026-09-30 14:00:00",
+      "validation": {
+        "at_least_two_rows": true,
+        "no_null_datetime": true,
+        "no_duplicate_datetime": true,
+        "strict_ascending": true,
+        "close_finite_positive": true
+      },
+      "status": "H6_DATA_ELIGIBLE"
+    },
+    "AUDUSD": {
+      "symbol": "AUDUSD",
+      "expected_path": "ml-signal-service/data/raw/mt5/H1/AUDUSD_H1.csv",
+      "existed_before": true,
+      "downloaded_this_stage": false,
+      "sha256": "0BF89F684D31DA032EB3B7D93713E45C7D8D1E8ADBF9A033D53311AE8A110A66",
+      "schema": "canonical",
+      "rows": 48116,
+      "first_label": "2019-01-02 00:00:00",
+      "final_label": "2026-09-24 18:00:00",
+      "validation": {
+        "at_least_two_rows": true,
+        "no_null_datetime": true,
+        "no_duplicate_datetime": true,
+        "strict_ascending": true,
+        "close_finite_positive": true
+      },
+      "status": "H6_DATA_ELIGIBLE"
+    },
+    "NZDUSD": {
+      "symbol": "NZDUSD",
+      "expected_path": "ml-signal-service/data/raw/mt5/H1/NZDUSD_H1.csv",
+      "existed_before": true,
+      "downloaded_this_stage": false,
+      "sha256": "9707F4D0066248440A97FD93B4CFAACE9D5A3F9D350171298F7EC695A97A85E9",
+      "schema": "canonical",
+      "rows": 48087,
+      "first_label": "2019-01-02 07:00:00",
+      "final_label": "2026-09-24 18:00:00",
+      "validation": {
+        "at_least_two_rows": true,
+        "no_null_datetime": true,
+        "no_duplicate_datetime": true,
+        "strict_ascending": true,
+        "close_finite_positive": true
+      },
+      "status": "H6_DATA_ELIGIBLE"
+    },
+    "XAUUSD": {
+      "symbol": "XAUUSD",
+      "expected_path": "ml-signal-service/data/raw/mt5/H1/XAUUSD_H1.csv",
+      "existed_before": true,
+      "downloaded_this_stage": false,
+      "sha256": "A36F2E2331B38E72A6D2874B625DB981AED92220499204D18E8CE58D71332CFA",
+      "schema": "legacy",
+      "rows": 45077,
+      "first_label": "2019-01-02 01:00:00",
+      "final_label": "2026-08-17 16:00:00",
+      "validation": {
+        "at_least_two_rows": true,
+        "no_null_datetime": true,
+        "no_duplicate_datetime": true,
+        "strict_ascending": true,
+        "close_finite_positive": true
+      },
+      "status": "H6_DATA_STALE",
+      "error": "final_label<2026-09-24 18:00:00"
+    }
+  },
+  "decision": "H6_FX_READY_XAUUSD_BLOCKED",
+  "statistical_only": false,
+  "no_market_statistics_calculated": true
+}

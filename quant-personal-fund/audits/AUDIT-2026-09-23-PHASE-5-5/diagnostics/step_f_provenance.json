@@ -1,0 +1,6 @@
+{
+  "common_range_driven_by": "JGB/BUND earliest + dropna inner join",
+  "adj_close_used": true,
+  "fx_adj_eq_close": true,
+  "tz_naive_normalized": true
+}

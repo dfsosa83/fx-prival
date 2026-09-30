@@ -1,0 +1,64 @@
+# Secrets and credentials
+*.env
+.env
+credentials.*
+secrets.*
+*_credentials.*
+*_secret.*
+fred-credentials.txt
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Jupyter notebooks
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# IDE and editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Data files (large, externally sourced, or reproducible)
+data/raw/*.csv
+data/raw/*.parquet
+data/raw/*.json
+data/raw/*.h5
+data/processed/*.csv
+data/processed/*.parquet
+data/processed/*.json
+data/processed/*.h5
+data/quality/*.html
+data/quality/*.json
+
+# Data manifests and reference data ARE committed
+!data/raw/manifests/
+!data/reference/
+
+# Experiment outputs (reproducible from manifest + inputs)
+experiments/EXP-*/reports/
+experiments/EXP-*/RUN_LOG.md
+
+# Keep template and experiment.yaml files
+!experiments/_template/
+!experiments/*/experiment.yaml
+
+# OS and temp files
+*.log
+*.tmp

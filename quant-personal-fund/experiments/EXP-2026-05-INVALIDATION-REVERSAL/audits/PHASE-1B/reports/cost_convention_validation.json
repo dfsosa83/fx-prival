@@ -1,0 +1,44 @@
+{
+  "base_point": 0.01,
+  "S_units": "points (spread_price=points*point)",
+  "L_definition": "0.5*S",
+  "convention_rows": [
+    {
+      "case": "base buy/cover",
+      "formula": "P + S/2 + L",
+      "L": "0.5*S",
+      "total_adverse": "S",
+      "xauusd_example_S_19pts": "0.19 price units"
+    },
+    {
+      "case": "base sell/short",
+      "formula": "P - S/2 - L",
+      "L": "0.5*S",
+      "total_adverse": "S",
+      "xauusd_example_S_19pts": "0.19 price units"
+    },
+    {
+      "case": "2x spread",
+      "formula": "P + S + S",
+      "L": "0.5*2S = S",
+      "total_adverse": "2S",
+      "xauusd_example": "0.38"
+    },
+    {
+      "case": "2x slippage",
+      "formula": "P + S/2 + S",
+      "L": "2*0.5*S = S",
+      "total_adverse": "1.5S",
+      "xauusd_example": "0.285"
+    },
+    {
+      "case": "combined 2x both",
+      "formula": "P + S + 2S",
+      "L": "2*0.5*2S = 2S",
+      "total_adverse": "3S",
+      "xauusd_example": "0.57"
+    }
+  ],
+  "ledger_episodes": 5229,
+  "c1_triggered_with_full_path": 662
+}

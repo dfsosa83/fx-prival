@@ -1,0 +1,49 @@
+# Audit Manifest — PHASE-0-5-DATA-AUDIT
+
+audit:
+  id: "PHASE-0-5-DATA-AUDIT"
+  type: "data-feasibility"
+  created: "2026-09-24"
+  status: "COMPLETE — MT5 READ-ONLY QUERY EXECUTED (demo terminal 7409623)"
+  approval: "User-approved Revision 2, 2026-09-24; MT5 execution authorized 2026-09-24"
+
+scope:
+  instruments: [XAUUSD, EURUSD, GBPUSD, AUDUSD, NZDUSD, USDCAD, USDCHF, USDJPY, EURJPY]
+  timeframes: [M5, M15, M30, H1]
+  cells: 36
+  purpose: >
+    Data availability, data quality, historical coverage, and current
+    contract-metadata assessment ONLY. No strategy, no backtest, no
+    profitability, no timeframe ranking, no sealed-test inspection.
+
+mt5_status:
+  queries_run: 36 cells (copy_rates_range x2 each) + 36 tick probes + 9 symbol_info
+  status: "COMPLETE"
+  account_verified: "demo 7409623 / FPMarketsSC-Demo, USD; 0 positions; 0 orders"
+  login_called: false
+  maxbars_setting: "NOT READ via terminal (recording would disturb session); copy_rates_range observed limit: 2016+ FX / 2020+ XAUUSD; 2015 probe empty"
+  server_retention_verified: false
+  source_origin: "all cells: repeated query — stable (two identical terminal queries)"
+  tick_data: "UNAVAILABLE — 0 ticks in 7-day window, all cells (error -2)"
+  historical_bid_ask: "UNAVAILABLE via tick API"
+  bar_spread_field: "present in all 36 cells (bar-level; NOT historical bid/ask)"
+
+safeguards_applied:
+  - "No modification to frival/run_daily.bat or frival/run_gold_rules.bat"
+  - "No modification to demo workflows, models, signals, broker/terminal settings, or prior artifacts"
+  - "No terminal session closed/relaunched/relogged/reconfigured"
+  - "No orders prepared or placed"
+  - "All outputs under quant-personal-fund/audits/PHASE-0-5-DATA-AUDIT/"
+  - "Bar spread reported separately from historical bid/ask"
+  - "No strategy, no backtest, no profitability analysis"
+
+deliverables:
+  - AUDIT_MANIFEST.yaml
+  - RUN_LOG.md
+  - REPRODUCIBILITY_MANIFEST.json
+  - data_inventory.csv
+  - instrument_timeframe_coverage.csv
+  - contract_metadata.csv
+  - query_log.csv
+  - DATA_FEASIBILITY_REPORT.md
+  - EXECUTION_SUMMARY.md

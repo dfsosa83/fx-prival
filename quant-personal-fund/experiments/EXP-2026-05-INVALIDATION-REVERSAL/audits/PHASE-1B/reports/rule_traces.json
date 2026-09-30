@@ -1,0 +1,62 @@
+[
+  {
+    "window": "development",
+    "episode": 0,
+    "reason": "other_pre_registered",
+    "trace": []
+  },
+  {
+    "window": "development",
+    "episode": 1,
+    "reason": "no_c1",
+    "trace": []
+  },
+  {
+    "window": "development",
+    "episode": 2,
+    "reason": "no_c1",
+    "trace": []
+  },
+  {
+    "window": "development",
+    "episode": 3,
+    "reason": "no_c1",
+    "trace": []
+  },
+  {
+    "window": "development",
+    "episode": 4,
+    "reason": "no_c1",
+    "trace": []
+  },
+  {
+    "window": "research_grade_oos",
+    "episode": 0,
+    "reason": "no_c1",
+    "trace": []
+  },
+  {
+    "window": "research_grade_oos",
+    "episode": 1,
+    "reason": "no_c1",
+    "trace": []
+  },
+  {
+    "window": "research_grade_oos",
+    "episode": 2,
+    "reason": "no_c1",
+    "trace": []
+  },
+  {
+    "window": "research_grade_oos",
+    "episode": 3,
+    "reason": "no_c1",
+    "trace": []
+  },
+  {
+    "window": "research_grade_oos",
+    "episode": 4,
+    "reason": "no_c1",
+    "trace": []
+  }
+]

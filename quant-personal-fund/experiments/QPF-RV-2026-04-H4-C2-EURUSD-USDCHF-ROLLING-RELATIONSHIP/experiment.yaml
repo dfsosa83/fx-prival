@@ -1,0 +1,15 @@
+experiment_id: QPF-RV-2026-04-H4-C2-EURUSD-USDCHF-ROLLING-RELATIONSHIP
+parent_design: QPF-RV-2026-03-H4-ROLLING-RELATIONSHIP-STABILITY
+candidate_id: C2
+instruments:
+  dependent: EURUSD
+  hedge: USDCHF
+timeframe: H1
+clock: INTERNAL_ORDINAL_NOT_UTC
+status: SNAPSHOT_FROZEN_PENDING_H4_C2_SCREEN
+research_question: >
+  Whether local trailing windows in which log(EURUSD) versus log(USDCHF)
+  has a stable in-window residual produce robust mean-reverting residuals
+  in immediately subsequent unseen H1 blocks under the frozen H4 protocol.
+profitability_claim: false
+trading_authorization: false

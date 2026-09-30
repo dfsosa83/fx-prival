@@ -1,0 +1,57 @@
+{
+  "experiment": "STAGE-1B-v1.2",
+  "label": "PORTFOLIO BASELINE \u2014 NOT ALPHA EVIDENCE",
+  "generated_at": "2026-09-28",
+  "periods": {
+    "data_start": "2020-02-28",
+    "warmup_only_period": "2020-02-28 to 2020-06-30",
+    "first_eligible_rebalance": "2020-06-30",
+    "performance_evaluation_start": "2020-06-30",
+    "performance_evaluation_end": "2026-09-23"
+  },
+  "frozen_parameters": {
+    "min_history_observations": 60,
+    "lookback_max_observations": 200,
+    "universe": "15 active instruments",
+    "rebalance": "monthly",
+    "vol_estimator": "ewma_halflife_60",
+    "cov_estimator": "ewma_halflife_60_shrinkage_0.2",
+    "cost": "bar_spread_proxy_L_0.5S_swap_0_no_rollover"
+  },
+  "input_hashes": {
+    "spec_v1.2": "b5656b9785ec1230ec09721b2700e7d02298c9e7617d0abbf772e768ec015e15",
+    "universe": "12540e28bc668fad60d555c9c88d915df4973335ac66695f9baefe610b0be14b",
+    "cost_model": "b8947465dc4fffdfa9d9337270d67a99415c3dcc72b44033d55958d54aa8b416",
+    "risk_parity": "57c78b357debe90ba78ff9dc49462d40c2c1a980eb512f06e51bf266d20a1236",
+    "rerun_v1.2": "9cd430dcf249905fa05c53f59c7205e7d9be526c152e2250a654ecd4c46ad191",
+    "eligibility": "6c5e4aa77a9004661aabda50cbc7efb3cb03bd585b3ef1bdce6cbf18b40ab870",
+    "accounting_v2": "0ed64934a47566eadd1f5b6ed9129344f3425d4701db82fa446f7e8769c2da43"
+  },
+  "data_hashes": {
+    "1343.T_daily.parquet": "dd7da2dc69304f2ff65677d1e2005a97fb3937cd6e1601b0119c11efda2cb0ec",
+    "2644.T_daily.parquet": "a5b6a1e5d8bf6ee31cba75c37df3c8701e0545bab425fcf613ab4d6ea331f2ad",
+    "^GSPC_daily.parquet": "be4da41ae32bc02639ad5b3420f87c9bc2f3172560e0a473c993e79514aaf9d0",
+    "^N225_daily.parquet": "161f3192499d18dd46afdb582c7069c5b793c7609ef2374b8f26a455dbed3a41",
+    "^NDX_daily.parquet": "8e87f51d8ad350d715f62cba503bc952eaa997412f84d7f218158ae33d571f31",
+    "^STOXX50E_daily.parquet": "5f89a5c0a8157426d5635ba67bccb0f732df55f02be2f4e58652a75620dbc44d",
+    "^TNX_daily.parquet": "b45ad9b98eb0d7c01e3a3af65d5f7a6810a6b3f0deaa2055c13ca6b3c1beb202",
+    "AUDUSD=X_daily.parquet": "d9a4e2a4b7f9925d69d62ab0b0ea6aef25a597889a5a7a9e9d6f1f16bb83d3fe",
+    "CL=F_daily.parquet": "8a18467300b22d145cef9e4347382cfce26eeb542199cf3d8dc55196d71545f8",
+    "EURJPY=X_daily.parquet": "8831ccf5994514c30cbbd82001775f46986e4d64e982a7e1e5addbb2420a0841",
+    "EURUSD=X_daily.parquet": "777a213ec9080d2d3c0036a110a0759d2b0c3b4ed3d88b06d56fe9fff4a6cb28",
+    "GBPUSD=X_daily.parquet": "9ba03f4c8292f0cc358b2ac0d364d77e82f2169e547739e2e0c7e9fa0637169a",
+    "GC=F_daily.parquet": "6fa71794186a0d5b75e235e8a5732c571ee1073d36578947d468929b3f8cc113",
+    "HG=F_daily.parquet": "06ff64bbf54363c946e4ccbf004263f998351d7a3540f0aebf1fdbb55f474753",
+    "IGLT.L_daily.parquet": "cdab4ec39b886f172fdb2c9d573d0294ffe8a7d8b37f4ef09506345bed339a9a",
+    "NZDUSD=X_daily.parquet": "16b98c6c00018a33ed92120ad0f2b134226f1dac815a44c8f6bf88507002c9d2",
+    "USDCAD=X_daily.parquet": "c7954a810affb1374348b4a137f43c859e812cba5b1eaab4fe7e441a235c96d6",
+    "USDCHF=X_daily.parquet": "e5702a6c1e98d6a85808aef46a4fb4b7098376e77d8e0890c394f24a54239fb7",
+    "USDJPY=X_daily.parquet": "c5477a0cee5634f14b612e4097556c90c38fee7fd33a1646f7c9f056b916a42a"
+  },
+  "software": {
+    "python": "3.11.11",
+    "numpy": "2.0.2",
+    "pandas": "2.2.2",
+    "scipy": "1.15.2"
+  }
+}

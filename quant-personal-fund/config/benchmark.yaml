@@ -1,0 +1,42 @@
+# Benchmark Configuration — EXP-2026-04A
+# USD-denominated equal-weight benchmarks on the 15-instrument active universe.
+
+base_currency: "USD"
+
+active_universe_count: 15
+excluded_instruments:
+  - "US10Y"   # yield-proxy, heterogeneous rates/bond leg excluded (ADR-003)
+  - "BUND"    # ETF proxy, heterogeneous rates/bond leg excluded (ADR-003)
+  - "JGB"     # REIT ETF (1343.T), excluded and archived (not relabeled)
+
+benchmark_A:
+  name: "Benchmark A"
+  description: "USD buy-and-hold equal-weight after one initial allocation"
+  rebalance_freq: null          # no rebalancing after initial allocation
+  entry_cost: "one_way_entry"   # charged once via entry_transaction_cost
+
+benchmark_B:
+  name: "Benchmark B"
+  description: "USD monthly-rebalanced equal-weight (PRIMARY active-comparison benchmark)"
+  rebalance_freq: "M"           # month-end (last trading day of each month)
+  primary: true
+  entry_cost: "one_way_entry"
+  trade_cost: "one_way per trade leg (entry/exit symmetric in 04A)"
+
+accounting:
+  engine: "portfolio.accounting_v2"
+  convention: >
+    Daily next-observation / next-return-interval research convention:
+    target formed at close[D] using info through D; effective for r[D+1];
+    transaction costs booked on D+1. NOT execution-grade fill simulation.
+  lag_days: 1
+  financing: "daily holding cost only (never inside transaction cost)"
+  cash_weight: 0.0              # explicit for benchmarks A/B
+  collateral: "reserved, not implemented (future long/short sleeves)"
+
+statistics:
+  bootstrap: "moving-block, supplementary only"
+  block_length: 10
+  block_length_sensitivity: [5, 20]
+  bootstrap_targets: ["mean_return_diff", "sharpe_diff"]
+  max_drawdown_gate: "observed value, duration, and episodes only (NO bootstrap CI as gate)"

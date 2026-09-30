@@ -1,0 +1,117 @@
+{
+  "experiment": "EXP-2026-05-INVALIDATION-REVERSAL",
+  "index_type": "reproducibility_index",
+  "created": "2026-09-25",
+  "final_status": "STOP (v3.6)",
+  "manifests": {
+    "v3.2_frozen": {
+      "file": "experiment.yaml",
+      "sha256": "f3b1cea932ac085d2d0ea4298b76670ee894b1e8741c9396e39ce77715af2e71",
+      "status": "unchanged"
+    },
+    "v3.3": {
+      "file": "experiment.v3.3.yaml",
+      "sha256": "6627de4c87a2ec1aa801532bcb5fcef8ac5a473ed248a4e5286a11e3a78f518d",
+      "status": "unchanged"
+    },
+    "v3.4": {
+      "file": "experiment.v3.4.yaml",
+      "sha256": "30ff82ce3f230a3b364bdf553b58ddd501dcb7231d3dd98199c65305de5891ef",
+      "status": "unchanged"
+    },
+    "v3.5": {
+      "file": "experiment.v3.5.yaml",
+      "sha256": "a1a9a990eabe4cbabc42b669e88d8486e0c1e7001794c6052e0cf3d5ac4c3f5d",
+      "status": "unchanged"
+    },
+    "v3.6": {
+      "file": "experiment.v3.6.yaml",
+      "sha256": "e0445ad25287c59c44cb60c76db941a1a16268bafa5be3255b71f52b6354e0b1",
+      "status": "current"
+    }
+  },
+  "ledgers": {
+    "v3.5_ledger": {
+      "file": "audits/PHASE-1B/reports/episode_ledger_v35.csv",
+      "sha256": "df7a98b6125a9097182dc192907bc2475ce7bdbe1ec642cad4cadc7f20e7d645",
+      "rows": 5225,
+      "status": "authoritative population for v3.5/v3.6 scoring"
+    }
+  },
+  "engines": {
+    "engine_v34": {
+      "file": "audits/PHASE-1B/engine/engine_v34.py",
+      "sha256": "b9a66d376e200fc90092d6468360de54d9f512f78d5e7bd480b8d31461b6c021"
+    },
+    "engine_v35": {
+      "file": "audits/PHASE-1B/engine/engine_v35.py",
+      "sha256": "5f54182bc19da1d0873eb46fe52bc98fc0a90987149ba68e35e33f5e7e3f584e"
+    },
+    "engine_v36": {
+      "file": "audits/PHASE-1B/engine/engine_v36.py",
+      "sha256": "2fe9893f0d3a8f189038d16d737aba4ae9bbe522604b3712e3f6435053c3100b",
+      "status": "current (short-stop fix)"
+    }
+  },
+  "scoring_code": {
+    "score_engine": {
+      "file": "audits/PHASE-1B/scoring/score_engine.py",
+      "sha256": "aba67ee36f748c5bb70ba16b077b94bb3a2ccebb0c07f4458198e8495d56f97e"
+    },
+    "bootstrap_inference": {
+      "file": "audits/PHASE-1B/scoring/bootstrap_inference.py",
+      "sha256": "8594fe5e395efe635a81e845dcb4d401408ae78cdc623828c5f05c816b49474a"
+    }
+  },
+  "input_data": {
+    "xauusd_m15": {
+      "file": "audits/PHASE-1B/data/processed/XAUUSD_M15_processed.parquet",
+      "sha256": "3087b019bbbcb4260cee869d502ecd12deb071a95e609d459c5992b913900a36",
+      "rows": 155252
+    },
+    "xauusd_h1": {
+      "file": "audits/PHASE-1B/data/processed/XAUUSD_H1_processed.parquet",
+      "sha256": "ebd172ebeef25c4ff29d86f01765996b36fb6d016e2483fb39b8f369c12656fb",
+      "rows": 38837
+    }
+  },
+  "scoring_results": {
+    "v35_invalid": {
+      "file": "audits/PHASE-1B/scoring_results/SCORING_RESULTS.json",
+      "sha256": "59ff46513cf1eb00aa02709bf900df2be2687beb2c16967d3fc92a1e34686fec",
+      "status": "INVALID — short-stop condition defect (never evidence)"
+    },
+    "v35_invalid_report": {
+      "file": "audits/PHASE-1B/scoring_results/SCORING_REPORT.md",
+      "sha256": "c0ade87e2811b7fd003b2263474037e08ff99377232c0f72ad6b9ca8a1fc3e6d",
+      "status": "INVALID — short-stop condition defect"
+    },
+    "v36": {
+      "file": "audits/PHASE-1B/scoring_results/SCORING_RESULTS_V36.json",
+      "sha256": "21544b10ca05c25bda27a0921778d8a1d89cb678e1b5d33ae1f899fd75ba4ded",
+      "status": "valid (basis for STOP verdict)"
+    },
+    "v36_report": {
+      "file": "audits/PHASE-1B/scoring_results/SCORING_REPORT_V36.md",
+      "sha256": "ef3b6704042f6f3fca1f7e2736f663238da00e70446287ddd0865e39ab7b96a2",
+      "status": "valid"
+    }
+  },
+  "tests": {
+    "total_passing": 331,
+    "breakdown": {
+      "existing_core": 273,
+      "engine_v33": 12,
+      "engine_v34": 12,
+      "engine_v35": 10,
+      "scoring_integrity": 12,
+      "engine_v36": 12
+    },
+    "last_full_run": "331 passed, 1 non-blocking LOKY warning"
+  },
+  "verdict_artifacts": {
+    "closure_report": "CLOSURE_REPORT.md",
+    "final_verdict": "FINAL_VERDICT.json",
+    "this_index": "REPRODUCIBILITY_INDEX.json"
+  }
+}

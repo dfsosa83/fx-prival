@@ -1,0 +1,49 @@
+# Data Manifest V2 — H5-v2 multiseries internal-clock snapshot
+manifest:
+  manifest_id: "QPF-RV-2026-10-H5-V2-MULTISERIES-DATA-MANIFEST"
+  experiment_id: "QPF-RV-2026-10-H5-V2-MULTI-PAIR-USD-MOMENTUM"
+  parent_design_id: "QPF-RV-2026-05-H5-MULTI-PAIR-USD-MOMENTUM"
+  predecessor_snapshot: "QPF-RV-2026-06-H5-V1-MULTI-PAIR-USD-MOMENTUM"
+  predecessor_status: "FROZEN_UNUSED_USDJPY_STALE"
+  created_by_stage: "H5_V2_IMMUTABLE_MULTISERIES_SNAPSHOT_FREEZE"
+  created: "2026-09-29"
+  mandatory_instruments: ["EURUSD", "GBPUSD", "USDJPY", "USDCHF", "USDCAD", "AUDUSD", "NZDUSD"]
+
+sources:
+  - {instrument: "EURUSD", path: "ml-signal-service/data/raw/mt5/H1/EURUSD_H1.csv", sha256: "8161B866D6CFE233B5361A51DE09ACFE9E9B8926D400EE09751DA8E65CA6550B", rows: 48186, label_range: ["2019-01-02 00:00:00", "2026-09-29 21:00:00"]}
+  - {instrument: "GBPUSD", path: "ml-signal-service/data/raw/mt5/H1/GBPUSD_H1.csv", sha256: "984C014AFA960A66ACB4BF855DD3DB1AFB81A685929B257396A6DC1D52798D09", rows: 48191, label_range: ["2019-01-02 00:00:00", "2026-09-29 21:00:00"]}
+  - {instrument: "USDJPY", path: "ml-signal-service/data/raw/mt5/H1/USDJPY_H1.csv", sha256: "810F789A7271E9861010B4A0A21987F96905AB9FF83C3449E625FD90416A5858", rows: 48191, label_range: ["2019-01-02 00:00:00", "2026-09-29 21:00:00"]}
+  - {instrument: "USDCHF", path: "ml-signal-service/data/raw/mt5/H1/USDCHF_H1.csv", sha256: "A25CBF3D0BF96C0A16FF41E9B157BBFFB1F94D8F268A16E5DD797D98F7134DFB", rows: 48191, label_range: ["2019-01-02 00:00:00", "2026-09-29 21:00:00"]}
+  - {instrument: "USDCAD", path: "ml-signal-service/data/raw/mt5/H1/USDCAD_H1.csv", sha256: "EF32C40422F4F45687E7A7E876E0F5F3F7E17F2CF2FF728D25D17DDA31BF2F31", rows: 48162, label_range: ["2019-01-02 07:00:00", "2026-09-29 21:00:00"]}
+  - {instrument: "AUDUSD", path: "ml-signal-service/data/raw/mt5/H1/AUDUSD_H1.csv", sha256: "0BF89F684D31DA032EB3B7D93713E45C7D8D1E8ADBF9A033D53311AE8A110A66", rows: 48116, label_range: ["2019-01-02 00:00:00", "2026-09-24 18:00:00"]}
+  - {instrument: "NZDUSD", path: "ml-signal-service/data/raw/mt5/H1/NZDUSD_H1.csv", sha256: "9707F4D0066248440A97FD93B4CFAACE9D5A3F9D350171298F7EC695A97A85E9", rows: 48087, label_range: ["2019-01-02 07:00:00", "2026-09-24 18:00:00"]}
+
+usdjpy_repair_provenance:
+  repair_stage: "USDJPY_REAL_HISTORY_REFRESH_AND_CANONICAL_REBUILD"
+  decision: "USDJPY_REAL_REFRESH_COMPLETE_PENDING_H5_V2_SNAPSHOT"
+  post_rebuild_sha256: "810F789A7271E9861010B4A0A21987F96905AB9FF83C3449E625FD90416A5858"
+
+intersection:
+  strict_seven_way_count: 48029
+  unmatched_counts: {EURUSD: 157, GBPUSD: 162, USDJPY: 162, USDCHF: 162, USDCAD: 133, AUDUSD: 87, NZDUSD: 58}
+  exclusion_rule: "exclude exactly the maximum common label"
+  excluded_max_common_label: "2026-09-24 18:00:00"
+  exclusion_count: 1
+
+snapshot:
+  path: "h5_v2_multiseries_h1_internal_snapshot.csv"
+  sha256: "751EE1647D54E5402C762141DB8D8B547118C9825BDCBFB988F48F2DDA8B2588"
+  sha256_file: "h5_v2_multiseries_h1_internal_snapshot.sha256"
+  columns: ["internal_index_k", "timestamp_label_internal", "eurusd_close", "gbpusd_close", "usdjpy_close", "usdchf_close", "usdcad_close", "audusd_close", "nzdusd_close"]
+  rows: 48028
+  first_label: "2019-01-02 07:00:00"
+  last_retained_label: "2026-09-24 17:00:00"
+  header_comment: "# INTERNAL_CLOCK_ONLY; NOT_UTC; STRICT_7WAY_INTERSECTION; EXCLUDE_MAX_COMMON_LABEL; NO_COSTS; NO_TRADING_USE"
+  internal_clock: "NOT_UTC"
+
+integrity:
+  no_imputation_interpolation_resampling_transformation: true
+  no_external_joins: true
+
+status: SNAPSHOT_V2_FROZEN_PENDING_H5_V2_SCREEN
+h5_screen: NOT_RUN

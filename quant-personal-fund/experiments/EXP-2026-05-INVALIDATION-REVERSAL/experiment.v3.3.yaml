@@ -1,0 +1,269 @@
+# Experiment Manifest — EXP-2026-05-INVALIDATION-REVERSAL (v3.3)
+# Status: VERSIONED REVISION (supersedes v3.2 for execution semantics)
+# Created: 2026-09-24
+# Basis: v3.2 frozen manifest (experiment.yaml, SHA-256 f3b1cea932...)
+#   — the v3.2 manifest is UNCHANGED and remains the immutable v3.2 record.
+# This v3.3 file records Phase 1A data-semantics findings and the broker-gate.
+
+experiment:
+  id: "EXP-2026-05-INVALIDATION-REVERSAL"
+  version: "v3.3"
+  status: "frozen_v3.3"
+  created: "2026-09-24"
+  researcher: "quant-fund"
+  design_version: "v3.3"
+  base_manifest: "experiment.yaml (v3.2, SHA-256 f3b1cea932ac085d2d0ea4298b76670ee894b1e8741c9396e39ce77715af2e71) — UNCHANGED"
+  hypothesis: >
+    After a long XAUUSD setup (bullish M15 breakout above resistance) is
+    structurally invalidated (solid-body close below frozen support), a
+    confirmed downside continuation (immediately next solid-body close below
+    the invalidation candle low) makes Policy B (exit-and-reverse) more
+    profitable than Policy A (exit-and-flat), net of instrument-specific
+    costs, on identical original episodes.
+  interpretation: >
+    Tests a FAILED BULLISH BREAKOUT followed by CONFIRMED DOWNSIDE
+    CONTINUATION. Not a long entered into a bearish support break.
+
+# ═══════════════════════════════════════════════════════════════════════════
+# STRUCTURE (unchanged from v3.2)
+# ═══════════════════════════════════════════════════════════════════════════
+structure:
+  primary: "XAUUSD_M15"
+  confirmatory_replications: ["EURUSD_M15", "GBPUSD_M15"]
+  exploratory_only: "all other instrument x timeframe cells — no verdict"
+  multiplicity_control: >
+    XAUUSD M15 is the ONLY verdict authority. Confirmatory replications
+    require primary GO + replication direction agreement at pre-registered
+    alpha. Exploratory cells are descriptive only. Partition frozen pre-run;
+    no post-hoc promotion of the best-looking cell.
+  no_winner_picking: true
+
+# ═══════════════════════════════════════════════════════════════════════════
+# LONG GENERATOR (unchanged from v3.2)
+# ═══════════════════════════════════════════════════════════════════════════
+long_generator:
+  h1_bullish: "completed H1: EMA(20) > EMA(50) AND H1 close > EMA(50)"
+  support_at_entry: "lowest low of the preceding 20 completed M15 bars, excluding the signal bar"
+  resistance_at_entry: "highest high of the preceding 20 completed M15 bars, excluding the signal bar"
+  long_entry_signal: "bullish solid-body M15 close (body >= 30% of range) above resistance_at_entry"
+  freeze_rule: "support_at_entry and resistance_at_entry frozen at entry; NEVER recalculated"
+  invalidation: "completed solid-body M15 close below frozen support_at_entry"
+  c1_confirmation: "immediately next completed solid-body M15 close below the low of the invalidation candle"
+  one_reversal_maximum: true
+
+# ═══════════════════════════════════════════════════════════════════════════
+# POLICIES (unchanged from v3.2)
+# ═══════════════════════════════════════════════════════════════════════════
+policies:
+  A: "Exit-and-flat: closes the long at the next-bar open after every completed invalidation signal; remains flat."
+  B: "Policy B (same long exit) — closes the same long at exactly the same next-bar open as Policy A. Opens the short only if the immediately next completed M15 bar meets C1 AND the next-bar-open entry is rollover/calendar eligible. If C1 does not occur immediately, or the short is ineligible, Policy B remains flat for the rest of that original episode. No waiting for later confirmation, no re-entry, no substituted signal, no episode discard."
+  C: "NOT in the primary experiment. No gate, no rule-selection surface."
+
+reason_codes:
+  - "c1_triggered"
+  - "no_c1"
+  - "rollover_ineligible"
+  - "holiday_early_close"
+  - "missing_bar"
+  - "other_pre_registered"
+reason_codes_mutually_exclusive: true
+
+incremental_ev_definition: >
+  Incremental EV(B - A) computed over ALL invalidated original episodes,
+  INCLUDING episodes with no triggered short (flat-short episodes contribute
+  0 incremental PnL but remain in the denominator).
+
+# ═══════════════════════════════════════════════════════════════════════════
+# EXECUTION CONVENTIONS (unchanged from v3.2)
+# ═══════════════════════════════════════════════════════════════════════════
+execution:
+  signal_timing: "all signals evaluated only after their M15 bar completes"
+  long_entry_fill: "next M15 bar open after the breakout signal bar"
+  policy_a_exit_fill: "next M15 bar open after the completed invalidation signal"
+  policy_b_short_entry: "next M15 bar open after C1 confirmation bar completes"
+  same_close_fills: "PROHIBITED unless a separately justified, auditable executable-price convention exists"
+  adverse_adjustment: "every market fill adjusted adversely with modeled bar-spread proxy + slippage"
+  short_stop_intrabar: "execute at the adverse stop price (worst of stop vs open)"
+  gap_beyond_stop: "execute at that adverse open"
+  gap_and_time_simultaneous: "stop priority; execute at worst of stop, open, and any crossed boundary"
+  stop_time_boundary_normal_bar: "stop priority; if stop not crossed intrabar and bar closes past time boundary, execute at time-exit bar close-adjusted price"
+  symmetry: "identical convention for Policy A and B wherever comparable"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# VOLATILITY — Wilder ATR(14), continuous series (unchanged from v3.2)
+# ═══════════════════════════════════════════════════════════════════════════
+volatility:
+  name: "Wilder_ATR_M15(14)"
+  true_range_formula: >
+    TR_t = max(
+        H_t - L_t,
+        abs(H_t - C_(t-1)),
+        abs(L_t - C_(t-1))
+    )
+  convention: >
+    Continuous Wilder ATR(14) series computed at every completed M15 bar
+    close from full available prior history per instrument/timeframe.
+    Initialize after the first 14 valid TR observations as their arithmetic
+    mean; thereafter ATR_t = (13 * ATR_(t-1) + TR_t) / 14.
+  trade_time_lookup: "for a short entered at open of bar t, use the ATR known at the close of bar t-1"
+  exclusion: "entry bar t and all later bars excluded from the ATR used for that trade"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SHORT STOP AND EXITS (unchanged from v3.2)
+# ═══════════════════════════════════════════════════════════════════════════
+short:
+  stop: "max(high_of_invalidation_bar, high_of_confirmation_bar) + 0.5 * continuous_Wilder_ATR_M15(14)"
+  stop_floor: "NO minimum stop floor in v1"
+  time_exit: "12 completed M15 bars (3h) after short entry"
+  forced_exit: "mandatory before broker rollover/maintenance window, before holidays, before early closes"
+  close_rule: "whichever occurs first"
+  take_profit: "NONE in v1 — no TP, no swing-low target, no trailing target, no secondary exit"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# COST CONVENTION (v3.3 — spread units now broker-verified)
+# ═══════════════════════════════════════════════════════════════════════════
+cost:
+  bar_ohlc: "mid-price proxy (no intra-bar bid/ask decomposition) — ASSUMPTION"
+  S_UNITS: "POINTS (VERIFIED Phase 1A: bar spread field is in points)"
+  spread_price_conversion: "spread_price = spread_points * point"
+  spread_conversion_evidence: >
+    Phase 1A (2026-09-24) matched live tick bid/ask against point*spread_field:
+    XAUUSD 19*0.01=0.19 (live 0.1900); EURUSD 11-12*1e-5 (live 0.00012);
+    GBPUSD 13-17*1e-5 (live 0.00017). Units confirmed = POINTS.
+  bar_spread_temporal_semantics: >
+    UNKNOWN — whether bar spread is open/mid/max-of-bar not established;
+    only units are confirmed. Treated as per-bar historical proxy.
+  buy_cover_fill: "P + S/2 + L   (S = spread_points * point)"
+  sell_short_fill: "P - S/2 - L"
+  L: "0.5 * S (fixed multiple; identical across XAUUSD and FX; no price-unit floor)"
+  base_case_total_adverse: "S/2 + 0.5*S = S (one full bar-spread)"
+  stress_cases:
+    - "2x spread: S -> 2S, L -> S"
+    - "2x slippage: L -> 2*0.5S = S"
+    - "combined: 2x spread AND 2x slippage"
+  symmetry: "identical cost mechanics for comparable Policy A and B actions"
+  swap: "0.0 — no rollover crossing; no financing in v1"
+  historical_bid_ask: "UNAVAILABLE (tick API returned no data) — research-grade cost realism"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# NO-ROLLOVER MECHANICS (v3.3 — maintenance window OBSERVED, not broker-confirmed)
+# ═══════════════════════════════════════════════════════════════════════════
+no_rollover:
+  maintenance_window_observed: "23:45 -> 01:00 UTC daily (XAUUSD M15 bar gap, 3 consecutive days 2026-09-21/22/23)"
+  maintenance_window_status: "PROVISIONAL / OBSERVED — NOT broker-confirmed; NOT established across DST/seasons"
+  maintenance_window_correction: "v3.2 candidate ~21-22 UTC was WRONG; observed is 23:45-01:00 UTC"
+  latest_eligible_entry: "no reversal entry if entry close + max holding span crosses the maintenance window; skip episode (rollover_ineligible), never delayed entry"
+  forced_exit: "last completed M15 bar before the maintenance window"
+  holidays_early_closes: "NOT CONFIRMED — holiday/early-close calendar unresolved"
+  note: '"12 bars < 24h" is NOT sufficient protection'
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PHASE 1A BROKER-CALENDAR GATE (v3.3 — MANDATORY)
+# ═══════════════════════════════════════════════════════════════════════════
+broker_calendar_gate: >
+  NO historical strategy run may use the rollover/holiday exclusion rule
+  until the applicable broker schedule AND timezone/DST behavior are
+  confirmed from broker documentation or a broker-confirmed source.
+  Status as of v3.3: maintenance window OBSERVED 23:45-01:00 UTC (3 days);
+  DST behavior UNKNOWN; holiday/early-close calendar UNCONFIRMED.
+  Until confirmed, the rollover_ineligible and holiday_early_close paths
+  are CONDITIONAL and any run using them is research-grade only.
+
+# ═══════════════════════════════════════════════════════════════════════════
+# TIMELINE (unchanged from v3.2)
+# ═══════════════════════════════════════════════════════════════════════════
+timeline:
+  development: "2020-01-01 to 2023-12-31 — rule definition/feasibility only"
+  research_grade_oos: "2024-01-01 to last retrieveable — NOT sealed; gold/audit work has viewed portions"
+  forward_validation: "post-freeze future window — the ONLY source of GO"
+  integrity_statement: >
+    No historical period is called sealed merely because it is chronologically
+    later. No historical GO is possible under this design.
+
+# ═══════════════════════════════════════════════════════════════════════════
+# FEASIBILITY RULE (unchanged from v3.2)
+# ═══════════════════════════════════════════════════════════════════════════
+feasibility:
+  pre_run_count: "count long-generator + invalidation + C1 episodes in development window before any policy scoring"
+  scalable: ">= 100 development episodes AND projected reachable forward-validation sample"
+  hold_if_fewer: "fewer than 100 development episodes => HOLD / NEEDS DATA; do not add rules to manufacture episodes"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# STATISTICS (unchanged from v3.2)
+# ═══════════════════════════════════════════════════════════════════════════
+statistics:
+  primary_endpoint: "incremental net EV/R (reversal-vs-flat, combined policy), 95% block-bootstrap CI"
+  secondary: ["win_pct_diagnostic_only", "avg_win_loss", "profit_factor", "drawdown_contribution", "whipsaw_rate", "reversal_frequency", "exposure_split"]
+  dependence: "block bootstrap on episode clusters; block = 24 M15 bars (6h); sensitivity 12/48"
+  cost_stress: ["2x_spread", "2x_slippage", "adverse_bar_spread_slope", "swap_zero_no_rollover_sensitivity"]
+  robustness: ["top_episode_removal", "year_split", "regime_decomposition", "whipsaw_sensitivity"]
+  win_rate_not_gate: true
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DECISION GATES (unchanged from v3.2; forward validation only)
+# ═══════════════════════════════════════════════════════════════════════════
+decision_gate:
+  GO:
+    - "forward validation ONLY (no historical GO)"
+    - "net EV/R > 0 with 95% CI excluding 0"
+    - "profit_factor >= 1.10"
+    - ">= 100 forward-validation episodes"
+    - "combined policy superior to flat"
+    - "robustness passes"
+    - "confirmatory replication direction agrees"
+  HOLD:
+    - "CI includes 0"
+    - "50-99 forward episodes"
+    - "research-grade OOS positive-but-unsealed ('promising, needs forward validation')"
+  STOP:
+    - "net EV/R < 0 with CI excluding 0"
+    - "robustness destroys the positive"
+    - "forward feasibility < 50"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ML / LLM ROLE (unchanged from v3.2)
+# ═══════════════════════════════════════════════════════════════════════════
+ml_llm:
+  ml_signal: "NONE in v1 — no ML in the signal"
+  ml_future: "only a later, separately preregistered incremental-value test after the deterministic baseline is understood"
+  llm_roles: ["data_quality_checks", "rule_compliance_checks", "audit_reports", "decision_explanations"]
+  llm_prohibited: ["no BUY/SELL authority", "no override of deterministic risk limits", "no orders"]
+  orders: "NO orders in demo or live accounts"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PHASE 1A CONTRACT FACTS (2026-09-24)
+# ═══════════════════════════════════════════════════════════════════════════
+contract_facts:
+  XAUUSD:
+    contract_size: "100.0 oz/lot — CONFIRMED (prior live pre-flight 2026-09-15, gold_rules v1.3; not exposed by current API)"
+    point: 0.01
+    digits: 2
+    volume_min_step: [0.01, 0.01]
+    volume_max: 20.0
+  EURUSD:
+    contract_size: "UNCONFIRMED (not exposed by terminal API)"
+    point: 1e-05
+    digits: 5
+    volume_min_step: [0.01, 0.01]
+    volume_max: 50.0
+  GBPUSD:
+    contract_size: "UNCONFIRMED (not exposed by terminal API)"
+    point: 1e-05
+    digits: 5
+    volume_min_step: [0.01, 0.01]
+    volume_max: 50.0
+  timezone: "UTC-aligned M15 timestamps (100% of Phase 1A sample) — CONFIRMED (observed)"
+  maintenance_window: "23:45-01:00 UTC XAUUSD — PROVISIONAL/OBSERVED (3 days)"
+  holidays_early_close: "UNCONFIRMED — broker calendar required"
+  DST: "UNKNOWN — not established across seasons"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# INPUTS
+# ═══════════════════════════════════════════════════════════════════════════
+inputs:
+  data: "NOT RETRIEVED YET — Phase 1 data retrieval awaits approval"
+  audit_reference:
+    - "PHASE-0-5-DATA-AUDIT (envelopes, cost fields)"
+    - "PHASE-1A-DATA-SEMANTICS (spread units, timezone, maintenance window)"
+  config_snapshot: ""
+  inputs_hash: ""

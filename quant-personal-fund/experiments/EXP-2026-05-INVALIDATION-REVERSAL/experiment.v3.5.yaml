@@ -1,0 +1,128 @@
+# Experiment Manifest — EXP-2026-05-INVALIDATION-REVERSAL (v3.5)
+# Status: VERSIONED REVISION (episode-boundary + right-censoring correction)
+# Created: 2026-09-24
+# Basis: v3.4 (experiment.v3.4.yaml, SHA-256 30ff82ce...) — UNCHANGED
+# This v3.5 corrects: episode assignment by entry timestamp, cross-boundary
+# outcome resolution, explicit right-censoring, dependence metadata.
+# NO performance scoring.
+
+experiment:
+  id: "EXP-2026-05-INVALIDATION-REVERSAL"
+  version: "v3.5"
+  status: "frozen_v3.5"
+  created: "2026-09-24"
+  researcher: "quant-fund"
+  design_version: "v3.5"
+  scope: "LEDGER RECONSTRUCTION + ENGINE VALIDATION ONLY — no PnL/EV/R/PF/win-rate/drawdown/CI"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 1. EPISODE ASSIGNMENT (frozen)
+# ═══════════════════════════════════════════════════════════════════════════
+assignment:
+  rule: >
+    Assign each episode to Development or research-grade OOS SOLELY by the
+    timestamp of its original long entry fill.
+  development: "entry fill timestamps 2020-02-28 through 2023-12-31 inclusive"
+  research_grade_oos: "entry fill timestamps 2024-01-01 through the last eligible entry timestamp"
+  engine_input: >
+    Engine runs on the FULL CONCATENATED XAUUSD M15/H1 history so an episode
+    can resolve invalidation, C1, short eligibility, and exit using post-entry
+    bars even when those bars cross the 2023-12-31 boundary.
+  cross_boundary_rationale: >
+    Cross-boundary observation is allowed because it is POST-ENTRY OUTCOME
+    RESOLUTION, not future information used to generate the entry signal.
+  label: "entry_timestamp_assignment_with_cross_boundary_outcome_resolution"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 2. RIGHT CENSORING (frozen)
+# ═══════════════════════════════════════════════════════════════════════════
+right_censoring:
+  last_available_bar_time: "timestamp of the final completed M15 bar in the stored dataset"
+  rule: >
+    If an episode's 20-calendar-day observation window ends after
+    last_available_bar_time, label it 'right_censored_at_data_end'.
+  never_label: ["no_invalidation_within_observation_window", "other_pre_registered",
+                "no_c1", "rollover_ineligible", "c1_triggered"]
+  ledger_status: "remains in the complete audit ledger; excluded from the fully observed feasibility/scoring population"
+  no_imputation: "do not impute missing future bars, invalidation, C1, or exits"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 3. FULLY OBSERVED EPISODES (frozen)
+# ═══════════════════════════════════════════════════════════════════════════
+fully_observed:
+  rule: >
+    Only episodes whose 20-calendar-day window is FULLY CONTAINED in the
+    stored dataset may be classified no_invalidation_within_observation_window
+    or enter the invalidation-conditioned A-vs-B population.
+  boundary_inclusion: "invalidation at exactly the 20-calendar-day boundary is INCLUDED"
+  boundary_exclusion: "invalidation after the boundary is OUTSIDE the episode"
+  downstream: "if invalidated within a complete window, retain v3.4 downstream rules unchanged"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 4. DEPENDENCE METADATA (metadata only — no statistics)
+# ═══════════════════════════════════════════════════════════════════════════
+dependence_metadata:
+  fields:
+    - "entry_time"
+    - "invalidation_time (where applicable)"
+    - "c1_time (where applicable)"
+    - "shared_invalidation_cluster_id (where applicable)"
+    - "deterministic time_block_id (24-M15-bar / 6-hour block structure)"
+    - "observation_complete (Boolean)"
+    - "assignment_window"
+  prohibitions:
+    - "Do not collapse, remove, or select episodes based on overlap."
+    - "Do not run bootstrap or calculate any statistic."
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 5. REASON CODES (v3.5 — mutually exclusive and exhaustive)
+# ═══════════════════════════════════════════════════════════════════════════
+reason_codes_v35:
+  - "c1_triggered"
+  - "no_c1"
+  - "rollover_ineligible"
+  - "conservative_observed_window_exclusion_not_broker_confirmed"
+  - "missing_bar"
+  - "no_invalidation_within_observation_window"
+  - "right_censored_at_data_end"
+
+reason_code_rules:
+  obsolete: "no_invalidation_within_unfrozen_scan_cap — REMOVED from v3.5"
+  no_catchall: "do not use other_pre_registered as a catch-all"
+  unknown_exclusion: "if another truly necessary exclusion appears, STOP and report rather than inventing a new reason code"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ALL OTHER FROZEN RULES (UNCHANGED — inherited from v3.4)
+# ═══════════════════════════════════════════════════════════════════════════
+inherited_from_v34:
+  structure: "XAUUSD M15 primary; EURUSD/GBPUSD confirmatory (not run); exploratory no verdict"
+  long_generator: "H1 EMA(20)>EMA(50) & close>EMA(50); M15 support/resistance from preceding 20 completed bars excluding signal bar; frozen at entry; bullish solid-body close above resistance"
+  invalidation: "completed solid-body M15 close below frozen support"
+  c1: "immediately next completed solid-body M15 close below invalidation-bar low"
+  policies: "A exit-and-flat; B same-long-exit then short after C1; one reversal max"
+  execution: "signals after completed bars; fills at next-bar open; no same-close fills; adverse modeled costs"
+  volatility: "continuous Wilder ATR(14), prior bars only"
+  short: "stop = max(high_inv, high_conf) + 0.5*ATR(14); time exit 12 bars; forced pre-window; no TP"
+  cost: "spread_price = spread_points * point; buy/cover = P+S/2+L; sell/short = P-S/2-L; L=0.5*S; stress 2x/2x/combined"
+  observation_window: "20 calendar days from entry fill timestamp"
+  conservative_session_exclusion: "episode touches 22:30-02:00 UTC -> conservative_observed_window_exclusion_not_broker_confirmed"
+  missing_bar: "pre-registered missing-bar/gap rule -> missing_bar"
+  timeline: "2020-2023 development; 2024+ research-grade OOS (NOT sealed); forward validation only GO source"
+  decision_gate: "forward-only GO; EV/R>0 CI excl 0; PF>=1.10; >=100 forward eps; robustness; replication agreement"
+  ml_llm: "no ML signal; no LLM authority; no orders"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# RESTRICTIONS (v3.5)
+# ═══════════════════════════════════════════════════════════════════════════
+restrictions:
+  - "Use only already-stored historical data; no MT5 retrieval or broker/account calls"
+  - "No login(), no terminal/process/settings changes, no frival/ modifications"
+  - "No orders"
+  - "No performance scoring, tuning, or strategy conclusion"
+  - "Do not modify prior manifests, ledgers, reports, or hashes"
+
+inputs:
+  data: "already-stored Phase 1B bars (no new retrieval)"
+  prior_manifests: ["experiment.yaml (v3.2)", "experiment.v3.3.yaml", "experiment.v3.4.yaml"]
+  config_snapshot: ""
+  inputs_hash: ""

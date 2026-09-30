@@ -1,0 +1,11 @@
+{
+  "rebalanced_or_buy_hold": "continuously_rebalanced_toward_1N",
+  "reported_turnover": 0.0,
+  "reported_cost_gross": 0.29621282357319384,
+  "days_txn_positive": 0,
+  "total_txn_cost": 0.0,
+  "total_hold_cost": 0.1414285714285714,
+  "hold_cost_pct_of_total": 100.0,
+  "recomputed_cost_gross": 0.29621282357319384,
+  "reconciliation_ok": "True"
+}

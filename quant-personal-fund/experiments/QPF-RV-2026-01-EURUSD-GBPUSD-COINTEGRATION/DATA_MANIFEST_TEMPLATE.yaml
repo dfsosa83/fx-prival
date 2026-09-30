@@ -1,0 +1,151 @@
+# BLANK PRE-DATA TEMPLATE — do not use as evidence.
+# This is a blank template. Nothing here proves that any data has been accessed,
+# obtained, inspected, or verified. No real values, paths, dates, hashes, source
+# selections, credentials, or computed outcomes are present. Placeholders only.
+# Use blank strings, null, empty lists/mappings, or the markers: TBD, NOT_RUN, UNAVAILABLE.
+
+manifest:
+  manifest_id: ""
+  experiment_id: "QPF-RV-2026-01-EURUSD-GBPUSD-COINTEGRATION"
+  program_scope: "FUTURE_QPF"
+  manifest_version: ""
+  created_by: ""
+  extraction_timestamp_utc: ""       # blank; no extraction has occurred
+
+dataset:
+  instrument: ""                     # TBD
+  broker_or_vendor: ""               # NOT SELECTED
+  source_type: ""                    # NOT SELECTED (broker_native | institutional | public)
+  symbol_as_received: ""             # TBD
+  canonical_symbol: ""               # TBD
+  asset_class: "FX"
+  timeframe: ""                      # TBD (candidate classes: H1, H4, M15, D1)
+  requested_date_range:
+    start: ""
+    end: ""
+  received_date_range:
+    start: ""
+    end: ""
+  source_file_path_or_uri: ""
+  file_format: ""
+  row_count: null
+  source_limitations: "UNAVAILABLE"
+  access_scope: ""
+  field_definitions: {}
+
+instruments:
+  # Candidate instruments only. No source symbol, vendor, range, or availability asserted.
+  - canonical_symbol: "EURUSD"
+    symbol_as_received: ""
+    role: "leg_1"
+    availability: "NOT_RUN"
+  - canonical_symbol: "GBPUSD"
+    symbol_as_received: ""
+    role: "leg_2"
+    availability: "NOT_RUN"
+
+time_contract:
+  canonical_timezone: "UTC"
+  timezone_as_received: ""
+  server_time_identified: "NOT_RUN"
+  utc_offset_history: "NOT_RUN"
+  dst_convention: "NOT_RUN"
+  conversion_method: ""
+  raw_timestamp_field: "timestamp"
+  canonical_timestamp_field: "timestamp_utc"
+  bar_completion_semantics: "NOT_RUN"
+  alignment_basis: "completed_bars_only"
+
+source:
+  source_hierarchy_tier: ""          # TBD (primary | secondary | tertiary)
+  source_selected: false
+  source_approved: false
+  provenance_notes: "UNAVAILABLE"
+
+files:
+  - file_id: ""
+    source_file_path_or_uri: ""
+    file_format: ""
+    checksum_sha256: ""
+    checksum_status: "NOT_RUN"
+    row_count: null
+    checksum_reproducible: "NOT_RUN"
+
+field_definitions:
+  timestamp:
+    available: "UNAVAILABLE"
+    semantic: ""
+  open: { available: "UNAVAILABLE", semantic: "" }
+  high: { available: "UNAVAILABLE", semantic: "" }
+  low: { available: "UNAVAILABLE", semantic: "" }
+  close: { available: "UNAVAILABLE", semantic: "" }
+  tick_volume_or_volume: { available: "UNAVAILABLE", semantic: "" }
+  bid_open: { available: "UNAVAILABLE", semantic: "" }
+  bid_high: { available: "UNAVAILABLE", semantic: "" }
+  bid_low: { available: "UNAVAILABLE", semantic: "" }
+  bid_close: { available: "UNAVAILABLE", semantic: "" }
+  ask_open: { available: "UNAVAILABLE", semantic: "" }
+  ask_high: { available: "UNAVAILABLE", semantic: "" }
+  ask_low: { available: "UNAVAILABLE", semantic: "" }
+  ask_close: { available: "UNAVAILABLE", semantic: "" }
+  spread_points_or_spread_price: { available: "UNAVAILABLE", semantic: "" }
+  price_semantics: ""                # bid | ask | mid | last | unknown  (unknown fails G1)
+  bid_ask_availability: "NOT_RUN"
+
+quality_audit:
+  overall_result: "NOT_RUN"
+  checks: {}                         # keyed by check_name; empty until G1 runs
+  # Expected check keys (to be populated at G1 only):
+  #   schema_validation, utc_conversion_validation, monotonic_timestamps,
+  #   duplicate_timestamps, missing_expected_bars, max_consecutive_missing,
+  #   market_closure_classification, partial_bar_identification, ohlc_integrity,
+  #   bid_ask_consistency, spread_sanity_description, symbol_mapping,
+  #   date_range_overlap, utc_alignment_rate, price_semantic_classification,
+  #   checksum_reproducibility, source_limitations
+  findings: []                       # list of {check_name, instrument, result, severity,
+                                     #          evidence_path, rule_applied,
+                                     #          remediation_needed, G1_impact}
+  severity_summary: {}
+
+alignment:
+  basis: "canonical_utc_completed_bars"
+  overlap_start: ""
+  overlap_end: ""
+  utc_alignment_rate: null
+  alignment_status: "NOT_RUN"
+  notes: ""
+
+g2_cost_evidence_status:
+  status: "NOT_RUN"
+  spread_or_bid_ask_evidence: "NOT_RUN"
+  commission_schedule: "NOT_RUN"
+  slippage_model: "NOT_RUN"
+  swap_rollover_long_short: "NOT_RUN"
+  rollover_day_convention: "NOT_RUN"
+  contract_size_and_pip: "NOT_RUN"
+  min_lot_and_margin: "NOT_RUN"
+  order_type_and_fill_assumptions: "NOT_RUN"
+  session_sensitivity: "NOT_RUN"
+  account_currency_conversion: "NOT_RUN"
+  entry_and_exit_costs_both_legs: "NOT_RUN"
+
+stage_status:
+  G0_EXECUTION_ISOLATION: "NOT_RUN"
+  G1_DATA_AUDIT: "NOT_RUN"
+  G2_COST_EVIDENCE: "NOT_RUN"
+  G3_COINTEGRATION_STATIONARITY: "NOT_RUN"
+  G4_MEAN_REVERSION: "NOT_RUN"
+  G5_ECONOMIC_VIABILITY: "NOT_RUN"
+  G6_COST_AWARE_BACKTEST: "NOT_RUN"
+
+traceability:
+  design_spec: "G0_G1_DESIGN_SPEC.md"
+  experiment_manifest: "experiment.yaml"
+  readme: "README.md"
+  run_log: "RUN_LOG.md"
+  lineage_references:
+    - "docs/falsification_ledger/no_edge_map.md"
+    - "docs/falsification_ledger/LEGACY_INDEX.md"
+    - "experiments/REGISTRY.md"
+    - "experiments/REGISTRY.yaml"
+  g1_decision_recommendation: ""     # blank until G1

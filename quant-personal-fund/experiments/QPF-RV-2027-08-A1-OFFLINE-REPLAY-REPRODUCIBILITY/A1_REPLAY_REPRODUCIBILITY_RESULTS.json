@@ -1,0 +1,48 @@
+{
+  "stage": "A1_CONTROLLED_OFFLINE_REPLAY_REPRODUCIBILITY_CHECK",
+  "experiment_id": "QPF-RV-2027-08-A1-OFFLINE-REPLAY-REPRODUCIBILITY",
+  "source_inventory": [
+    {"path": "frival/gold_rules/engine.py", "sha256": "9653AE906D30583493A49A478CA123B6A190AC16B93B3FD4F9A2CCDD4B2357E8"},
+    {"path": "frival/gold_rules/bias.py", "sha256": "106999937CFC810C88E58DCCF9476EC63FF998D2CDF08A4BFE43DCD259F8362F"},
+    {"path": "frival/gold_rules/levels.py", "sha256": "63442EBBADAF059B816E49F9FDB28D71471CA4E7C5C98C8C3FE997674E0E49D5"},
+    {"path": "frival/gold_rules/run_gold_rules.py", "sha256": "CF1EC9A4B0DDD1FF71E26D3E89C421112FB9A40098F78B248FD7C5CADD811967"}
+  ],
+  "fixture_inventory": [
+    {"path": "frival/gold_rules/tests/fixtures/XAUUSD_M15.csv", "sha256": "574A38DC501821106FB5CA32E43F61CEACCEDBC31E281470B70B0D2665D28FBB"},
+    {"path": "frival/gold_rules/tests/fixtures/XAUUSD_M30.csv", "sha256": "9345E3D33DE2391A2FDED8B2BC49FC5DD1F2E071C24B30D195D5D7910A55566F"},
+    {"path": "frival/gold_rules/tests/fixtures/XAUUSD_H1.csv", "sha256": "81E51BBF9C720BBA96E5AB4A5B0C98EE483B14A84D0B8AE57C5526B2170B7521"}
+  ],
+  "fixture_eligibility": "OK_LOCAL_XAUUSD_FIXTURES_UNMODIFIED",
+  "offline_boundary_checks": {
+    "OFFLINE_ONLY": "intended",
+    "ORDERS_DISABLED": "intended",
+    "NO_BROKER_CONNECTION": "violated_by_entry_point",
+    "NO_MT5_IMPORT_OR_INITIALIZATION": "violated_by_entry_point",
+    "NO_NETWORK": "not_evaluated_pre_execution",
+    "NO_EXTERNAL_DATA": "ok_local_fixtures_only",
+    "NO_VIRTUAL_FILL": "not_evaluated_pre_execution",
+    "NO_PNL": "ok_no_pnl_computed"
+  },
+  "isolation_blocker": {
+    "entry_point": "frival/gold_rules/run_gold_rules.py",
+    "reason": "imports execution_bot.core.mt5_connector/order_manager and uses MetaTrader5 (bar fetch needed even in dry mode)",
+    "also": "tests/test_rules.py imports tests.fetch_data (imports MetaTrader5); tests/test_demo_pnl.py imports run_gold_rules + demo_ledger"
+  },
+  "run_1_status": "NOT_EXECUTED",
+  "run_2_status": "NOT_EXECUTED",
+  "event_record_count": 0,
+  "event_field_name_sets": null,
+  "missing_field_list": null,
+  "canonical_record_hashes": null,
+  "equality_booleans": null,
+  "cleanup_status": "NOT_APPLICABLE_NO_TEMP_CREATED",
+  "decision": "REPLAY_REPRODUCIBILITY_PAUSE",
+  "failure_reason": "OFFLINE_ISOLATION_NOT_DEMONSTRABLE",
+  "prohibition_attestation": {
+    "no_code_or_test_executed": true,
+    "no_broker_mt5_network": true,
+    "no_orders_or_fills": true,
+    "no_pnl_or_performance": true,
+    "no_repository_modification": true
+  }
+}

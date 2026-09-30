@@ -1,0 +1,154 @@
+{
+  "retrieval_timestamp_utc": "2026-09-29T19:57:11.475915+00:00",
+  "read_only": true,
+  "errors": [],
+  "terminal": {
+    "connected": true,
+    "build": 6230,
+    "trade_allowed": true
+  },
+  "account": {
+    "login": "REDACTED",
+    "server": "REDACTED",
+    "trade_mode": 0,
+    "currency": "USD",
+    "leverage": 30,
+    "margin_mode": 2
+  },
+  "symbols": {
+    "EURUSD": {
+      "symbol_as_received": "EURUSD",
+      "mapping_status": "CONFIRMED_FOR_CURRENT_MT5_SAMPLE",
+      "visible": true,
+      "selectable": false
+    },
+    "GBPUSD": {
+      "symbol_as_received": "GBPUSD",
+      "mapping_status": "CONFIRMED_FOR_CURRENT_MT5_SAMPLE",
+      "visible": true,
+      "selectable": false
+    }
+  },
+  "h1_sample": {
+    "EURUSD": {
+      "returned": 500,
+      "method": "copy_rates_from_pos(start_pos=1, count=500); position 0 (current forming bar) excluded",
+      "first_time": 1788228000,
+      "last_time": 1790715600,
+      "fields": [
+        "broker_symbol",
+        "canonical_symbol",
+        "retrieval_timestamp_utc",
+        "time",
+        "open",
+        "high",
+        "low",
+        "close",
+        "tick_volume",
+        "spread",
+        "real_volume",
+        "bar_completed"
+      ]
+    },
+    "GBPUSD": {
+      "returned": 500,
+      "method": "copy_rates_from_pos(start_pos=1, count=500); position 0 (current forming bar) excluded",
+      "first_time": 1788228000,
+      "last_time": 1790715600,
+      "fields": [
+        "broker_symbol",
+        "canonical_symbol",
+        "retrieval_timestamp_utc",
+        "time",
+        "open",
+        "high",
+        "low",
+        "close",
+        "tick_volume",
+        "spread",
+        "real_volume",
+        "bar_completed"
+      ]
+    }
+  },
+  "ticks": {
+    "EURUSD": {
+      "returned": 1000,
+      "fields": [
+        "time",
+        "bid",
+        "ask",
+        "last",
+        "volume",
+        "time_msc",
+        "flags",
+        "volume_real"
+      ]
+    },
+    "GBPUSD": {
+      "returned": 1000,
+      "fields": [
+        "time",
+        "bid",
+        "ask",
+        "last",
+        "volume",
+        "time_msc",
+        "flags",
+        "volume_real"
+      ]
+    }
+  },
+  "symbol_metadata": {
+    "EURUSD": {
+      "digits": 5,
+      "point": 1e-05,
+      "trade_tick_size": 1e-05,
+      "trade_contract_size": 100000.0,
+      "volume_min": 0.01,
+      "volume_max": 50.0,
+      "volume_step": 0.01,
+      "trade_mode": 4,
+      "spread_current_points": 12,
+      "swap_long": -6.47,
+      "swap_short": 2.83,
+      "swap_rollover3days": 3,
+      "currency_base": "EUR",
+      "currency_profit": "USD",
+      "currency_margin": "EUR",
+      "visible": true,
+      "selectable": null,
+      "start_time": 0,
+      "expiration_time": 0
+    },
+    "GBPUSD": {
+      "digits": 5,
+      "point": 1e-05,
+      "trade_tick_size": 1e-05,
+      "trade_contract_size": 100000.0,
+      "volume_min": 0.01,
+      "volume_max": 50.0,
+      "volume_step": 0.01,
+      "trade_mode": 4,
+      "spread_current_points": 16,
+      "swap_long": -2.22,
+      "swap_short": -2.02,
+      "swap_rollover3days": 3,
+      "currency_base": "GBP",
+      "currency_profit": "USD",
+      "currency_margin": "GBP",
+      "visible": true,
+      "selectable": null,
+      "start_time": 0,
+      "expiration_time": 0
+    }
+  },
+  "timezone_evidence": {
+    "system_utc_now": "2026-09-29T19:57:11.475915+00:00",
+    "latest_completed_h1_bar_epoch_server": 1790715600,
+    "mt5_time_semantics_evidence": "MT5 API documents bar/tick 'time' as server time; UTC offset and DST are not directly exposed by the read API.",
+    "server_offset_directly_identified": false,
+    "server_timezone_status": "UNRESOLVED",
+    "bar_completion_semantics": "completed bars selected by start_pos=1; position 0 excluded as the forming bar"
+  }
+}

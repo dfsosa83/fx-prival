@@ -1,0 +1,17 @@
+{
+  "base_currency": "USD",
+  "non_usd_instruments": [
+    "AUDUSD",
+    "BUND",
+    "EURJPY",
+    "EURUSD",
+    "GBPUSD",
+    "JGB",
+    "NKY",
+    "NZDUSD",
+    "SX5E"
+  ],
+  "fx_conversion_applied": false,
+  "timestamp_alignment": "N/A - no conversion exists",
+  "severity": "blocking_if_confirmed"
+}

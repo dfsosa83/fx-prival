@@ -1,0 +1,132 @@
+{
+  "design_spec": "docs/governance/STAGE_1B_DESIGN_SPEC.md (frozen)",
+  "label": "PORTFOLIO BASELINE \u2014 NOT ALPHA EVIDENCE",
+  "universe": [
+    "AUDUSD",
+    "COPPER",
+    "EURJPY",
+    "EURUSD",
+    "GBPUSD",
+    "NDX",
+    "NKY",
+    "NZDUSD",
+    "SPX",
+    "SX5E",
+    "USDCAD",
+    "USDCHF",
+    "USDJPY",
+    "WTI",
+    "XAUUSD"
+  ],
+  "period": [
+    "2020-02-28",
+    "2026-09-22"
+  ],
+  "baselines": {
+    "equal": {
+      "metrics": {
+        "annualized_return": 0.05498360528750812,
+        "annualized_volatility": 0.06366307293128612,
+        "sharpe": 0.8722208531336407,
+        "sortino": 1.1112770365545441,
+        "calmar": 0.3515586202141068,
+        "max_drawdown": -0.1563995365951258,
+        "drawdown_duration_days": 185,
+        "turnover": 1.584661438221909,
+        "total_cost": 0.07105232205618454,
+        "gross_pnl": 0.44807157797895464,
+        "cost_to_gross": 0.15857359749678607,
+        "n_drawdown_episodes": 15,
+        "cumulative_return": 0.4379333312826974
+      },
+      "mean_weights": {
+        "AUDUSD": 0.06413403467757582,
+        "COPPER": 0.06413403467757582,
+        "EURJPY": 0.06413403467757582,
+        "EURUSD": 0.06413403467757582,
+        "GBPUSD": 0.06413403467757582,
+        "NDX": 0.06413403467757582,
+        "NKY": 0.06413403467757582,
+        "NZDUSD": 0.06413403467757582,
+        "SPX": 0.06413403467757582,
+        "SX5E": 0.06413403467757582,
+        "USDCAD": 0.06413403467757582,
+        "USDCHF": 0.06413403467757582,
+        "USDJPY": 0.06413403467757582,
+        "WTI": 0.06413403467757582,
+        "XAUUSD": 0.06413403467757582
+      },
+      "weight_concentration_hhi": 0.06169761606036747
+    },
+    "inverse_vol": {
+      "metrics": {
+        "annualized_return": 0.03032437169519886,
+        "annualized_volatility": 0.03893298166783805,
+        "sharpe": 0.7863771467674461,
+        "sortino": 1.052407290212654,
+        "calmar": 0.28488437189416843,
+        "max_drawdown": -0.10644449007004163,
+        "drawdown_duration_days": 483,
+        "turnover": 2.13048458490405,
+        "total_cost": 0.04308219675845949,
+        "gross_pnl": 0.25095516518666006,
+        "cost_to_gross": 0.17167288318777987,
+        "n_drawdown_episodes": 5,
+        "cumulative_return": 0.22472243461907926
+      },
+      "mean_weights": {
+        "AUDUSD": 0.06969085934522454,
+        "COPPER": 0.029212738132286236,
+        "EURJPY": 0.0996267831351669,
+        "EURUSD": 0.10010129166849686,
+        "GBPUSD": 0.08812572124623619,
+        "NDX": 0.03275846194655467,
+        "NKY": 0.035489027366853144,
+        "NZDUSD": 0.0693180716717487,
+        "SPX": 0.044457139578746745,
+        "SX5E": 0.03910340186585603,
+        "USDCAD": 0.1137466865621286,
+        "USDCHF": 0.09284212436151996,
+        "USDJPY": 0.08473197368773858,
+        "WTI": 0.018952509966497354,
+        "XAUUSD": 0.043853729628591305
+      },
+      "weight_concentration_hhi": 0.07508502681324984
+    },
+    "risk_parity": {
+      "metrics": {
+        "annualized_return": 0.018767571654833226,
+        "annualized_volatility": 0.025873832747768805,
+        "sharpe": 0.7311735702445602,
+        "sortino": 0.9532022362441706,
+        "calmar": 0.4233830440533763,
+        "max_drawdown": -0.04432764117135305,
+        "drawdown_duration_days": 322,
+        "turnover": 13.342544290435281,
+        "total_cost": 0.027750962459704855,
+        "gross_pnl": 0.15619996016482993,
+        "cost_to_gross": 0.17766305721474362,
+        "n_drawdown_episodes": 2,
+        "cumulative_return": 0.13447624428326566
+      },
+      "mean_weights": {
+        "AUDUSD": 0.05456080559893008,
+        "COPPER": 0.014477095238553297,
+        "EURJPY": 0.08372911355888818,
+        "EURUSD": 0.06712524709382643,
+        "GBPUSD": 0.05476222822127,
+        "NDX": 0.018574390241541,
+        "NKY": 0.022207260021368812,
+        "NZDUSD": 0.042299883440203495,
+        "SPX": 0.02325496513434249,
+        "SX5E": 0.018235787830026363,
+        "USDCAD": 0.1971455304163472,
+        "USDCHF": 0.17071801416749854,
+        "USDJPY": 0.09824265020984257,
+        "WTI": 0.017471397421313702,
+        "XAUUSD": 0.04063221819739857
+      },
+      "weight_concentration_hhi": 0.10082136628759614
+    }
+  }
+}

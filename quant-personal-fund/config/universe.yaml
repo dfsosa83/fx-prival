@@ -1,0 +1,162 @@
+# Instrument Universe Definition
+# The canonical list of instruments in the research universe.
+# Loaded by core/instruments.py.
+# To add an instrument: add it here AND in data/reference/instrument_master.csv.
+# To remove an instrument: set is_active: false (do not delete — preserve history).
+
+universe:
+  fx:
+    - ticker: EURUSD
+      base_currency: EUR
+      quote_currency: USD
+      pip_value: 0.0001
+      lot_size: 100000
+      tick_size: 0.00001
+      yahoo_ticker: "EURUSD=X"
+      is_active: true
+
+    - ticker: USDJPY
+      base_currency: USD
+      quote_currency: JPY
+      pip_value: 0.01
+      lot_size: 100000
+      tick_size: 0.001
+      yahoo_ticker: "USDJPY=X"
+      is_active: true
+
+    - ticker: GBPUSD
+      base_currency: GBP
+      quote_currency: USD
+      pip_value: 0.0001
+      lot_size: 100000
+      tick_size: 0.00001
+      yahoo_ticker: "GBPUSD=X"
+      is_active: true
+
+    - ticker: AUDUSD
+      base_currency: AUD
+      quote_currency: USD
+      pip_value: 0.0001
+      lot_size: 100000
+      tick_size: 0.00001
+      yahoo_ticker: "AUDUSD=X"
+      is_active: true
+
+    - ticker: USDCAD
+      base_currency: USD
+      quote_currency: CAD
+      pip_value: 0.0001
+      lot_size: 100000
+      tick_size: 0.00001
+      yahoo_ticker: "USDCAD=X"
+      is_active: true
+
+    - ticker: USDCHF
+      base_currency: USD
+      quote_currency: CHF
+      pip_value: 0.0001
+      lot_size: 100000
+      tick_size: 0.00001
+      yahoo_ticker: "USDCHF=X"
+      is_active: true
+
+    - ticker: NZDUSD
+      base_currency: NZD
+      quote_currency: USD
+      pip_value: 0.0001
+      lot_size: 100000
+      tick_size: 0.00001
+      yahoo_ticker: "NZDUSD=X"
+      is_active: true
+
+    - ticker: EURJPY
+      base_currency: EUR
+      quote_currency: JPY
+      pip_value: 0.01
+      lot_size: 100000
+      tick_size: 0.001
+      yahoo_ticker: "EURJPY=X"
+      is_active: true
+
+  equity_index:
+    - ticker: SPX
+      asset_name: "S&P 500"
+      currency: USD
+      tick_size: 0.01
+      yahoo_ticker: "^GSPC"
+      is_active: true
+
+    - ticker: NDX
+      asset_name: "Nasdaq 100"
+      currency: USD
+      tick_size: 0.01
+      yahoo_ticker: "^NDX"
+      is_active: true
+
+    - ticker: SX5E
+      asset_name: "Euro Stoxx 50"
+      currency: EUR
+      tick_size: 0.01
+      yahoo_ticker: "^STOXX50E"
+      is_active: true
+
+    - ticker: NKY
+      asset_name: "Nikkei 225"
+      currency: JPY
+      tick_size: 0.01
+      yahoo_ticker: "^N225"
+      is_active: true
+
+  govt_bond:
+    - ticker: US10Y
+      asset_name: "US 10-Year Treasury"
+      currency: USD
+      tick_size: 0.01
+      yahoo_ticker: "^TNX"
+      data_type: yield
+      notes: "Yield series; requires conversion to bond price proxy"
+      is_active: false
+      deactivation_reason: "EXP-2026-04A: heterogeneous rates/bond leg excluded. ADR-003 proposes future homogeneous solution. Raw data archived."
+
+    - ticker: BUND
+      asset_name: "German Bund 10Y"
+      currency: EUR
+      tick_size: 0.01
+      yahoo_ticker: "IGLT.L"
+      notes: "iShares Euro Govt Bond 7-10yr UCITS ETF. Price returns, not yield."
+      is_active: false
+      deactivation_reason: "EXP-2026-04A: heterogeneous rates/bond leg excluded (ETF proxy). ADR-003 proposes future homogeneous solution. Raw data archived."
+
+    - ticker: JGB
+      asset_name: "Japanese Bond/REIT Proxy"
+      currency: JPY
+      tick_size: 0.01
+      yahoo_ticker: "1343.T"
+      notes: "Japanese ETF proxy (NEXT FUNDS). Price returns."
+      is_active: false
+      deactivation_reason: "EXP-2026-04A: REIT ETF excluded from active universe. Preserved as archived evidence only. Not relabeled."
+
+  commodity:
+    - ticker: XAUUSD
+      asset_name: "Gold"
+      currency: USD
+      tick_size: 0.01
+      yahoo_ticker: "GC=F"
+      notes: "Gold futures front-month"
+      is_active: true
+
+    - ticker: WTI
+      asset_name: "WTI Crude Oil"
+      currency: USD
+      tick_size: 0.01
+      yahoo_ticker: "CL=F"
+      notes: "Crude oil futures front-month"
+      is_active: true
+
+    - ticker: COPPER
+      asset_name: "Copper"
+      currency: USD
+      tick_size: 0.0001
+      yahoo_ticker: "HG=F"
+      notes: "Copper futures front-month"
+      is_active: true

@@ -1,0 +1,4 @@
+symbol,point,digits,last_bar_spread_points,spread_price_units,live_tick_spread_units,live_tick_spread_points,unit_conclusion,bars_sampled,first_bar_utc,last_bar_utc
+XAUUSD,0.01,2,19,0.19,0.19,19,points_price_eq_points_times_point,346,2026-09-21 01:00:00+00:00,2026-09-24 18:15:00+00:00
+EURUSD,0.00001,5,11,0.00011,0.00012,12,points_price_eq_points_times_point,362,2026-09-21 00:00:00+00:00,2026-09-24 18:15:00+00:00
+GBPUSD,0.00001,5,13,0.00013,0.00017,17,points_price_eq_points_times_point,362,2026-09-21 00:00:00+00:00,2026-09-24 18:15:00+00:00

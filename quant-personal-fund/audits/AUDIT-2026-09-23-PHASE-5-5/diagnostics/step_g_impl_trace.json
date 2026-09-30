@@ -1,0 +1,8 @@
+{
+  "gross_exposure_mean": 0.6442126024473276,
+  "cash_residual_mean": 0.3557873975526724,
+  "max_weight_p99": 0.15,
+  "rows_over_cap_0_15": 12,
+  "sign_flip_events": 2503,
+  "rebalance_days_fraction": 0.4440703329592218
+}

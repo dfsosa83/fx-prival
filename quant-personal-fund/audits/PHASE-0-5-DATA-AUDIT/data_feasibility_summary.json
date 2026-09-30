@@ -1,0 +1,52 @@
+{
+  "cells_total": 36,
+  "cells_probed_ok": 36,
+  "cells_error": 0,
+  "envelope_summary": {
+    "XAUUSD": {
+      "first": "2020-02-28 01:00:00",
+      "last": "2026-01-30 23:55:00"
+    },
+    "EURUSD": {
+      "first": "2016-01-04 00:00:00",
+      "last": "2026-01-30 23:55:00"
+    },
+    "GBPUSD": {
+      "first": "2016-01-04 00:00:00",
+      "last": "2026-01-30 23:55:00"
+    },
+    "AUDUSD": {
+      "first": "2016-01-04 00:00:00",
+      "last": "2026-01-30 23:55:00"
+    },
+    "NZDUSD": {
+      "first": "2016-01-04 01:00:00",
+      "last": "2026-01-30 23:55:00"
+    },
+    "USDCAD": {
+      "first": "2016-01-04 01:00:00",
+      "last": "2026-01-30 23:55:00"
+    },
+    "USDCHF": {
+      "first": "2016-01-04 01:00:00",
+      "last": "2026-01-30 23:55:00"
+    },
+    "USDJPY": {
+      "first": "2016-01-04 01:00:00",
+      "last": "2026-01-30 23:55:00"
+    },
+    "EURJPY": {
+      "first": "2016-01-04 00:00:00",
+      "last": "2026-01-30 23:55:00"
+    }
+  },
+  "tick_data": "UNAVAILABLE \u2014 0 ticks returned in 7-day window across all 36 cells (MT5 error -2)",
+  "hist_bid_ask": "UNAVAILABLE via tick API",
+  "bar_spread_field": "present in all 36 cells (bar-level spread, NOT historical bid/ask)",
+  "repeated_query_stable": "all 36 cells stable across two identical queries",
+  "duplicates": "0 in recent window across all cells",
+  "recent_gaps": "7 per FX cell (>1.5x interval, consistent with weekends); XAUUSD cells same order",
+  "maxbars": "value NOT read (terminal inspection would disturb session); copy_rates_range returned data from 2016 (FX) / 2020 (XAUUSD); 2015 probe returned empty \u2014 retention/maxbars limit observed but TERMINAL_MAXBARS exact value unknown",
+  "server_retention_verified": false,
+  "source_origin_note": "All data 'repeated query \u2014 stable' (two identical terminal queries); broker-server retention not independently verified"
+}

@@ -1,0 +1,13 @@
+{
+  "iid_block1": {
+    "mean": 0.006837994588647575,
+    "ci": [
+      -0.07025557283048187,
+      0.09000972529729745
+    ]
+  },
+  "ar1_block1_width": 0.1412002696112673,
+  "ar1_block10_width": 0.23917750210498767,
+  "block_wider_for_autocorrelated": true,
+  "reproducible": true
+}

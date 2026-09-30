@@ -1,0 +1,53 @@
+{
+  "stage": "A1_CONTROLLED_OFFLINE_REPLAY_REPRODUCIBILITY_CHECK_V2",
+  "experiment_id": "QPF-RV-2027-09-A1-OFFLINE-REPLAY-REPRODUCIBILITY-V2",
+  "module_paths": {
+    "runner": "quant-personal-fund/tools/a1_offline_runner/a1_offline_runner.py",
+    "engine": "frival/gold_rules/engine.py",
+    "bias": "frival/gold_rules/bias.py",
+    "levels": "frival/gold_rules/levels.py"
+  },
+  "source_hashes": {
+    "a1_offline_runner.py": "36E80FC2C85B9BE52C762C215AD58397D9CB13F472033F690C2A876171979FA3",
+    "engine.py": "9653AE906D30583493A49A478CA123B6A190AC16B93B3FD4F9A2CCDD4B2357E8",
+    "bias.py": "106999937CFC810C88E58DCCF9476EC63FF998D2CDF08A4BFE43DCD259F8362F",
+    "levels.py": "63442EBBADAF059B816E49F9FDB28D71471CA4E7C5C98C8C3FE997674E0E49D5"
+  },
+  "fixture_hashes": {
+    "XAUUSD_M15.csv": "574A38DC501821106FB5CA32E43F61CEACCEDBC31E281470B70B0D2665D28FBB",
+    "XAUUSD_M30.csv": "9345E3D33DE2391A2FDED8B2BC49FC5DD1F2E071C24B30D195D5D7910A55566F",
+    "XAUUSD_H1.csv": "81E51BBF9C720BBA96E5AB4A5B0C98EE483B14A84D0B8AE57C5526B2170B7521"
+  },
+  "isolation_checks": {
+    "forbidden_import_guard_hits": [],
+    "no_broker_connection": true,
+    "no_mt5_initialization": true,
+    "no_network": true,
+    "no_environment_or_credentials": true,
+    "no_orders_or_virtual_fills": true,
+    "no_pnl": true
+  },
+  "run_1_status": "COMPLETED",
+  "run_2_status": "COMPLETED",
+  "event_record_count_run_1": 807,
+  "event_record_count_run_2": 807,
+  "error_count_run_1": 0,
+  "error_count_run_2": 0,
+  "required_missing_fields": [],
+  "prohibited_fields_present": [],
+  "canonical_record_sha256_run_1": "DC11FF41788E946C9FCB37C66A04184CFC77288F603459CAEAB7E869A0DBBF81",
+  "canonical_record_sha256_run_2": "DC11FF41788E946C9FCB37C66A04184CFC77288F603459CAEAB7E869A0DBBF81",
+  "record_count_equal": true,
+  "key_sets_equal": true,
+  "ordered_records_equal": true,
+  "hashes_equal": true,
+  "temp_cleanup_status": "CLEANED",
+  "decision": "REPLAY_REPRODUCIBILITY_PASS",
+  "failure_reason": null,
+  "prohibition_attestation": {
+    "no_broker_mt5_network": true,
+    "no_orders_or_fills": true,
+    "no_pnl_or_performance": true,
+    "no_repository_modification_except_permitted": true
+  }
+}

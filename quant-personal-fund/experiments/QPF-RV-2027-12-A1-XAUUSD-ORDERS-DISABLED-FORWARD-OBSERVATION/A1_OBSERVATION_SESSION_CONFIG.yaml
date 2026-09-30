@@ -1,0 +1,18 @@
+# A1 XAUUSD orders-disabled forward-observation session configuration.
+# Data source: validated read-only demo feed (bars + tick); no write path exists.
+# All string values intentionally avoid prohibited execution tokens.
+
+mode: OBSERVATION_ONLY
+session_id: a1_xauusd_observ_20260930
+instrument: XAUUSD
+timeframes: [H1, M30, M15]
+feed: demo_readonly_read_only_bars_and_tick
+evaluation_trigger: caller_supplied
+pending_entry_expiry_bars: 3
+warmup_m15: 100
+bar_fetch_counts:
+  H1: 600
+  M30: 600
+  M15: 900
+min_calendar_days: 30
+min_completed_cycles: 50

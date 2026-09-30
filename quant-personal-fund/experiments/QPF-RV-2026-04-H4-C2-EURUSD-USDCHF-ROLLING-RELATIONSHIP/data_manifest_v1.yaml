@@ -1,0 +1,66 @@
+# Data Manifest V1 — H4-C2 EURUSD/USDCHF internal-clock snapshot
+manifest:
+  manifest_id: "QPF-RV-2026-04-H4-C2-DATA-MANIFEST-V1"
+  experiment_id: "QPF-RV-2026-04-H4-C2-EURUSD-USDCHF-ROLLING-RELATIONSHIP"
+  parent_design_id: "QPF-RV-2026-03-H4-ROLLING-RELATIONSHIP-STABILITY"
+  candidate_id: "C2"
+  orientation: "log(EURUSD) on log(USDCHF)"
+  created_by_stage: "H4_C2_IMMUTABLE_SNAPSHOT_FREEZE"
+  created: "2026-09-29"
+
+sources:
+  - instrument: "EURUSD"
+    role: "dependent"
+    path: "ml-signal-service/data/raw/mt5/H1/EURUSD_H1.csv"
+    sha256: "8161B866D6CFE233B5361A51DE09ACFE9E9B8926D400EE09751DA8E65CA6550B"
+    schema: ["open", "high", "low", "close", "volume", "datetime"]
+    rows: 48186
+    label_range: ["2019-01-02 00:00:00", "2026-09-29 21:00:00"]
+  - instrument: "USDCHF"
+    role: "hedge"
+    path: "ml-signal-service/data/raw/mt5/H1/USDCHF_H1.csv"
+    sha256: "A25CBF3D0BF96C0A16FF41E9B157BBFFB1F94D8F268A16E5DD797D98F7134DFB"
+    schema: ["open", "high", "low", "close", "volume", "datetime"]
+    rows: 48191
+    label_range: ["2019-01-02 00:00:00", "2026-09-29 21:00:00"]
+
+intersection:
+  count: 48186
+  unmatched_eurusd_only: 0
+  unmatched_usdchf_only: 5
+  exclusion_rule: "exclude exactly the maximum common label"
+  excluded_max_common_label: "2026-09-29 21:00:00"
+  exclusion_count: 1
+
+snapshot:
+  path: "eurusd_usdchf_h1_internal_snapshot_v1.csv"
+  sha256: "67590790F8BF0E20A707792D8DE85077C6D1067BD45035B05744D5D235E1DBF6"
+  sha256_file: "eurusd_usdchf_h1_internal_snapshot_v1.sha256"
+  columns: ["internal_index_k", "timestamp_label_internal", "eurusd_close", "usdchf_close"]
+  rows: 48185
+  first_label: "2019-01-02 00:00:00"
+  last_retained_label: "2026-09-29 20:00:00"
+  header_comment: "# INTERNAL_CLOCK_ONLY; NOT_UTC; STRICT_INTERSECTION; EXCLUDE_MAX_COMMON_LABEL; NO_COSTS; NO_TRADING_USE"
+  internal_clock: "NOT_UTC"
+
+integrity:
+  no_imputation_interpolation_resampling_transformation: true
+  no_external_joins: true
+
+verification:
+  state: "SNAPSHOT_FROZEN_PENDING_H4_C2_SCREEN"
+
+governance:
+  H4_C2_SCREEN: "NOT_RUN"
+  market_statistics_or_economic_results: false
+  trading_outputs: false
+
+references:
+  - "experiment.yaml"
+  - "H4_C2_DESIGN_BINDING.md"
+  - "H4_C2_DATA_AUDIT.md"
+  - "H4_C2_SNAPSHOT_FREEZE_REPORT.md"
+  - "H4_C2_SNAPSHOT_FREEZE_DECISION.md"
+  - "freeze_h4_c2_snapshot.py"
+  - "eurusd_usdchf_h1_internal_snapshot_v1.csv"
+  - "eurusd_usdchf_h1_internal_snapshot_v1.sha256"

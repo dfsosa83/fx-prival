@@ -1,0 +1,364 @@
+inventory_scope:
+  stage: "EXISTING_SIGNAL_AND_BOT_EVIDENCE_INVENTORY"
+  mode: "read_only"
+  date: "2026-09-30"
+  areas:
+    - "frival/gold_rules"
+    - "frival/execution_bot"
+    - "frival/agents"
+    - "frival/model"
+    - "frival/fx_rules_backtest"
+    - "frival/output"
+    - "frival/main.py"
+    - "frival/signal_gate.py"
+    - "frival/run_daily_scheduler.py"
+    - "ml-signal-service/notebooks"
+    - "ml-signal-service/models_bin"
+    - "ml-signal-service/steps"
+    - "ml-signal-service/docs"
+    - "quant-personal-fund/research_control"
+    - "quant-personal-fund/experiments"
+    - "quant-personal-fund/signals"
+    - "quant-personal-fund/core"
+    - "quant-personal-fund/portfolio"
+    - "quant-personal-fund/risk"
+    - "quant-personal-fund/backtest"
+    - "quant-personal-fund/execution"
+  code_or_tests_executed: false
+  market_data_analyzed: false
+
+assets:
+  - id: "A1"
+    name: "GOLD_RULES_ENGINE"
+    category: "IMPLEMENTED_SIGNAL_RULE"
+    instrument: "XAUUSD"
+    timeframe: "M15/M30/H1"
+    deterministic_rule: true
+    uses_ml_or_llm: false
+    entry_behavior: "break-and-retest market entry at retest confirmation; separate breakout-continuation trigger"
+    pending_entry_behavior: "WAIT_CANDLE_CLOSE retest window with pending_retest_max_bars_m15 timeout"
+    expiration_behavior: "retest/confirm timeouts drop the setup back to WATCH_ZONE"
+    stop_target_risk: "SL beyond invalidation with ATR buffer; TP = nearest structural level; gates R:R>=1.5, <=$25 risk, <=1 position, -$50/day"
+    execution_isolated: "reuses execution_bot adapter; login guard; --dry log-only mode"
+    uses_mt5_or_network: true
+    local_logs_or_fixtures: true
+    replayable_from_local: "partial (fixtures + fx_rules_backtest CSVs)"
+    forward_demo_required: true
+    evidence:
+      - "frival/gold_rules/engine.py"
+      - "frival/gold_rules/bias.py"
+      - "frival/gold_rules/levels.py"
+      - "frival/gold_rules/run_gold_rules.py"
+      - "frival/gold_rules/config.yaml"
+      - "frival/gold_rules/journal/"
+      - "frival/gold_rules/state/engine_state.json"
+      - "frival/gold_rules/tests/"
+      - "ml-signal-service/docs/experiments/EXP-2026-03-RULEENGINE_gold-rules-engine-design.md"
+    unknowns:
+      - "current trading.mode in gold config template not read here"
+      - "running process code revision unknown"
+      - "full-history M15/M30 beyond fixtures unverified"
+  - id: "A2"
+    name: "FX_SIGNAL_PIPELINE"
+    category: "SIGNAL_ORCHESTRATOR"
+    instrument: "EURUSD;GBPUSD;USDCHF;USDCAD;EURUSD_AGNOSTIC(shadow)"
+    timeframe: "H1"
+    deterministic_rule: false
+    uses_ml_or_llm: true
+    entry_behavior: "signal emission only (FIRED/SHELVED); no order call in main.py"
+    pending_entry_behavior: "none at signal stage"
+    expiration_behavior: "none at signal stage"
+    stop_target_risk: "trade.entry/entry_zone/stop_loss/take_profit emitted per signal"
+    execution_isolated: "signals only"
+    uses_mt5_or_network: true
+    local_logs_or_fixtures: true
+    replayable_from_local: "no (LLM API dependency)"
+    forward_demo_required: true
+    evidence:
+      - "frival/main.py"
+      - "frival/signal_gate.py"
+      - "frival/agents/"
+      - "frival/agents/prompts/"
+      - "frival/model/ensemble.py"
+      - "frival/run_daily_scheduler.py"
+      - "frival/output/signals/"
+    unknowns:
+      - "current LLM model/endpoint config not read here"
+  - id: "A3"
+    name: "EXEC_D1_TERMINAL"
+    category: "PENDING_ENTRY_LIFECYCLE"
+    secondary_category: "EXECUTION_ADAPTER"
+    instrument: "configurable"
+    timeframe: "H1"
+    deterministic_rule: true
+    uses_ml_or_llm: false
+    entry_behavior: "MARKET_FILLED (in-zone/reanchor) or PENDING_TRIGGERED on touch"
+    pending_entry_behavior: "ENTRY_PENDING with trigger level and quote watermark"
+    expiration_behavior: "ENTRY_VALIDITY_SECONDS=600; EXPIRED_UNFILLED on no touch"
+    stop_target_risk: "SL/TP carried on VIRTUAL_OPEN; per-pair lot, daily cap, one position per pair"
+    execution_isolated: true
+    uses_mt5_or_network: true
+    local_logs_or_fixtures: true
+    replayable_from_local: "partial (lifecycle mechanics replayable from event log)"
+    forward_demo_required: true
+    evidence:
+      - "frival/execution_bot/run_exec_d1_terminal.py"
+      - "frival/execution_bot/core/exec_d1_terminal.py"
+      - "frival/execution_bot/core/lifecycle.py"
+      - "frival/execution_bot/core/lifecycle_store.py"
+      - "frival/execution_bot/data/exec_d1_runtime/"
+      - "frival/execution_bot/tests/test_exec_delta1.py"
+      - "frival/execution_bot/tests/test_exec_d1_terminal.py"
+    unknowns:
+      - "current entry_semantics value in live settings template not read here"
+  - id: "A4"
+    name: "LEGACY_ORDER_BOT"
+    category: "DEMO_OR_PAPER_COMPONENT"
+    instrument: "configurable"
+    timeframe: "H1"
+    deterministic_rule: true
+    uses_ml_or_llm: false
+    entry_behavior: "consumes A2 signals; demo simulated fill when is_demo_mode()"
+    pending_entry_behavior: "none"
+    expiration_behavior: "none"
+    stop_target_risk: "order_manager demo branch; demo_ledger virtual positions"
+    execution_isolated: "partial (demo branch; delegated when execution.enabled)"
+    uses_mt5_or_network: true
+    local_logs_or_fixtures: true
+    replayable_from_local: "no (consumer, not a distinct rule)"
+    forward_demo_required: true
+    evidence:
+      - "frival/execution_bot/order_bot.py"
+      - "frival/execution_bot/core/order_manager.py"
+      - "frival/execution_bot/core/demo_ledger.py"
+      - "frival/execution_bot/core/broker_constraints.py"
+    unknowns: []
+  - id: "A5"
+    name: "GOLD_TESTS_FIXTURES"
+    category: "TEST_FIXTURE_OR_TEST_EVIDENCE"
+    instrument: "XAUUSD"
+    timeframe: "M15/M30/H1"
+    deterministic_rule: true
+    uses_ml_or_llm: false
+    entry_behavior: "n/a"
+    pending_entry_behavior: "n/a"
+    expiration_behavior: "n/a"
+    stop_target_risk: "n/a"
+    execution_isolated: true
+    uses_mt5_or_network: false
+    local_logs_or_fixtures: true
+    replayable_from_local: true
+    forward_demo_required: false
+    evidence:
+      - "frival/gold_rules/tests/test_rules.py"
+      - "frival/gold_rules/tests/test_engine.py"
+      - "frival/gold_rules/tests/test_breakout.py"
+      - "frival/gold_rules/tests/test_demo_pnl.py"
+      - "frival/gold_rules/tests/sanity_walk.py"
+      - "frival/gold_rules/tests/fixtures/XAUUSD_M15.csv"
+      - "frival/gold_rules/tests/fixtures/XAUUSD_M30.csv"
+      - "frival/gold_rules/tests/fixtures/XAUUSD_H1.csv"
+    unknowns: []
+  - id: "A6"
+    name: "ML_LLM_ARTIFACTS"
+    category: "ML_LLM_COMPONENT"
+    instrument: "multiple"
+    timeframe: "H1/S/D"
+    deterministic_rule: false
+    uses_ml_or_llm: true
+    entry_behavior: "n/a"
+    pending_entry_behavior: "n/a"
+    expiration_behavior: "n/a"
+    stop_target_risk: "n/a"
+    execution_isolated: true
+    uses_mt5_or_network: true
+    local_logs_or_fixtures: true
+    replayable_from_local: "no (rejected families)"
+    forward_demo_required: false
+    evidence:
+      - "ml-signal-service/notebooks/"
+      - "ml-signal-service/models_bin/"
+      - "ml-signal-service/steps/"
+      - "ml-signal-service/experiments/"
+    unknowns: []
+  - id: "A7"
+    name: "HISTORICAL_LOGS_REPORTS"
+    category: "HISTORICAL_LOG_OR_REPORT"
+    instrument: "FX;XAUUSD"
+    timeframe: "H1/M15"
+    deterministic_rule: false
+    uses_ml_or_llm: false
+    entry_behavior: "n/a"
+    pending_entry_behavior: "n/a"
+    expiration_behavior: "n/a"
+    stop_target_risk: "n/a"
+    execution_isolated: true
+    uses_mt5_or_network: false
+    local_logs_or_fixtures: true
+    replayable_from_local: true
+    forward_demo_required: false
+    evidence:
+      - "frival/output/logs/"
+      - "frival/output/signals/"
+      - "frival/output/reports/"
+      - "frival/execution_bot/data/exec_d1_runtime/"
+      - "frival/execution_bot/data/demo_trades_ledger.jsonl"
+      - "frival/gold_rules/journal/"
+      - "frival/execution_bot/reports/"
+    unknowns: []
+  - id: "A8"
+    name: "FX_RULES_BACKTEST"
+    category: "SIMULATOR_OR_REPLAY_COMPONENT"
+    instrument: "EURUSD;GBPUSD;USDCAD;USDJPY"
+    timeframe: "M15/M30/H1"
+    deterministic_rule: true
+    uses_ml_or_llm: false
+    entry_behavior: "simulated entries from the unmodified A1 engine"
+    pending_entry_behavior: "inherits A1 engine state machine"
+    expiration_behavior: "inherits A1 engine timeouts"
+    stop_target_risk: "simulated SL/TP/invalidation lifecycle"
+    execution_isolated: true
+    uses_mt5_or_network: false
+    local_logs_or_fixtures: true
+    replayable_from_local: true
+    forward_demo_required: false
+    evidence:
+      - "frival/fx_rules_backtest/run_backtest.py"
+      - "frival/fx_rules_backtest/acquire_data.py"
+      - "frival/fx_rules_backtest/data/"
+      - "frival/fx_rules_backtest/results/"
+    unknowns:
+      - "data acquisition script external dependency (not required for replay)"
+  - id: "A9"
+    name: "DEMO_LEDGER"
+    category: "DEMO_OR_PAPER_COMPONENT"
+    instrument: "FX;XAUUSD"
+    timeframe: "n/a"
+    deterministic_rule: true
+    uses_ml_or_llm: false
+    entry_behavior: "virtual open on simulated fill"
+    pending_entry_behavior: "n/a"
+    expiration_behavior: "SL/TP/timeout close"
+    stop_target_risk: "records realized_usd and R per virtual trade"
+    execution_isolated: true
+    uses_mt5_or_network: false
+    local_logs_or_fixtures: true
+    replayable_from_local: true
+    forward_demo_required: false
+    evidence:
+      - "frival/execution_bot/core/demo_ledger.py"
+      - "frival/execution_bot/data/demo_trades_ledger.jsonl"
+      - "frival/execution_bot/tests/test_demo_ledger.py"
+    unknowns: []
+  - id: "A10"
+    name: "GOLD_RULES_DESIGN_DOC"
+    category: "DOCUMENTATION_ONLY"
+    instrument: "XAUUSD"
+    timeframe: "M15/M30/H1"
+    deterministic_rule: true
+    uses_ml_or_llm: false
+    entry_behavior: "specified in document"
+    pending_entry_behavior: "specified in document"
+    expiration_behavior: "specified in document"
+    stop_target_risk: "specified in document"
+    execution_isolated: true
+    uses_mt5_or_network: false
+    local_logs_or_fixtures: false
+    replayable_from_local: false
+    forward_demo_required: false
+    evidence:
+      - "ml-signal-service/docs/experiments/EXP-2026-03-RULEENGINE_gold-rules-engine-design.md"
+    unknowns: []
+  - id: "A11"
+    name: "QPF_PLATFORM_LIBRARY"
+    category: "UNKNOWN_OR_INCOMPLETE"
+    instrument: "multi-asset"
+    timeframe: "mixed"
+    deterministic_rule: "partial"
+    uses_ml_or_llm: false
+    entry_behavior: "unspecified (platform scaffolding)"
+    pending_entry_behavior: "unspecified"
+    expiration_behavior: "unspecified"
+    stop_target_risk: "portfolio/risk modules exist; not a concrete trading rule"
+    execution_isolated: true
+    uses_mt5_or_network: false
+    local_logs_or_fixtures: false
+    replayable_from_local: false
+    forward_demo_required: false
+    evidence:
+      - "quant-personal-fund/signals/"
+      - "quant-personal-fund/core/"
+      - "quant-personal-fund/backtest/"
+      - "quant-personal-fund/portfolio/"
+      - "quant-personal-fund/risk/"
+      - "quant-personal-fund/execution/"
+      - "quant-personal-fund/monitoring/"
+      - "quant-personal-fund/docs/no_edge_map.md"
+    unknowns:
+      - "phases 2-6 planned/incomplete"
+
+signal_lifecycle:
+  supported_by: "A3"
+  stages:
+    - "SIGNAL_RECEIVED"
+    - "ENTRY_PENDING"
+    - "MARKET_FILLED"
+    - "PENDING_TRIGGERED"
+    - "VIRTUAL_OPEN"
+    - "CLOSED_TP"
+    - "CLOSED_SL"
+    - "CLOSED_TIMEOUT"
+    - "EXPIRED_UNFILLED"
+    - "NO_VALID_PENDING"
+    - "EXTERNAL_STATE_CONFLICT"
+  pending_entry_supported: true
+  expiry_window_confirmed_in_code: true
+  expiry_window_note: "ENTRY_VALIDITY_SECONDS=600 (about 10 minutes); EXPIRED_UNFILLED when no touch"
+  risk_handling: "CLOSED_TP/CLOSED_SL/CLOSED_TIMEOUT; EXTERNAL_STATE_CONFLICT excluded from paper metrics"
+  evidence:
+    - "frival/execution_bot/core/lifecycle.py"
+    - "frival/execution_bot/core/exec_d1_terminal.py"
+    - "frival/execution_bot/core/lifecycle_store.py"
+
+evidence_summary:
+  local_signal_journal: true
+  local_runtime_event_log: true
+  local_gold_journal: true
+  local_test_fixtures: true
+  local_replay_harness: true
+  local_demo_ledger: true
+  local_reports: true
+  forward_demo_required_for_full_measurement: true
+
+readiness_summary:
+  - id: "A1"
+    classification: "READY_FOR_FORWARD_DEMO_DESIGN"
+  - id: "A3"
+    classification: "READY_FOR_FORWARD_DEMO_DESIGN"
+  - id: "A8"
+    classification: "READY_FOR_OFFLINE_REPLAY_DESIGN"
+  - id: "A2"
+    classification: "NOT_A_CANDIDATE"
+  - id: "A4"
+    classification: "NOT_A_CANDIDATE"
+  - id: "A5"
+    classification: "NOT_A_CANDIDATE"
+  - id: "A6"
+    classification: "NOT_A_CANDIDATE"
+  - id: "A7"
+    classification: "NOT_A_CANDIDATE"
+  - id: "A9"
+    classification: "NOT_A_CANDIDATE"
+  - id: "A10"
+    classification: "NOT_A_CANDIDATE"
+  - id: "A11"
+    classification: "NOT_A_CANDIDATE"
+
+blockers:
+  - "A1: current trading.mode not read here; running-process revision unknown; full M15/M30 history beyond fixtures unverified"
+  - "A1/A3: forward measurement needs an explicit pre-declared measurement/logging plan and demo-only isolation confirmation"
+  - "A2: external LLM API dependency; signal quality historically rejected"
+  - "A4: demo virtual fills are paper, not broker fills; consumer of A2 signals"
+  - "A8: harness replays A1 engine on FX; transfer edge reported not to hold (EXP-2026-04)"
+  - "A11: platform phases 2-6 planned/incomplete; execution and monitoring placeholders"
+  - "No performance/PnL computed; no profitability or production-readiness claim"

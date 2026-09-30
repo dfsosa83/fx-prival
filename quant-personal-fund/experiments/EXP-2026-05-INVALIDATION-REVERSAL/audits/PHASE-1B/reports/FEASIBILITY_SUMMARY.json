@@ -1,0 +1,44 @@
+{
+  "development": {
+    "m15_bars": 90718,
+    "h1_bars": 22692,
+    "total_episodes": 2650,
+    "reason_distribution": {
+      "other_pre_registered": 710,
+      "no_c1": 1255,
+      "conservative_observed_window_exclusion_not_broker_confirmed": 324,
+      "rollover_ineligible": 38,
+      "c1_triggered": 323
+    },
+    "excluded_count": 1034,
+    "non_excluded_denominator_episodes": 1616,
+    "c1_triggered": 323,
+    "no_c1": 1255,
+    "rollover_ineligible": 38,
+    "session_exclusion": 324
+  },
+  "research_grade_oos": {
+    "m15_bars": 64442,
+    "h1_bars": 16122,
+    "total_episodes": 2579,
+    "reason_distribution": {
+      "no_c1": 1154,
+      "conservative_observed_window_exclusion_not_broker_confirmed": 283,
+      "c1_triggered": 339,
+      "other_pre_registered": 773,
+      "rollover_ineligible": 30
+    },
+    "excluded_count": 1056,
+    "non_excluded_denominator_episodes": 1523,
+    "c1_triggered": 339,
+    "no_c1": 1154,
+    "rollover_ineligible": 30,
+    "session_exclusion": 283
+  },
+  "_feasibility_verdict": {
+    "verdict": "GO (sample sufficient for feasibility)",
+    "dev_non_excluded_episodes": 1616,
+    "oos_non_excluded_episodes": 1523,
+    "note": "Feasibility verdict ONLY \u2014 no performance scoring performed."
+  }
+}

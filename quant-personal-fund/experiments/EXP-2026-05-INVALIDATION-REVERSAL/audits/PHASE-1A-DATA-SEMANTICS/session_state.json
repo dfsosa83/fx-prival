@@ -1,0 +1,22 @@
+{
+  "before": {
+    "login": 7409623,
+    "server": "FPMarketsSC-Demo",
+    "currency": "USD",
+    "balance": 5000.05,
+    "equity": 5000.05,
+    "n_positions": 0,
+    "n_orders": 0,
+    "utc_now": "2026-09-24T18:22:19.963707+00:00"
+  },
+  "after": {
+    "login": 7409623,
+    "server": "FPMarketsSC-Demo",
+    "currency": "USD",
+    "balance": 5000.05,
+    "equity": 5000.05,
+    "n_positions": 0,
+    "n_orders": 0,
+    "utc_now": "2026-09-24T18:22:20.013817+00:00"
+  }
+}

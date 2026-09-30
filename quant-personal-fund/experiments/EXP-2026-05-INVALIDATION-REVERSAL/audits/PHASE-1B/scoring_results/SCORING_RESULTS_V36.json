@@ -1,0 +1,533 @@
+{
+  "prior_scoring": "INVALID \u2014 short-stop condition defect",
+  "scenarios": {
+    "base": {
+      "windows": {
+        "development": {
+          "n_eligible_denominator": 1863,
+          "c1_triggered": 359,
+          "no_c1": 1462,
+          "rollover_ineligible": 42,
+          "mean_delta_R": 0.03217854064768839,
+          "median_delta_R": 0.0,
+          "pct_positive": 9.07139023081052,
+          "avg_positive_delta_R": 1.1530029183730137,
+          "avg_negative_delta_R": -0.7100466946231359,
+          "profit_factor_diagnostic": 1.444363816460074,
+          "c1_exit_types": {
+            "time_exit_12bars": 282,
+            "stop_or_forced_lt12": 77,
+            "hold_bars_dist": {
+              "12.0": 282,
+              "3.0": 20,
+              "9.0": 10,
+              "8.0": 10,
+              "1.0": 7,
+              "6.0": 7
+            }
+          },
+          "bootstrap_6h": {
+            "block_hours": 6,
+            "n_blocks": 865,
+            "n_episodes": 1863,
+            "observed_mean_delta_R": 0.03217854064768839,
+            "ci_lower": 6.067953500737694e-05,
+            "ci_upper": 0.0633072032624258,
+            "prob_mean_delta_R_gt_0": 0.9753,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_3h": {
+            "block_hours": 3,
+            "n_blocks": 1039,
+            "n_episodes": 1863,
+            "observed_mean_delta_R": 0.03217854064768839,
+            "ci_lower": 0.002070090448563915,
+            "ci_upper": 0.060643776954008764,
+            "prob_mean_delta_R_gt_0": 0.9822,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_12h": {
+            "block_hours": 12,
+            "n_blocks": 691,
+            "n_episodes": 1863,
+            "observed_mean_delta_R": 0.03217854064768839,
+            "ci_lower": -0.003830685944460437,
+            "ci_upper": 0.06633029952910677,
+            "prob_mean_delta_R_gt_0": 0.9595,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "iid_diagnostic_only": {
+            "n": 1863,
+            "mean": 0.03217854064768839,
+            "t_stat": 2.234633528485845,
+            "p_value": 0.025559647522378676,
+            "label": "DIAGNOSTIC ONLY \u2014 not primary inference"
+          }
+        },
+        "research_grade_oos": {
+          "n_eligible_denominator": 1692,
+          "c1_triggered": 382,
+          "no_c1": 1270,
+          "rollover_ineligible": 40,
+          "mean_delta_R": -0.02084715878444334,
+          "median_delta_R": 0.0,
+          "pct_positive": 9.160756501182032,
+          "avg_positive_delta_R": 0.7453612642097627,
+          "avg_negative_delta_R": -0.6643365137259531,
+          "profit_factor_diagnostic": 0.7660983676466793,
+          "c1_exit_types": {
+            "time_exit_12bars": 297,
+            "stop_or_forced_lt12": 85,
+            "hold_bars_dist": {
+              "12.0": 297,
+              "2.0": 24,
+              "3.0": 14,
+              "5.0": 11,
+              "8.0": 9,
+              "1.0": 9
+            }
+          },
+          "bootstrap_6h": {
+            "block_hours": 6,
+            "n_blocks": 709,
+            "n_episodes": 1692,
+            "observed_mean_delta_R": -0.02084715878444334,
+            "ci_lower": -0.04986360224225073,
+            "ci_upper": 0.007433733745137038,
+            "prob_mean_delta_R_gt_0": 0.0828,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_3h": {
+            "block_hours": 3,
+            "n_blocks": 866,
+            "n_episodes": 1692,
+            "observed_mean_delta_R": -0.02084715878444334,
+            "ci_lower": -0.04672776195811179,
+            "ci_upper": 0.004765675393197077,
+            "prob_mean_delta_R_gt_0": 0.0572,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_12h": {
+            "block_hours": 12,
+            "n_blocks": 531,
+            "n_episodes": 1692,
+            "observed_mean_delta_R": -0.02084715878444334,
+            "ci_lower": -0.05136600224564317,
+            "ci_upper": 0.009487320534517498,
+            "prob_mean_delta_R_gt_0": 0.0918,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "iid_diagnostic_only": {
+            "n": 1692,
+            "mean": -0.02084715878444334,
+            "t_stat": -1.9298236373303266,
+            "p_value": 0.05379578814040938,
+            "label": "DIAGNOSTIC ONLY \u2014 not primary inference"
+          }
+        }
+      }
+    },
+    "2x_spread": {
+      "windows": {
+        "development": {
+          "n_eligible_denominator": 1863,
+          "c1_triggered": 359,
+          "no_c1": 1462,
+          "rollover_ineligible": 42,
+          "mean_delta_R": 0.029496387969938014,
+          "median_delta_R": 0.0,
+          "pct_positive": 9.07139023081052,
+          "avg_positive_delta_R": 1.1414983770858733,
+          "avg_negative_delta_R": -0.7261129207343056,
+          "profit_factor_diagnostic": 1.398312491065604,
+          "c1_exit_types": {
+            "time_exit_12bars": 282,
+            "stop_or_forced_lt12": 77,
+            "hold_bars_dist": {
+              "12.0": 282,
+              "3.0": 20,
+              "9.0": 10,
+              "8.0": 10,
+              "1.0": 7,
+              "6.0": 7
+            }
+          },
+          "bootstrap_6h": {
+            "block_hours": 6,
+            "n_blocks": 865,
+            "n_episodes": 1863,
+            "observed_mean_delta_R": 0.029496387969938014,
+            "ci_lower": -0.0027385709025871687,
+            "ci_upper": 0.060648077192550255,
+            "prob_mean_delta_R_gt_0": 0.9657,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_3h": {
+            "block_hours": 3,
+            "n_blocks": 1039,
+            "n_episodes": 1863,
+            "observed_mean_delta_R": 0.029496387969938014,
+            "ci_lower": -0.0006369680977057708,
+            "ci_upper": 0.05801820699747532,
+            "prob_mean_delta_R_gt_0": 0.9727,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_12h": {
+            "block_hours": 12,
+            "n_blocks": 691,
+            "n_episodes": 1863,
+            "observed_mean_delta_R": 0.029496387969938014,
+            "ci_lower": -0.006586068900276169,
+            "ci_upper": 0.06383128809923398,
+            "prob_mean_delta_R_gt_0": 0.9451,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "iid_diagnostic_only": {
+            "n": 1863,
+            "mean": 0.029496387969938014,
+            "t_stat": 2.0457303950938535,
+            "p_value": 0.04092314352842929,
+            "label": "DIAGNOSTIC ONLY \u2014 not primary inference"
+          }
+        },
+        "research_grade_oos": {
+          "n_eligible_denominator": 1692,
+          "c1_triggered": 382,
+          "no_c1": 1270,
+          "rollover_ineligible": 40,
+          "mean_delta_R": -0.02307757729718981,
+          "median_delta_R": 0.0,
+          "pct_positive": 8.80614657210402,
+          "avg_positive_delta_R": 0.7668017909795918,
+          "avg_negative_delta_R": -0.6607789984603636,
+          "profit_factor_diagnostic": 0.7452897883314256,
+          "c1_exit_types": {
+            "time_exit_12bars": 297,
+            "stop_or_forced_lt12": 85,
+            "hold_bars_dist": {
+              "12.0": 297,
+              "2.0": 24,
+              "3.0": 14,
+              "5.0": 11,
+              "8.0": 9,
+              "1.0": 9
+            }
+          },
+          "bootstrap_6h": {
+            "block_hours": 6,
+            "n_blocks": 709,
+            "n_episodes": 1692,
+            "observed_mean_delta_R": -0.02307757729718981,
+            "ci_lower": -0.052062767538175014,
+            "ci_upper": 0.005331475893288955,
+            "prob_mean_delta_R_gt_0": 0.0616,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_3h": {
+            "block_hours": 3,
+            "n_blocks": 866,
+            "n_episodes": 1692,
+            "observed_mean_delta_R": -0.02307757729718981,
+            "ci_lower": -0.04902669675583989,
+            "ci_upper": 0.0026356265545893287,
+            "prob_mean_delta_R_gt_0": 0.0403,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_12h": {
+            "block_hours": 12,
+            "n_blocks": 531,
+            "n_episodes": 1692,
+            "observed_mean_delta_R": -0.02307757729718981,
+            "ci_lower": -0.05373079009569826,
+            "ci_upper": 0.00743618526292103,
+            "prob_mean_delta_R_gt_0": 0.0715,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "iid_diagnostic_only": {
+            "n": 1692,
+            "mean": -0.02307757729718981,
+            "t_stat": -2.1312459917357383,
+            "p_value": 0.03321274139541233,
+            "label": "DIAGNOSTIC ONLY \u2014 not primary inference"
+          }
+        }
+      }
+    },
+    "2x_slippage": {
+      "windows": {
+        "development": {
+          "n_eligible_denominator": 1863,
+          "c1_triggered": 359,
+          "no_c1": 1462,
+          "rollover_ineligible": 42,
+          "mean_delta_R": 0.03083746430881982,
+          "median_delta_R": 0.0,
+          "pct_positive": 9.07139023081052,
+          "avg_positive_delta_R": 1.1472506477294744,
+          "avg_negative_delta_R": -0.7180798076786835,
+          "profit_factor_diagnostic": 1.4210805671414521,
+          "c1_exit_types": {
+            "time_exit_12bars": 282,
+            "stop_or_forced_lt12": 77,
+            "hold_bars_dist": {
+              "12.0": 282,
+              "3.0": 20,
+              "9.0": 10,
+              "8.0": 10,
+              "1.0": 7,
+              "6.0": 7
+            }
+          },
+          "bootstrap_6h": {
+            "block_hours": 6,
+            "n_blocks": 865,
+            "n_episodes": 1863,
+            "observed_mean_delta_R": 0.03083746430881982,
+            "ci_lower": -0.0013603486746573688,
+            "ci_upper": 0.06197076705378583,
+            "prob_mean_delta_R_gt_0": 0.9703,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_3h": {
+            "block_hours": 3,
+            "n_blocks": 1039,
+            "n_episodes": 1863,
+            "observed_mean_delta_R": 0.03083746430881982,
+            "ci_lower": 0.0007456547889299965,
+            "ci_upper": 0.0593470105188025,
+            "prob_mean_delta_R_gt_0": 0.9771,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_12h": {
+            "block_hours": 12,
+            "n_blocks": 691,
+            "n_episodes": 1863,
+            "observed_mean_delta_R": 0.03083746430881982,
+            "ci_lower": -0.0051898749500104546,
+            "ci_upper": 0.06512795401253783,
+            "prob_mean_delta_R_gt_0": 0.952,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "iid_diagnostic_only": {
+            "n": 1863,
+            "mean": 0.03083746430881982,
+            "t_stat": 2.1401674899631873,
+            "p_value": 0.03247083334710199,
+            "label": "DIAGNOSTIC ONLY \u2014 not primary inference"
+          }
+        },
+        "research_grade_oos": {
+          "n_eligible_denominator": 1692,
+          "c1_triggered": 382,
+          "no_c1": 1270,
+          "rollover_ineligible": 40,
+          "mean_delta_R": -0.02196236804081825,
+          "median_delta_R": 0.0,
+          "pct_positive": 9.160756501182032,
+          "avg_positive_delta_R": 0.7411783602345108,
+          "avg_negative_delta_R": -0.6697928306670204,
+          "profit_factor_diagnostic": 0.7555932635422885,
+          "c1_exit_types": {
+            "time_exit_12bars": 297,
+            "stop_or_forced_lt12": 85,
+            "hold_bars_dist": {
+              "12.0": 297,
+              "2.0": 24,
+              "3.0": 14,
+              "5.0": 11,
+              "8.0": 9,
+              "1.0": 9
+            }
+          },
+          "bootstrap_6h": {
+            "block_hours": 6,
+            "n_blocks": 709,
+            "n_episodes": 1692,
+            "observed_mean_delta_R": -0.02196236804081825,
+            "ci_lower": -0.050943227911968536,
+            "ci_upper": 0.006373141429327186,
+            "prob_mean_delta_R_gt_0": 0.0725,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_3h": {
+            "block_hours": 3,
+            "n_blocks": 866,
+            "n_episodes": 1692,
+            "observed_mean_delta_R": -0.02196236804081825,
+            "ci_lower": -0.04793398135977592,
+            "ci_upper": 0.0036941901953236557,
+            "prob_mean_delta_R_gt_0": 0.0482,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_12h": {
+            "block_hours": 12,
+            "n_blocks": 531,
+            "n_episodes": 1692,
+            "observed_mean_delta_R": -0.02196236804081825,
+            "ci_lower": -0.05251184889217961,
+            "ci_upper": 0.008496502337294617,
+            "prob_mean_delta_R_gt_0": 0.0803,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "iid_diagnostic_only": {
+            "n": 1692,
+            "mean": -0.02196236804081825,
+            "t_stat": -2.030689350494257,
+            "p_value": 0.04244270789551002,
+            "label": "DIAGNOSTIC ONLY \u2014 not primary inference"
+          }
+        }
+      }
+    },
+    "combined": {
+      "windows": {
+        "development": {
+          "n_eligible_denominator": 1863,
+          "c1_triggered": 359,
+          "no_c1": 1462,
+          "rollover_ineligible": 42,
+          "mean_delta_R": 0.028155311631069442,
+          "median_delta_R": 0.0,
+          "pct_positive": 9.07139023081052,
+          "avg_positive_delta_R": 1.1357461064423342,
+          "avg_negative_delta_R": -0.7341460337898531,
+          "profit_factor_diagnostic": 1.3760426769726237,
+          "c1_exit_types": {
+            "time_exit_12bars": 282,
+            "stop_or_forced_lt12": 77,
+            "hold_bars_dist": {
+              "12.0": 282,
+              "3.0": 20,
+              "9.0": 10,
+              "8.0": 10,
+              "1.0": 7,
+              "6.0": 7
+            }
+          },
+          "bootstrap_6h": {
+            "block_hours": 6,
+            "n_blocks": 865,
+            "n_episodes": 1863,
+            "observed_mean_delta_R": 0.028155311631069442,
+            "ci_lower": -0.004159921477309306,
+            "ci_upper": 0.05932793926344379,
+            "prob_mean_delta_R_gt_0": 0.9575,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_3h": {
+            "block_hours": 3,
+            "n_blocks": 1039,
+            "n_episodes": 1863,
+            "observed_mean_delta_R": 0.028155311631069442,
+            "ci_lower": -0.0020593018419002873,
+            "ci_upper": 0.05675073075638175,
+            "prob_mean_delta_R_gt_0": 0.9675,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_12h": {
+            "block_hours": 12,
+            "n_blocks": 691,
+            "n_episodes": 1863,
+            "observed_mean_delta_R": 0.028155311631069442,
+            "ci_lower": -0.007935028324309782,
+            "ci_upper": 0.062498198378116154,
+            "prob_mean_delta_R_gt_0": 0.9349,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "iid_diagnostic_only": {
+            "n": 1863,
+            "mean": 0.028155311631069442,
+            "t_stat": 1.951334641008974,
+            "p_value": 0.051167019850041545,
+            "label": "DIAGNOSTIC ONLY \u2014 not primary inference"
+          }
+        },
+        "research_grade_oos": {
+          "n_eligible_denominator": 1692,
+          "c1_triggered": 382,
+          "no_c1": 1270,
+          "rollover_ineligible": 40,
+          "mean_delta_R": -0.02419278655356473,
+          "median_delta_R": 0.0,
+          "pct_positive": 8.628841607565011,
+          "avg_positive_delta_R": 0.7783941528860995,
+          "avg_negative_delta_R": -0.6549989032627206,
+          "profit_factor_diagnostic": 0.7351904296203126,
+          "c1_exit_types": {
+            "time_exit_12bars": 297,
+            "stop_or_forced_lt12": 85,
+            "hold_bars_dist": {
+              "12.0": 297,
+              "2.0": 24,
+              "3.0": 14,
+              "5.0": 11,
+              "8.0": 9,
+              "1.0": 9
+            }
+          },
+          "bootstrap_6h": {
+            "block_hours": 6,
+            "n_blocks": 709,
+            "n_episodes": 1692,
+            "observed_mean_delta_R": -0.02419278655356473,
+            "ci_lower": -0.05323143620304512,
+            "ci_upper": 0.004310872951510339,
+            "prob_mean_delta_R_gt_0": 0.0516,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_3h": {
+            "block_hours": 3,
+            "n_blocks": 866,
+            "n_episodes": 1692,
+            "observed_mean_delta_R": -0.02419278655356473,
+            "ci_lower": -0.050187047890496196,
+            "ci_upper": 0.001572985283436835,
+            "prob_mean_delta_R_gt_0": 0.0344,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "bootstrap_12h": {
+            "block_hours": 12,
+            "n_blocks": 531,
+            "n_episodes": 1692,
+            "observed_mean_delta_R": -0.02419278655356473,
+            "ci_lower": -0.05488120348498269,
+            "ci_upper": 0.00634973938667313,
+            "prob_mean_delta_R_gt_0": 0.0622,
+            "n_replications": 10000,
+            "seed": 42
+          },
+          "iid_diagnostic_only": {
+            "n": 1692,
+            "mean": -0.02419278655356473,
+            "t_stat": -2.2314844539257614,
+            "p_value": 0.025779675941592525,
+            "label": "DIAGNOSTIC ONLY \u2014 not primary inference"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,67 @@
+# Data Manifest V1 — AUDUSD/NZDUSD internal-clock snapshot
+manifest:
+  manifest_id: "QPF-RV-2026-02-DATA-MANIFEST-V1-AUDNZD-INTERNAL-SNAPSHOT"
+  experiment_id: "QPF-RV-2026-02-AUDUSD-NZDUSD-COINTEGRATION"
+  candidate_id: "C1"
+  created_by_stage: "G1_AUDNZD_IMMUTABLE_SNAPSHOT_FREEZE"
+  created: "2026-09-29"
+
+sources:
+  - instrument: "AUDUSD"
+    path: "ml-signal-service/data/raw/mt5/H1/AUDUSD_H1.csv"
+    sha256: "0BF89F684D31DA032EB3B7D93713E45C7D8D1E8ADBF9A033D53311AE8A110A66"
+    schema: ["datetime", "open", "high", "low", "close", "volume"]
+    rows: 48116
+    label_range: ["2019-01-02 00:00:00", "2026-09-24 18:00:00"]
+  - instrument: "NZDUSD"
+    path: "ml-signal-service/data/raw/mt5/H1/NZDUSD_H1.csv"
+    sha256: "9707F4D0066248440A97FD93B4CFAACE9D5A3F9D350171298F7EC695A97A85E9"
+    schema: ["datetime", "open", "high", "low", "close", "volume"]
+    rows: 48087
+    label_range: ["2019-01-02 07:00:00", "2026-09-24 18:00:00"]
+
+intersection:
+  count: 48030
+  unmatched_audusd_only: 86
+  unmatched_nzdusd_only: 57
+  sort_order: "lexicographic ascending"
+  exclusion_rule: "exclude exactly the maximum common timestamp label"
+  excluded_max_common_label: "2026-09-24 18:00:00"
+  exclusion_count: 1
+
+snapshot:
+  path: "audnzd_h1_internal_snapshot_v1.csv"
+  sha256: "B4F90F302C5181FBC881318910CC3904E9CB9C95CC400AF3D29FA42218E71BB2"
+  sha256_file: "audnzd_h1_internal_snapshot_v1.sha256"
+  rows: 48029
+  columns: ["internal_index_k", "timestamp_label_internal", "audusd_close", "nzdusd_close"]
+  first_label: "2019-01-02 07:00:00"
+  last_retained_label: "2026-09-24 17:00:00"
+  header_comment: "# INTERNAL_CLOCK_ONLY; NOT_UTC; STRICT_INTERSECTION; EXCLUDE_MAX_COMMON_LABEL; NO_COSTS; NO_TRADING_USE"
+  internal_clock: "NOT_UTC"
+
+integrity:
+  no_imputation_resampling_transformation: true
+  no_external_joins: true
+  no_cost_or_trading_content: true
+
+verification:
+  state: "SNAPSHOT_FROZEN_PENDING_G3"
+
+governance:
+  G0_EXECUTION_ISOLATION: "PASS"
+  G1_DATA_AUDIT: "PASS"
+  G3_COINTEGRATION_STATIONARITY: "NOT_RUN"
+  G4_MEAN_REVERSION: "NOT_RUN"
+  G5_ECONOMIC_VIABILITY: "NOT_RUN"
+  G6_COST_AWARE_BACKTEST: "NOT_RUN"
+
+references:
+  - "experiment.yaml"
+  - "G0_G1_DESIGN_SPEC.md"
+  - "G1_DATA_AUDIT.md"
+  - "AUDNZD_SNAPSHOT_FREEZE_REPORT.md"
+  - "AUDNZD_SNAPSHOT_FREEZE_DECISION.md"
+  - "freeze_audnzd_snapshot.py"
+  - "audnzd_h1_internal_snapshot_v1.csv"
+  - "audnzd_h1_internal_snapshot_v1.sha256"

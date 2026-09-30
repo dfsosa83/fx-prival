@@ -1,0 +1,70 @@
+{
+  "experiment": "EXP-2026-05-INVALIDATION-REVERSAL",
+  "version": "v3.6",
+  "status": "STOP",
+  "verdict": "STOP — historical research-grade OOS did not confirm the development effect; no operational use.",
+  "date": "2026-09-25",
+  "development": {
+    "eligible_denominator": 1863,
+    "c1_triggered": 359,
+    "no_c1": 1462,
+    "rollover_ineligible": 42,
+    "base_mean_incremental_delta_R": 0.0322,
+    "base_6h_block_bootstrap_ci": [0.0001, 0.0633],
+    "base_probability_mean_delta_R_gt_0": 0.975,
+    "base_profit_factor_diagnostic": 1.444,
+    "cost_sensitivity_note": "Positive but weak across all 4 scenarios (PF 1.38-1.44)"
+  },
+  "research_grade_oos": {
+    "eligible_denominator": 1692,
+    "c1_triggered": 382,
+    "no_c1": 1270,
+    "rollover_ineligible": 40,
+    "base_mean_incremental_delta_R": -0.0208,
+    "base_6h_block_bootstrap_ci": [-0.0499, 0.0074],
+    "base_probability_mean_delta_R_gt_0": 0.083,
+    "base_profit_factor_diagnostic": 0.766,
+    "cost_sensitivity_note": "Negative in all 4 pre-registered cost scenarios (PF 0.74-0.77)"
+  },
+  "block_sensitivity_base": {
+    "development": {
+      "3h_ci": [0.0021, 0.0606],
+      "6h_ci": [0.0001, 0.0633],
+      "12h_ci": [-0.0038, 0.0663],
+      "note": "Does not robustly exclude zero at 12h"
+    },
+    "research_grade_oos": {
+      "3h_ci": [-0.0467, 0.0048],
+      "6h_ci": [-0.0499, 0.0074],
+      "12h_ci": [-0.0514, 0.0095],
+      "note": "Directionally negative at all block lengths"
+    }
+  },
+  "historical_evidence_status": {
+    "oos_is_sealed": false,
+    "oos_label": "research-grade",
+    "bar_spread_is_executable_bid_ask": false,
+    "bar_spread_label": "historical proxy only",
+    "historical_bid_ask_available": false,
+    "broker_calendar_dst_confirmed": false,
+    "maintenance_window_observed_utc": "23:45-01:00 (limited sample)"
+  },
+  "prior_scoring": {
+    "status": "INVALID — short-stop condition defect",
+    "evidence_use": "MUST NEVER be used as evidence for or against any hypothesis",
+    "artifacts": [
+      "audits/PHASE-1B/scoring_results/SCORING_RESULTS.json",
+      "audits/PHASE-1B/scoring_results/SCORING_REPORT.md",
+      "audits/PHASE-1B/scoring_results/scored_*.csv"
+    ]
+  },
+  "authorized_actions": "NONE for this variant",
+  "prohibited": [
+    "strategy deployment",
+    "demo/live trading",
+    "forward validation",
+    "parameter tuning",
+    "post-hoc optimization",
+    "new hypothesis/variant/ML/follow-up from this closure"
+  ]
+}

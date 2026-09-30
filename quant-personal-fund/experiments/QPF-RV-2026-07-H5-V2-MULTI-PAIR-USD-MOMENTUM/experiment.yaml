@@ -1,0 +1,26 @@
+experiment_id: QPF-RV-2026-07-H5-V2-MULTI-PAIR-USD-MOMENTUM
+parent_design: QPF-RV-2026-05-H5-MULTI-PAIR-USD-MOMENTUM
+stage: H5_V1B_USDJPY_HISTORY_COMPLETENESS_REPAIR
+timeframe: H1
+clock: INTERNAL_ORDINAL_NOT_UTC
+mandatory_instruments:
+  - EURUSD
+  - GBPUSD
+  - USDJPY
+  - USDCHF
+  - USDCAD
+  - AUDUSD
+  - NZDUSD
+status: PAUSE_DIRECTIONAL_STATISTICAL_VIABILITY
+failure_source: USDJPY
+failure_detail: >
+  The repository MT5 downloader appends rows ordered datetime,open,high,low,close,volume
+  with no header for an existing file, while the existing USDJPY raw file is ordered
+  open,high,low,close,volume,datetime. Invoking the downloader would misalign columns and
+  corrupt USDJPY, so the downloader was not invoked and no v2 snapshot was built.
+research_question: >
+  Whether broad, coherent USD strength or weakness across the mandatory basket,
+  conditioned on high target volatility, predicts directional continuation in
+  the frozen target panel under the parent H5 protocol.
+profitability_claim: false
+trading_authorization: false

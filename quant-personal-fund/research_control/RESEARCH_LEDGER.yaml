@@ -1,0 +1,122 @@
+project:
+  name: "Forex and XAUUSD Quantitative Research"
+  objective: "Establish statistically credible FX and XAUUSD hypotheses under frozen protocols, then separately evaluate economic viability with realistic costs, and only later consider execution."
+  active_research_family: "H6_FAILED_BREAKOUT_INVALIDATION"
+
+global_rules:
+  timestamps: "INTERNAL_ORDINAL_NOT_UTC"
+  immutable_snapshot_required: true
+  exclude_max_available_label: true
+  raw_data_imputation_allowed: false
+  external_joins_allowed: false
+  frozen_protocol_changes_after_results_allowed: false
+  pnl_before_statistical_approval_allowed: false
+  execution_before_explicit_authorization_allowed: false
+  fx_xauusd_pooled_analysis_allowed: false
+
+hypotheses:
+  - id: "G3-v3"
+    formulation: "EURUSD/GBPUSD H1 fixed-OLS residual mean reversion"
+    status: "REJECTED"
+    reason: "OOS ADF, rolling stability and subperiod gates failed"
+  - id: "G3-AUDNZD"
+    formulation: "AUDUSD/NZDUSD H1 fixed-OLS residual mean reversion"
+    status: "REJECTED"
+    reason: "OOS ADF/Johansen/rolling stability gates failed"
+  - id: "H4-C2"
+    formulation: "EURUSD/USDCHF local rolling residual relationship"
+    status: "REJECTED"
+    reason: "Insufficient eligible validation windows"
+  - id: "H5-v2"
+    formulation: "Multi-pair USD momentum plus high-volatility continuation"
+    status: "REJECTED"
+    reason: "No paired strength/weakness BH-corrected validation survivor"
+  - id: "H6"
+    formulation: "Single-instrument failed-breakout invalidation event study"
+    status: "REJECTED"
+    reason: "No BH-corrected paired survivor in FX (324) or XAUUSD (54) validation"
+    protocol_path: "experiments/QPF-RV-2026-11-H6-FAILED-BREAKOUT-INVALIDATION/H6_PROTOCOL.md"
+
+data_pipeline:
+  canonical_schema:
+    - "datetime"
+    - "open"
+    - "high"
+    - "low"
+    - "close"
+    - "volume"
+  legacy_schema:
+    - "open"
+    - "high"
+    - "low"
+    - "close"
+    - "volume"
+    - "datetime"
+  direct_downloader_append_to_legacy_allowed: false
+  safe_rebuild_utility:
+    path: "tools/raw_data_schema_rebuild/safe_h1_csv_rebuild.py"
+    synthetic_tests: "16/16_PASS"
+    synthetic_requirement_coverage: "17_REQUIRED_CASES_COVERED; PATH_ISOLATION_CASES_COMBINED_IN_ONE_TEST"
+  a1_mt5_demo_readonly_feed:
+    status: "VALIDATED_APPROVED_DATA_SOURCE"
+    scope: "XAUUSD H1/M30/M15 bars and tick; count-only demo order/position reconciliation"
+    orders_allowed: false
+    pnl_allowed: false
+    live_account_allowed: false
+  usd_jpy:
+    status: "REFRESHED_CANONICAL_BACKUP_RETAINED"
+  xau_usd:
+    status: "REFRESHED_CANONICAL_H6_DATA_ELIGIBLE"
+    final_label: "2026-09-30 14:00:00"
+    schema: "CANONICAL"
+    mandatory_for_h6: true
+
+current_state:
+  a1_observation:
+    setup_status: "PASS_QPF-RV-2027-10_ORDERS_DISABLED_RUNTIME"
+    environment_status: "READY_QPF-RV-2027-11_DEMO_ONLY_ORDERS_DISABLED"
+    environment_validation: "DEMO_VERIFIED_XAUUSD_AVAILABLE_0_POS_0_ORDERS"
+    forward_observation_status: "ACTIVE"
+    session_id: "a1_xauusd_observ_20260930"
+    session_path: "experiments/QPF-RV-2027-12-A1-XAUUSD-ORDERS-DISABLED-FORWARD-OBSERVATION/"
+    start_decision: "A1_ORDERS_DISABLED_FORWARD_OBSERVATION_STARTED"
+    observation_window: "INCOMPLETE_0D_1CYCLE_TARGET_30D_50CYCLES"
+    orders_allowed: false
+    pnl_allowed: false
+  h6_fx_instruments:
+    - "EURUSD"
+    - "USDJPY"
+    - "USDCHF"
+    - "USDCAD"
+    - "AUDUSD"
+    - "NZDUSD"
+  h6_fx_data_status: "H6_DATA_ELIGIBLE"
+  h6_xauusd_status: "H6_DATA_ELIGIBLE"
+  h6_snapshot_status: "ALL_SEVEN_SINGLE_INSTRUMENT_SNAPSHOTS_FROZEN"
+  h6_statistical_screen_status: "RUN_REJECTED_BOTH_STRATA"
+  h6_economic_test_status: "NOT_RUN"
+  h6_execution_status: "NOT_AUTHORIZED"
+
+next_action:
+  id: "A1_BOUNDED_OBSERVATION_ROUTINE"
+  status: "ACTIVE_UNTIL_WINDOW_COMPLETE_OR_PAUSE"
+  scope: "XAUUSD A1 observation only; MT5 demo read-only; orders disabled"
+  required_steps:
+    - "maximum one cycle per newly closed M15 bar"
+    - "validate append-only integrity before each cycle"
+    - "preserve frozen source hashes"
+    - "write event and heartbeat records"
+    - "shutdown MT5 after each cycle"
+    - "run health check every 10 cycles or on trigger"
+  stop_conditions:
+    - "30 calendar days and 50 completed cycles reached"
+    - "integrity failure"
+    - "orders-disabled violation"
+    - "runtime or feed error"
+    - "non-demo environment"
+  prohibited_steps:
+    - "demo orders"
+    - "virtual fills"
+    - "PnL"
+    - "cost analysis"
+    - "trading"

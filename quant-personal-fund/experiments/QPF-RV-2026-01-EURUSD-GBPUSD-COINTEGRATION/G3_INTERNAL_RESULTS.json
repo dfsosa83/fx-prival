@@ -1,0 +1,18 @@
+{
+  "experiment_id": "QPF-RV-2026-01-EURUSD-GBPUSD-COINTEGRATION",
+  "stage": "G3_INTERNAL_STATISTICAL_VIABILITY_SCREENING",
+  "run_utc_note": "internal clock only; labels are NOT_UTC",
+  "seed": 42,
+  "timestamp_labels_are_not_utc": true,
+  "started": "2026-09-29T20:36:27.969242+00:00",
+  "errors": [],
+  "hashes": {
+    "eurusd_expected": "AFC3109108AE64E59800F99D4B87A11B58B26EDE5185DCBD3B132422E4F3DA5F",
+    "eurusd_actual": "56E72E231DF53BAD0743940D2F21C5FA678EAE2CC47B02D82C7152DCE73A67FE",
+    "gbpusd_expected": "11D9D435C1DDBC4A797BDF236ED3F3F13765338D2AD21870268016F76FD24CB7",
+    "gbpusd_actual": "D175138CFA33F377071FAF2C9DC84F8D7FD35383D3778829476015A99F4DE6D2",
+    "hash_ok": false
+  },
+  "final_recommendation": "PAUSE_STATISTICAL_VIABILITY",
+  "reason": "hash verification failed"
+}

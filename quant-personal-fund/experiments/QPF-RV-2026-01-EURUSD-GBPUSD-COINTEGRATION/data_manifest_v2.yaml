@@ -1,0 +1,68 @@
+# Data Manifest V2 — Internal-Clock Immutable Input Snapshot
+# New manifest; data_manifest_v1.yaml is NOT modified.
+
+manifest:
+  manifest_id: "QPF-RV-2026-01-DATA-MANIFEST-V2-INTERNAL-CLOCK-SNAPSHOT"
+  experiment_id: "QPF-RV-2026-01-EURUSD-GBPUSD-COINTEGRATION"
+  program_scope: "FUTURE_QPF"
+  created_by_stage: "G3R0_SNAPSHOT_FREEZE"
+  created: "2026-09-29"
+  supersedes_input_version: "data_manifest_v1.yaml"
+  reason: "Mutable incremental downloader outputs changed after G1; v2 freezes an immutable strict-intersection input snapshot before any G3-v2 parsing."
+
+raw_sources:
+  - instrument: "EURUSD"
+    path: "ml-signal-service/data/raw/mt5/H1/EURUSD_H1.csv"
+    sha256_current: "56E72E231DF53BAD0743940D2F21C5FA678EAE2CC47B02D82C7152DCE73A67FE"
+    rows: 48185
+    date_label_range: ["2019-01-02 00:00:00", "2026-09-29 20:00:00"]
+  - instrument: "GBPUSD"
+    path: "ml-signal-service/data/raw/mt5/H1/GBPUSD_H1.csv"
+    sha256_current: "D175138CFA33F377071FAF2C9DC84F8D7FD35383D3778829476015A99F4DE6D2"
+    rows: 48190
+    date_label_range: ["2019-01-02 00:00:00", "2026-09-29 20:00:00"]
+
+source_schema: ["datetime", "close"]
+
+snapshot:
+  path: "g3_internal_clock_snapshot_v2.csv"
+  sha256: "159BE4F9F1A3AD7F1F0B19675C6EB11DC4CFFDED95101898F147D041BEB0BA5D"
+  sha256_file: "g3_internal_clock_snapshot_v2.sha256"
+  rows: 48184
+  columns: ["internal_index_k", "timestamp_label_internal", "eurusd_close", "gbpusd_close"]
+  first_label: "2019-01-02 00:00:00"
+  last_label: "2026-09-29 20:00:00"
+  header_comment: "# INTERNAL_CLOCK_ONLY; NOT_UTC; STRICT_INTERSECTION; NO_COSTS; NO_TRADING_USE"
+  internal_clock: "NOT_UTC"
+
+exclusions:
+  final_label_excluded: "2026-09-29 19:00:00"
+  unmatched_excluded_by_intersection: {gbpusd_only: 5, eurusd_only: 0}
+  no_imputation_forward_fill_interpolation_resampling: true
+
+verification:
+  state: "SNAPSHOT_FROZEN_PENDING_G3_V2"
+  hash_verified_at_freeze: true
+  observed_at_freeze: "sources now end at 2026-09-29 20:00:00; the frozen rule excluded only 2026-09-29 19:00:00, which was present"
+
+no_external_joins: true
+no_cost_or_trading_content: true
+
+governance:
+  G0_EXECUTION_ISOLATION: "PASS"
+  G1_DATA_AUDIT: "PAUSE"
+  INTERNAL_CLOCK_AMENDMENT: "APPROVED_FOR_STATISTICAL_SCREENING_ONLY"
+  G2_COST_EVIDENCE: "NOT_RUN"
+  G3_COINTEGRATION_STATIONARITY: "NOT_RUN"
+  G4_MEAN_REVERSION: "NOT_RUN"
+  G5_ECONOMIC_VIABILITY: "NOT_RUN"
+  G6_COST_AWARE_BACKTEST: "NOT_RUN"
+
+references:
+  - "data_manifest_v1.yaml"
+  - "G3_INTERNAL_DECISION.md"
+  - "G3_INTERNAL_STATISTICAL_PROTOCOL_V2.md"
+  - "G3R0_SNAPSHOT_FREEZE_REPORT.md"
+  - "g3_internal_clock_snapshot_v2.csv"
+  - "g3_internal_clock_snapshot_v2.sha256"
+  - "RUN_LOG.md"

@@ -1,0 +1,52 @@
+{
+  "metrics": {
+    "annualized_return": 0.01241849303113618,
+    "annualized_volatility": 0.07328393426417115,
+    "cumulative_return": 0.16145256470852898,
+    "sharpe_ratio": 0.5468554034249418,
+    "sortino_ratio": 0.6812224802536245,
+    "calmar_ratio": 0.09379335866856674,
+    "max_drawdown": -0.1324026904188263,
+    "max_drawdown_peak": "2024-07-11",
+    "max_drawdown_trough": "2025-04-07",
+    "var_95_daily": -0.006984212181288864,
+    "expected_shortfall_95": -0.0110063932432121,
+    "total_txn_cost": 0.0,
+    "total_hold_cost": 0.0602116402116402,
+    "total_cost": 0.0602116402116402,
+    "cost_to_gross_pnl": 0.23755653863688247,
+    "mean_daily_turnover": 0.0,
+    "annualized_turnover": 0.0,
+    "n_days": 3057,
+    "start_date": "2015-01-01",
+    "end_date": "2026-09-22"
+  },
+  "dataset": {
+    "dataset_id": "universe_daily_20260923_085950",
+    "instruments": [
+      "AUDUSD",
+      "BUND",
+      "COPPER",
+      "EURJPY",
+      "EURUSD",
+      "GBPUSD",
+      "JGB",
+      "NDX",
+      "NKY",
+      "NZDUSD",
+      "SPX",
+      "SX5E",
+      "US10Y",
+      "USDCAD",
+      "USDCHF",
+      "USDJPY",
+      "WTI",
+      "XAUUSD"
+    ],
+    "date_range_start": "2015-01-01",
+    "date_range_end": "2026-09-22",
+    "inputs_hash": "c65e40309425cb01",
+    "validation_errors": 0
+  },
+  "generated_at": "2026-09-23T08:59:50.294673"
+}

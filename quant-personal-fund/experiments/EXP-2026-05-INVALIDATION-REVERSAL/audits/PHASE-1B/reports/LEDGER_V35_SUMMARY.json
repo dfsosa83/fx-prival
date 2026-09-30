@@ -1,0 +1,39 @@
+{
+  "last_available_bar_time": "2026-09-23 23:45:00+00:00",
+  "total_episodes": 5225,
+  "windows": {
+    "development": {
+      "n_episodes": 2650,
+      "reason_distribution": {
+        "no_c1": 1462,
+        "conservative_observed_window_exclusion_not_broker_confirmed": 324,
+        "no_invalidation_within_observation_window": 446,
+        "rollover_ineligible": 42,
+        "c1_triggered": 359,
+        "missing_bar": 17
+      },
+      "fully_observed": 2650,
+      "right_censored_at_data_end": 0,
+      "avsb_eligible": 1863,
+      "min_entry": "2020-03-03 19:30:00+00:00",
+      "max_entry": "2023-12-29 09:15:00+00:00"
+    },
+    "research_grade_oos": {
+      "n_episodes": 2575,
+      "reason_distribution": {
+        "no_c1": 1270,
+        "conservative_observed_window_exclusion_not_broker_confirmed": 281,
+        "c1_triggered": 382,
+        "no_invalidation_within_observation_window": 562,
+        "missing_bar": 19,
+        "rollover_ineligible": 40,
+        "right_censored_at_data_end": 21
+      },
+      "fully_observed": 2554,
+      "right_censored_at_data_end": 21,
+      "avsb_eligible": 1692,
+      "min_entry": "2024-01-02 11:45:00+00:00",
+      "max_entry": "2026-09-22 02:45:00+00:00"
+    }
+  }
+}

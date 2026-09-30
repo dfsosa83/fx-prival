@@ -1,0 +1,74 @@
+query_id,symbol,timeframe,date_range,result,reason,timestamp,query,note
+NONE,,,,STOPPED,"Active terminal64 (FPMarkets MT5) process detected. Per approved safeguard #2, an isolated read-only MT5 connection cannot be established without risking disturbance of the active session (MT5 Python API is single-terminal IPC; a second instance would conflict on profile/ports). No MT5 query was run.",2026-09-24,,
+,XAUUSD,M5,,OK,,2026-09-24T15:23:05.606462+00:00,copy_rates_range recent+stability,rows=10458 env_first=2020-02-28 01:00:00 env_last=2026-01-30 23:55:00
+,XAUUSD,M5,,ERROR/NA,,2026-09-24T15:23:05.615069+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,XAUUSD,M15,,OK,,2026-09-24T15:23:05.836393+00:00,copy_rates_range recent+stability,rows=3486 env_first=2020-02-28 01:00:00 env_last=2026-01-30 23:45:00
+,XAUUSD,M15,,ERROR/NA,,2026-09-24T15:23:05.842463+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,XAUUSD,M30,,OK,,2026-09-24T15:23:06.067568+00:00,copy_rates_range recent+stability,rows=1743 env_first=2020-02-28 01:00:00 env_last=2026-01-30 23:30:00
+,XAUUSD,M30,,ERROR/NA,,2026-09-24T15:23:06.071566+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,XAUUSD,H1,,OK,,2026-09-24T15:23:06.298116+00:00,copy_rates_range recent+stability,rows=872 env_first=2020-02-28 01:00:00 env_last=2026-01-30 23:00:00
+,XAUUSD,H1,,ERROR/NA,,2026-09-24T15:23:06.302111+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,EURUSD,M5,,OK,,2026-09-24T15:23:06.577502+00:00,copy_rates_range recent+stability,rows=10945 env_first=2016-01-04 00:00:00 env_last=2026-01-30 23:55:00
+,EURUSD,M5,,ERROR/NA,,2026-09-24T15:23:06.585064+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,EURUSD,M15,,OK,,2026-09-24T15:23:06.822046+00:00,copy_rates_range recent+stability,rows=3649 env_first=2016-01-04 00:00:00 env_last=2026-01-30 23:45:00
+,EURUSD,M15,,ERROR/NA,,2026-09-24T15:23:06.828076+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,EURUSD,M30,,OK,,2026-09-24T15:23:08.525261+00:00,copy_rates_range recent+stability,rows=1825 env_first=2016-01-04 00:00:00 env_last=2026-01-30 23:30:00
+,EURUSD,M30,,ERROR/NA,,2026-09-24T15:23:08.538214+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,EURUSD,H1,,OK,,2026-09-24T15:23:10.003952+00:00,copy_rates_range recent+stability,rows=913 env_first=2016-01-04 00:00:00 env_last=2026-01-30 23:00:00
+,EURUSD,H1,,ERROR/NA,,2026-09-24T15:23:10.007310+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,GBPUSD,M5,,OK,,2026-09-24T15:23:10.247678+00:00,copy_rates_range recent+stability,rows=10945 env_first=2016-01-04 00:00:00 env_last=2026-01-30 23:55:00
+,GBPUSD,M5,,ERROR/NA,,2026-09-24T15:23:10.254971+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,GBPUSD,M15,,OK,,2026-09-24T15:23:10.492687+00:00,copy_rates_range recent+stability,rows=3649 env_first=2016-01-04 00:00:00 env_last=2026-01-30 23:45:00
+,GBPUSD,M15,,ERROR/NA,,2026-09-24T15:23:10.501769+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,GBPUSD,M30,,OK,,2026-09-24T15:23:12.222697+00:00,copy_rates_range recent+stability,rows=1825 env_first=2016-01-04 00:00:00 env_last=2026-01-30 23:30:00
+,GBPUSD,M30,,ERROR/NA,,2026-09-24T15:23:12.233736+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,GBPUSD,H1,,OK,,2026-09-24T15:23:13.541687+00:00,copy_rates_range recent+stability,rows=913 env_first=2016-01-04 00:00:00 env_last=2026-01-30 23:00:00
+,GBPUSD,H1,,ERROR/NA,,2026-09-24T15:23:13.548716+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,AUDUSD,M5,,OK,,2026-09-24T15:23:13.784439+00:00,copy_rates_range recent+stability,rows=10945 env_first=2016-01-04 00:00:00 env_last=2026-01-30 23:55:00
+,AUDUSD,M5,,ERROR/NA,,2026-09-24T15:23:13.789572+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,AUDUSD,M15,,OK,,2026-09-24T15:23:16.434846+00:00,copy_rates_range recent+stability,rows=3649 env_first=2016-01-04 00:00:00 env_last=2026-01-30 23:45:00
+,AUDUSD,M15,,ERROR/NA,,2026-09-24T15:23:16.439858+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,AUDUSD,M30,,OK,,2026-09-24T15:23:17.274210+00:00,copy_rates_range recent+stability,rows=1825 env_first=2016-01-04 00:00:00 env_last=2026-01-30 23:30:00
+,AUDUSD,M30,,ERROR/NA,,2026-09-24T15:23:17.277714+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,AUDUSD,H1,,OK,,2026-09-24T15:23:17.934570+00:00,copy_rates_range recent+stability,rows=913 env_first=2016-01-04 00:00:00 env_last=2026-01-30 23:00:00
+,AUDUSD,H1,,ERROR/NA,,2026-09-24T15:23:17.940773+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,NZDUSD,M5,,OK,,2026-09-24T15:23:18.175095+00:00,copy_rates_range recent+stability,rows=10944 env_first=2016-01-04 01:00:00 env_last=2026-01-30 23:55:00
+,NZDUSD,M5,,ERROR/NA,,2026-09-24T15:23:18.185049+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,NZDUSD,M15,,OK,,2026-09-24T15:23:25.742453+00:00,copy_rates_range recent+stability,rows=3649 env_first=2016-01-04 01:00:00 env_last=2026-01-30 23:45:00
+,NZDUSD,M15,,ERROR/NA,,2026-09-24T15:23:25.751291+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,NZDUSD,M30,,OK,,2026-09-24T15:23:30.509911+00:00,copy_rates_range recent+stability,rows=1825 env_first=2016-01-04 01:00:00 env_last=2026-01-30 23:30:00
+,NZDUSD,M30,,ERROR/NA,,2026-09-24T15:23:30.519306+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,NZDUSD,H1,,OK,,2026-09-24T15:23:36.017865+00:00,copy_rates_range recent+stability,rows=913 env_first=2016-01-04 01:00:00 env_last=2026-01-30 23:00:00
+,NZDUSD,H1,,ERROR/NA,,2026-09-24T15:23:36.023890+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,USDCAD,M5,,OK,,2026-09-24T15:23:38.133348+00:00,copy_rates_range recent+stability,rows=10945 env_first=2016-01-04 01:00:00 env_last=2026-01-30 23:55:00
+,USDCAD,M5,,ERROR/NA,,2026-09-24T15:23:38.138359+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,USDCAD,M15,,OK,,2026-09-24T15:23:38.911359+00:00,copy_rates_range recent+stability,rows=3649 env_first=2016-01-04 01:00:00 env_last=2026-01-30 23:45:00
+,USDCAD,M15,,ERROR/NA,,2026-09-24T15:23:38.917156+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,USDCAD,M30,,OK,,2026-09-24T15:23:39.483071+00:00,copy_rates_range recent+stability,rows=1825 env_first=2016-01-04 01:00:00 env_last=2026-01-30 23:30:00
+,USDCAD,M30,,ERROR/NA,,2026-09-24T15:23:39.489857+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,USDCAD,H1,,OK,,2026-09-24T15:23:39.740559+00:00,copy_rates_range recent+stability,rows=913 env_first=2016-01-04 01:00:00 env_last=2026-01-30 23:00:00
+,USDCAD,H1,,ERROR/NA,,2026-09-24T15:23:39.749597+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,USDCHF,M5,,OK,,2026-09-24T15:25:17.752611+00:00,copy_rates_range recent+stability,rows=10945 env_first=2016-01-04 01:00:00 env_last=2026-01-30 23:55:00
+,USDCHF,M5,,ERROR/NA,,2026-09-24T15:25:17.762506+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,USDCHF,M15,,OK,,2026-09-24T15:25:20.879570+00:00,copy_rates_range recent+stability,rows=3649 env_first=2016-01-04 01:00:00 env_last=2026-01-30 23:45:00
+,USDCHF,M15,,ERROR/NA,,2026-09-24T15:25:20.884206+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,USDCHF,M30,,OK,,2026-09-24T15:25:28.548653+00:00,copy_rates_range recent+stability,rows=1825 env_first=2016-01-04 01:00:00 env_last=2026-01-30 23:30:00
+,USDCHF,M30,,ERROR/NA,,2026-09-24T15:25:28.552523+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,USDCHF,H1,,OK,,2026-09-24T15:25:31.627695+00:00,copy_rates_range recent+stability,rows=913 env_first=2016-01-04 01:00:00 env_last=2026-01-30 23:00:00
+,USDCHF,H1,,ERROR/NA,,2026-09-24T15:25:31.633376+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,USDJPY,M5,,OK,,2026-09-24T15:28:30.112238+00:00,copy_rates_range recent+stability,rows=10945 env_first=2016-01-04 01:00:00 env_last=2026-01-30 23:55:00
+,USDJPY,M5,,ERROR/NA,,2026-09-24T15:28:30.117757+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,USDJPY,M15,,OK,,2026-09-24T15:28:30.932561+00:00,copy_rates_range recent+stability,rows=3649 env_first=2016-01-04 01:00:00 env_last=2026-01-30 23:45:00
+,USDJPY,M15,,ERROR/NA,,2026-09-24T15:28:30.941603+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,USDJPY,M30,,OK,,2026-09-24T15:28:34.344891+00:00,copy_rates_range recent+stability,rows=1825 env_first=2016-01-04 01:00:00 env_last=2026-01-30 23:30:00
+,USDJPY,M30,,ERROR/NA,,2026-09-24T15:28:34.348598+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,USDJPY,H1,,OK,,2026-09-24T15:28:38.735667+00:00,copy_rates_range recent+stability,rows=913 env_first=2016-01-04 01:00:00 env_last=2026-01-30 23:00:00
+,USDJPY,H1,,ERROR/NA,,2026-09-24T15:28:38.743504+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,EURJPY,M5,,OK,,2026-09-24T15:28:40.731684+00:00,copy_rates_range recent+stability,rows=10380 env_first=2016-01-04 00:00:00 env_last=2026-01-30 23:55:00
+,EURJPY,M5,,ERROR/NA,,2026-09-24T15:28:40.740725+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,EURJPY,M15,,OK,,2026-09-24T15:28:41.341501+00:00,copy_rates_range recent+stability,rows=3461 env_first=2016-01-04 00:00:00 env_last=2026-01-30 23:45:00
+,EURJPY,M15,,ERROR/NA,,2026-09-24T15:28:41.347116+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,EURJPY,M30,,OK,,2026-09-24T15:28:41.931152+00:00,copy_rates_range recent+stability,rows=1731 env_first=2016-01-04 00:00:00 env_last=2026-01-30 23:30:00
+,EURJPY,M30,,ERROR/NA,,2026-09-24T15:28:41.938197+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False
+,EURJPY,H1,,OK,,2026-09-24T15:28:42.193465+00:00,copy_rates_range recent+stability,rows=866 env_first=2016-01-04 00:00:00 env_last=2026-01-30 23:00:00
+,EURJPY,H1,,ERROR/NA,,2026-09-24T15:28:42.199514+00:00,copy_ticks_range 7d,ticks=0 bid_ask=False

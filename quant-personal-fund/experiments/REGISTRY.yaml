@@ -1,0 +1,185 @@
+# Experiment Registry — machine-readable companion to REGISTRY.md
+# Governance reference only. Reserves nothing; creates no experiment folder.
+# Fields mirror docs/governance/EXPERIMENT_MANIFEST_SPEC.md where applicable.
+
+registry:
+  version: 1
+  purpose: "Identifier governance: prevent reuse of historical experiment IDs and define the future QPF namespace."
+  historical_id_scheme: "EXP-2026-xx (ambiguous across programs; always qualify with program_scope)"
+  future_id_scheme: "QPF-<FAMILY>-<YEAR>-<SEQUENCE>-<SLUG>"
+  canonical_identifier_rule: >-
+    Use `id` for FUTURE_QPF records and `historical_id` for
+    LEGACY_FRIVAL_ML and QPF_PLATFORM records.
+  legacy_ids_immutable: true
+  program_scopes:
+    - LEGACY_FRIVAL_ML
+    - QPF_PLATFORM
+    - FUTURE_QPF
+  # The identifiers below are illustrative only and are NOT reserved.
+  # Reserved future-QPF identifiers are represented exclusively in the
+  # `experiments` list below, with program_scope: FUTURE_QPF.
+  future_examples_not_reserved:
+    - "QPF-MR-2026-01-FX-INTRADAY-OVEREXTENSION"
+    - "QPF-CRYPTO-2026-01-PERP-BASIS-FUNDING"
+
+experiments:
+  # --- QPF platform ---
+  - historical_id: "EXP-2026-01-VOL-FORECAST-OVERLAY"
+    program_scope: "QPF_PLATFORM"
+    title: "ML volatility-forecast sizing overlay (price features)"
+    status: "closed"
+    decision: "HOLD (historical STOP superseded by EXP-2026-04B)"
+    evidence: "quant-personal-fund/experiments/EXP-2026-01-VOL-FORECAST-OVERLAY/experiment.yaml"
+    traceability: "MEDIUM"
+
+  - historical_id: "EXP-2026-02-MACRO-VOL-OVERLAY"
+    program_scope: "QPF_PLATFORM"
+    title: "ML volatility overlay (FRED macro features, continuous de-risk)"
+    status: "superseded"
+    decision: "HOLD (superseded by EXP-2026-03)"
+    evidence: "quant-personal-fund/docs/RESEARCH_PROGRESS.md"
+    traceability: "LOW"
+    note: "No artifact folder."
+
+  - historical_id: "EXP-2026-03-SELECTIVE-DERISK-OVERLAY"
+    program_scope: "QPF_PLATFORM"
+    title: "Selective top-decile de-risk overlay (macro features)"
+    status: "closed"
+    decision: "STOP"
+    evidence: "quant-personal-fund/experiments/EXP-2026-03-SELECTIVE-DERISK-OVERLAY/"
+    traceability: "HIGH"
+
+  - historical_id: "EXP-2026-04A-BENCHMARK-FOUNDATION"
+    program_scope: "QPF_PLATFORM"
+    title: "Benchmark remediation (USD conversion, financing single-charge, Benchmark A/B)"
+    status: "completed"
+    decision: "PASS (foundation stage)"
+    evidence: "quant-personal-fund/experiments/EXP-2026-04A-BENCHMARK-FOUNDATION/"
+    traceability: "HIGH"
+
+  - historical_id: "EXP-2026-04B-STRATEGY-RERUNS"
+    program_scope: "QPF_PLATFORM"
+    title: "Verdict-validity reruns on Benchmark B"
+    status: "completed"
+    decision: "Trend HOLD; EXP-2026-01 HOLD; EXP-2026-03 STOP; no sleeve beats Benchmark B"
+    evidence: "quant-personal-fund/experiments/EXP-2026-04B-STRATEGY-RERUNS/"
+    traceability: "HIGH"
+
+  - historical_id: "EXP-2026-05-INVALIDATION-REVERSAL"
+    program_scope: "QPF_PLATFORM"
+    title: "Exit-and-reverse vs exit-and-flat after M15 invalidation (XAUUSD)"
+    status: "closed"
+    decision: "STOP"
+    evidence: "quant-personal-fund/experiments/EXP-2026-05-INVALIDATION-REVERSAL/"
+    traceability: "HIGH"
+
+  # --- Legacy program ---
+  - historical_id: "EXP-2026-03-RULEENGINE"
+    program_scope: "LEGACY_FRIVAL_ML"
+    title: "Gold rules engine (automated A/B level-test, Claim C)"
+    status: "closed"
+    decision: "REJECTED (measurement failure; never traded)"
+    evidence: "ml-signal-service/docs/experiments/EXP-2026-03-RULEENGINE_gold-rules-engine-design.md"
+    traceability: "MEDIUM"
+
+  - historical_id: "EXP-2026-04-RULEENGINE-FX-BACKTEST"
+    program_scope: "LEGACY_FRIVAL_ML"
+    title: "Gold A/B rules transferred to FX"
+    status: "closed"
+    decision: "REJECTED (negative EV/R on all pairs)"
+    evidence: "ml-signal-service/docs/experiments/EXP-2026-04-RULEENGINE-FX-BACKTEST.md; frival/fx_rules_backtest/results/SUMMARY.md"
+    traceability: "MEDIUM"
+
+  - historical_id: "EXP-2026-05-EURUSD-SELL-COSTLABEL"
+    program_scope: "LEGACY_FRIVAL_ML"
+    title: "Directional H1 ML, EURUSD SELL, cost-adjusted label"
+    status: "resolved"
+    decision: "HOLD"
+    evidence: "ml-signal-service/experiments/EXP-2026-05-EURUSD-SELL-COSTLABEL/RUN_LOG.md"
+    traceability: "HIGH"
+
+  - historical_id: "EXP-2026-06-EURUSD-BUY-COSTLABEL"
+    program_scope: "LEGACY_FRIVAL_ML"
+    title: "Directional H1 ML, EURUSD BUY, cost-adjusted label"
+    status: "closed"
+    decision: "STOP"
+    evidence: "ml-signal-service/experiments/EXP-2026-06-EURUSD-BUY-COSTLABEL/RUN_LOG.md"
+    traceability: "HIGH"
+
+  - historical_id: "EXP-2026-07-CROSSES-COSTLABEL"
+    program_scope: "LEGACY_FRIVAL_ML"
+    title: "FX crosses as diversification (same label)"
+    status: "aborted"
+    decision: "REJECTED (arithmetic handicap)"
+    evidence: "ml-signal-service/experiments/EXP-2026-07-CROSSES-COSTLABEL/RUN_LOG.md"
+    traceability: "HIGH"
+
+  - historical_id: "EXP-2026-08-EQUITY-INDEX-COSTLABEL"
+    program_scope: "LEGACY_FRIVAL_ML"
+    title: "Directional ML on equity index (US30)"
+    status: "closed"
+    decision: "STOP"
+    evidence: "ml-signal-service/experiments/EXP-2026-08-EQUITY-INDEX-COSTLABEL/RUN_LOG.md"
+    traceability: "HIGH"
+
+  - historical_id: "EXP-2026-09-US30-LABEL-GEOMETRY-REDESIGN"
+    program_scope: "LEGACY_FRIVAL_ML"
+    title: "US30 label-geometry redesign (TP2.0/SL1.0)"
+    status: "closed"
+    decision: "STOP (hypothesis falsified)"
+    evidence: "ml-signal-service/experiments/EXP-2026-09-US30-LABEL-GEOMETRY-REDESIGN/RUN_LOG.md"
+    traceability: "HIGH"
+
+  - historical_id: "EXP-2026-10-GOLD-EXIT-MANAGEMENT"
+    program_scope: "LEGACY_FRIVAL_ML"
+    title: "Mechanical exits on manual gold entries (operator-SL-anchored)"
+    status: "closed"
+    decision: "STOP (confounded)"
+    evidence: "ml-signal-service/experiments/EXP-2026-10-GOLD-EXIT-MANAGEMENT/experiment.yaml"
+    traceability: "HIGH"
+
+  - historical_id: "EXP-2026-11-GOLD-EXIT-ATR"
+    program_scope: "LEGACY_FRIVAL_ML"
+    title: "ATR-anchored mechanical exits on the same entries"
+    status: "closed"
+    decision: "STOP (robustness)"
+    evidence: "ml-signal-service/experiments/EXP-2026-11-GOLD-EXIT-ATR/"
+    traceability: "HIGH"
+
+  - historical_id: "EXP-2026-12-CROSS-SECTIONAL-MOMENTUM"
+    program_scope: "LEGACY_FRIVAL_ML"
+    title: "Weekly cross-sectional relative-strength momentum"
+    status: "closed"
+    decision: "REJECTED (effect approximately zero in recent regimes)"
+    evidence: "ml-signal-service/experiments/EXP-2026-12-CROSS-SECTIONAL-MOMENTUM/RUN_LOG.md"
+    traceability: "HIGH"
+
+  - historical_id: "EXP-2026-13-EVENT-DRIVEN"
+    program_scope: "LEGACY_FRIVAL_ML"
+    title: "Scheduled macro surprise to 1/4/24h price response"
+    status: "closed"
+    decision: "HOLD (FX null; XAUUSD regime-only)"
+    evidence: "ml-signal-service/experiments/EXP-2026-13-EVENT-DRIVEN/RUN_LOG.md"
+    traceability: "HIGH"
+
+  - historical_id: "EXP-2026-14-VOLATILITY-TIMING"
+    program_scope: "LEGACY_FRIVAL_ML"
+    title: "CALM vs VOLATILE regime trade-EV"
+    status: "closed"
+    decision: "REJECTED"
+    evidence: "ml-signal-service/experiments/EXP-2026-14-VOLATILITY-TIMING/RUN_LOG.md"
+    traceability: "MEDIUM"
+
+  # --- Future QPF (pre-registration only; no results) ---
+  - id: "QPF-RV-2026-01-EURUSD-GBPUSD-COINTEGRATION"
+    historical_id: null
+    program_scope: "FUTURE_QPF"
+    family: "RV"
+    title: "EURUSD-GBPUSD Cointegration Viability Falsification"
+    status: "preregistered"
+    decision: "NONE"
+    purpose: "Viability falsification only (statistical viability first; economic viability deferred)."
+    evidence: "experiments/QPF-RV-2026-01-EURUSD-GBPUSD-COINTEGRATION/experiment.yaml"
+    traceability: "pre-registered / no data accessed"
+    results: "none available"
+    execution_authorized: false

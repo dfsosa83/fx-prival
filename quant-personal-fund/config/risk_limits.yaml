@@ -1,0 +1,54 @@
+# Risk Limits Configuration
+# Portfolio-level risk constraints and drawdown governance.
+# Populated with placeholder values for Phase 1.
+# These will be calibrated in Phase 2 when the risk engine is built.
+
+portfolio:
+  # Volatility targeting
+  annual_vol_target: 0.10        # 10% annualized portfolio volatility target
+  vol_target_min: 0.08           # Minimum volatility target
+  vol_target_max: 0.12           # Maximum volatility target
+  vol_lookback_days: 60          # Lookback window for volatility estimation
+  vol_estimation_method: "ewma"  # Volatility estimation method (ewma | realized)
+
+  # Leverage
+  max_gross_leverage: 3.0        # Maximum gross leverage
+  max_net_leverage: 2.0          # Maximum net leverage
+
+  # Per-instrument limits
+  max_risk_per_instrument: 0.10  # Maximum fraction of total risk budget per instrument
+  max_capital_per_instrument: 0.20  # Maximum fraction of capital per instrument
+
+  # Per-asset-class limits
+  max_risk_per_class: 0.35       # Maximum fraction of total risk per asset class
+
+  # Currency exposure
+  max_net_currency_exposure: 0.50  # Maximum net exposure to any single currency
+
+  # Concentration
+  max_var_contribution: 0.15     # Maximum contribution of single instrument to portfolio VaR
+  max_correlation_pair: 0.80     # Alert threshold for high pair correlation
+
+drawdown_governance:
+  # Response to portfolio drawdown — exposure scaling
+  - drawdown: 0.0
+    exposure_multiplier: 1.0     # Normal operation (0 to -5%)
+  - drawdown: -0.05
+    exposure_multiplier: 0.75    # Reduce risk to 75% (-5% to -8%)
+  - drawdown: -0.08
+    exposure_multiplier: 0.50    # Reduce risk to 50% (-8% to -12%)
+  - drawdown: -0.12
+    exposure_multiplier: 0.25    # Reduce risk to 25% (-12% to -15%)
+  - drawdown: -0.15
+    exposure_multiplier: 0.0     # Halt scaling; full review required
+
+stress_scenarios:
+  # Historical stress scenarios for portfolio stress testing (Phase 2)
+  - name: "2008_global_financial_crisis"
+    description: "Sep–Dec 2008"
+
+  - name: "2020_covid_crash"
+    description: "Feb–Mar 2020"
+
+  - name: "2022_rate_hiking"
+    description: "2022 USD strength and bond sell-off"

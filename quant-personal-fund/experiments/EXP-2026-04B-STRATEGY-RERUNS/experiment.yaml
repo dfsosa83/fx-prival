@@ -1,0 +1,163 @@
+# Experiment Manifest — EXP-2026-04B-STRATEGY-RERUNS
+# Pre-registered: 2026-09-23
+# Status: preregistered
+# Authorization: user-approved 2026-09-23, scope limited to EXP-2026-04B only.
+
+experiment:
+  id: "EXP-2026-04B-STRATEGY-RERUNS"
+  status: "preregistered"
+  created: "2026-09-23"
+  researcher: "quant-fund"
+  stage: "04B"
+  purpose: >
+    Verdict-validity rerun ONLY. Determines whether prior trend and
+    ML-volatility-overlay conclusions remain valid under corrected
+    15-instrument USD accounting and Benchmark B. NOT alpha discovery.
+  supersedes: null
+  references:
+    - "EXP-2026-04A inputs_hash: 77e86d1aa99037d3ce21f2f01d430d1b06c0bb880d0b2755460bbe7c3c3292a0"
+    - "EXP-2026-01-VOL-FORECAST-OVERLAY/experiment.yaml (frozen parameters + gate)"
+    - "EXP-2026-03-SELECTIVE-DERISK-OVERLAY/experiment.yaml (frozen parameters + gate)"
+    - "AUDIT-2026-09-23-PHASE-5-5 (remediation basis)"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# FROZEN SCOPE (authorization: 04B only; no other phase/work authorized)
+# ═══════════════════════════════════════════════════════════════════════════
+scope:
+  rerun_only:
+    - "trend sleeve (long-only, monthly rebalance)"
+    - "EXP-2026-01 price-feature ML volatility overlay"
+    - "EXP-2026-03 macro-feature selective de-risking ML volatility overlay"
+  excluded:
+    - "carry/value: preserved ONLY as zero-swap spot proxy; NOT rerun, NOT restated as economically complete carry"
+    - "no new strategies / features / models / parameters / optimization / data"
+  frozen_modules:
+    - "signals/* (must NOT be edited)"
+    - "portfolio/accounting_v2.py, core/fx.py, portfolio/benchmark.py, core/costs.py, risk/metrics.py"
+    - "config/* values (financing multipliers applied at RUNTIME only)"
+    - "raw data, prior experiment artifacts"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# FROZEN STRATEGY PARAMETERS (must match approved 04B design exactly)
+# ═══════════════════════════════════════════════════════════════════════════
+frozen_parameters:
+  trend_sleeve:
+    source: "portfolio/builder.py::trend_weights"
+    lookbacks: [21, 63, 126, 189, 252]
+    long_only: true
+    rebalance_freq: "M"
+    vol_target: 0.20
+    vol_halflife: 60
+    max_position: 0.15
+    signal_halflife: 10
+    rebalance_threshold: 0.02
+    normalize_window: 252
+  EXP_2026_01:
+    source: "scripts/phase5_ml_overlay.py"
+    horizon: 30
+    feature_selector: "noise_voting_3model_regression"
+    min_strategy_support: 1
+    seed: 42
+    model: "LightGBM (n_estimators=400, max_depth=12, learning_rate=0.03, num_leaves=60)"
+    vol_baseline: "realized_vol_60"
+    min_scale: 0.5
+    max_scale: 1.0
+    k_sensitivity: 1.0
+    purge_days: 30
+    train_end: "2022-12-31"
+    val_start: "2023-01-01"
+    val_end: "2023-12-31"
+    test_start: "2024-01-01"
+  EXP_2026_03:
+    source: "scripts/exp2026_03_run.py"
+    horizon: 30
+    derisk_scale: 0.5
+    derisk_quantile: 0.90
+    quantile_window: 252
+    feature_selector: "noise_voting_3model_regression"
+    min_strategy_support: 1
+    seed: 42
+    model: "LightGBM (as EXP-2026-01)"
+    macro_features: ["DGS3MO","DGS10","T10Y3M","VIXCLS","CPIAUCSL","UNRATE"]
+    macro_delta_windows: [21, 63]
+    publication_lag_days: 45
+    vol_baseline: "realized_vol_60"
+    purge_days: 30
+    train_end: "2022-12-31"
+    val_start: "2023-01-01"
+    val_end: "2023-12-31"
+    test_start: "2024-01-01"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# HISTORICAL GATES (literal; no substitution of Benchmark B values)
+# ═══════════════════════════════════════════════════════════════════════════
+historical_gates:
+  EXP_2026_03:  # LITERAL, unchanged. ONLY source of the GO/HOLD/STOP verdict.
+    go: "full_period_sharpe >= 0.55 AND max_drawdown > -0.167 AND cost_to_gross_pnl < 0.545"
+    hold: "full_period_sharpe between 0.40 and 0.55 OR any one GO condition missed"
+    stop: "full_period_sharpe < 0.40 OR max_drawdown <= -0.167 OR cost_to_gross_pnl >= 0.545"
+    note: >
+      Absolute thresholds 0.55 / -0.167 / 0.545 are applied literally.
+      Benchmark B values are NEVER substituted into these thresholds.
+  EXP_2026_01:
+    go: "net sharpe > baseline sharpe + 0.10 AND max_drawdown < baseline max_drawdown"
+    hold: "net sharpe within baseline sharpe +/- 0.10"
+    stop: "net sharpe < baseline sharpe - 0.10 OR max_drawdown > baseline max_drawdown"
+    note: >
+      Relative-gate FORM preserved verbatim. Benchmark B used only as the
+      corrected-accounting baseline comparator. Labeled as a corrected-
+      accounting re-evaluation, not a rewrite of the historical verdict.
+  trend_sleeve:
+    note: "No sealed historical GO/HOLD/STOP gate. Reported as comparison statement only."
+
+# ═══════════════════════════════════════════════════════════════════════════
+# COMPARATORS
+# ═══════════════════════════════════════════════════════════════════════════
+comparators:
+  primary: "Benchmark B (economically implemented; sole gate baseline)"
+  analytical_exposure_matched:
+    formula: "R_EM[t] = g_lagged[t] * R_B[t] + (1 - g_lagged[t]) * R_cash[t]"
+    g_lagged: "sleeve gross exposure known before return interval t (1-day lag)"
+    R_B: "Benchmark B net return"
+    R_cash: "0.0 (rf=0 convention)"
+    label: "Analytical Exposure-Matched Reference — non-tradeable"
+    constraints:
+      - "NO transaction costs, turnover, trades, execution claims, or separate economic NAV"
+      - "NOT a GO/HOLD/STOP gate target"
+      - "Use ONLY to decompose asset-selection vs exposure-timing effects"
+      - "Benchmark B remains the only economically implemented benchmark"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# FINANCING SENSITIVITY (runtime multipliers only; no config edits)
+# ═══════════════════════════════════════════════════════════════════════════
+financing_scenarios:
+  A: {multiplier: 0.0, purpose: "financing-free reference"}
+  B: {multiplier: 1.0, purpose: "PRIMARY scenario and ONLY verdict basis"}
+  C: {multiplier: 0.5, purpose: "downside sensitivity"}
+  D: {multiplier: 1.5, purpose: "upside sensitivity"}
+  rules:
+    - "financing charged ONLY through daily holding cost (H1-corrected)"
+    - "config/cost_model.yaml NOT modified; multipliers applied at runtime"
+    - "Scenario B is the only verdict basis; A/C/D are sensitivity only"
+
+statistics:
+  bootstrap: "moving_block, supplementary only (return and Sharpe differences vs Benchmark B)"
+  block_length: 10
+  block_length_sensitivity: [5, 20]
+  n_resamples: 1000
+  seed: 42
+  max_drawdown: "observed value, duration, main episodes; NO bootstrap CI as decision gate"
+
+inputs:
+  data_manifests: []
+  config_snapshot: "git 569eba348c9dcc5f09dffdf1617be72c0aa1826c"
+  references_04A: "inputs_hash 77e86d1aa99037d3...; reports/reproducibility_hashes.json"
+  inputs_hash: "405a408e45bdc78547910f169fa2a062613500f62b582c6572ce408e8fb81be4"
+
+non_goals:
+  - "No Phase 6, paper trading, broker integration, live trading"
+  - "No new market data downloads"
+  - "No new strategies, features, models, parameter tuning, or optimization"
+  - "No carry/value rerun or economic restatement"
+  - "No change to the active 15-instrument Benchmark B foundation"
+  - "No modification of frozen modules or prior artifacts"

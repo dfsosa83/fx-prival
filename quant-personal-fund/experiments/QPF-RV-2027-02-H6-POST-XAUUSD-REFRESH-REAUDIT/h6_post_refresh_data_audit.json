@@ -1,0 +1,164 @@
+{
+  "stage": "H6_POST_XAUUSD_REFRESH_DATA_REAUDIT",
+  "universe": [
+    "EURUSD",
+    "USDJPY",
+    "USDCHF",
+    "USDCAD",
+    "AUDUSD",
+    "NZDUSD",
+    "XAUUSD"
+  ],
+  "fx_instruments": [
+    "EURUSD",
+    "USDJPY",
+    "USDCHF",
+    "USDCAD",
+    "AUDUSD",
+    "NZDUSD"
+  ],
+  "separate_stratum": "XAUUSD",
+  "primary_multiplicity_family": "7 instruments x 3 N x 3 M x 3 H x 2 event classes = 378",
+  "threshold_final_label": "2026-09-24 18:00:00",
+  "min_rows": 30000,
+  "instruments": {
+    "EURUSD": {
+      "symbol": "EURUSD",
+      "raw_path": "ml-signal-service/data/raw/mt5/H1/EURUSD_H1.csv",
+      "sha256": "2F7B0630EDCD6CE0D162992393996E0248E51280EB58798C1313A91D0FFAA7AE",
+      "schema": "legacy",
+      "rows": 48204,
+      "first_label": "2019-01-02 00:00:00",
+      "final_label": "2026-09-30 15:00:00",
+      "validation": {
+        "no_null_datetime": true,
+        "no_duplicate_datetime": true,
+        "strict_ascending": true,
+        "close_finite_positive": true,
+        "at_least_30000_rows": true
+      },
+      "status": "H6_DATA_ELIGIBLE"
+    },
+    "USDJPY": {
+      "symbol": "USDJPY",
+      "raw_path": "ml-signal-service/data/raw/mt5/H1/USDJPY_H1.csv",
+      "sha256": "810F789A7271E9861010B4A0A21987F96905AB9FF83C3449E625FD90416A5858",
+      "schema": "canonical",
+      "rows": 48191,
+      "first_label": "2019-01-02 00:00:00",
+      "final_label": "2026-09-29 21:00:00",
+      "validation": {
+        "no_null_datetime": true,
+        "no_duplicate_datetime": true,
+        "strict_ascending": true,
+        "close_finite_positive": true,
+        "at_least_30000_rows": true
+      },
+      "status": "H6_DATA_ELIGIBLE"
+    },
+    "USDCHF": {
+      "symbol": "USDCHF",
+      "raw_path": "ml-signal-service/data/raw/mt5/H1/USDCHF_H1.csv",
+      "sha256": "E87554BC919CED237E62B993AC612DD53FA9F583A07CCE81797CFB6B455DC9EB",
+      "schema": "legacy",
+      "rows": 48209,
+      "first_label": "2019-01-02 00:00:00",
+      "final_label": "2026-09-30 15:00:00",
+      "validation": {
+        "no_null_datetime": true,
+        "no_duplicate_datetime": true,
+        "strict_ascending": true,
+        "close_finite_positive": true,
+        "at_least_30000_rows": true
+      },
+      "status": "H6_DATA_ELIGIBLE"
+    },
+    "USDCAD": {
+      "symbol": "USDCAD",
+      "raw_path": "ml-signal-service/data/raw/mt5/H1/USDCAD_H1.csv",
+      "sha256": "8AECF7FE947BBB340469BC739AB7B93ED0EEA44E89984A31D3ED6178A8C39B53",
+      "schema": "legacy",
+      "rows": 48179,
+      "first_label": "2019-01-02 07:00:00",
+      "final_label": "2026-09-30 14:00:00",
+      "validation": {
+        "no_null_datetime": true,
+        "no_duplicate_datetime": true,
+        "strict_ascending": true,
+        "close_finite_positive": true,
+        "at_least_30000_rows": true
+      },
+      "status": "H6_DATA_ELIGIBLE"
+    },
+    "AUDUSD": {
+      "symbol": "AUDUSD",
+      "raw_path": "ml-signal-service/data/raw/mt5/H1/AUDUSD_H1.csv",
+      "sha256": "0BF89F684D31DA032EB3B7D93713E45C7D8D1E8ADBF9A033D53311AE8A110A66",
+      "schema": "canonical",
+      "rows": 48116,
+      "first_label": "2019-01-02 00:00:00",
+      "final_label": "2026-09-24 18:00:00",
+      "validation": {
+        "no_null_datetime": true,
+        "no_duplicate_datetime": true,
+        "strict_ascending": true,
+        "close_finite_positive": true,
+        "at_least_30000_rows": true
+      },
+      "status": "H6_DATA_ELIGIBLE"
+    },
+    "NZDUSD": {
+      "symbol": "NZDUSD",
+      "raw_path": "ml-signal-service/data/raw/mt5/H1/NZDUSD_H1.csv",
+      "sha256": "9707F4D0066248440A97FD93B4CFAACE9D5A3F9D350171298F7EC695A97A85E9",
+      "schema": "canonical",
+      "rows": 48087,
+      "first_label": "2019-01-02 07:00:00",
+      "final_label": "2026-09-24 18:00:00",
+      "validation": {
+        "no_null_datetime": true,
+        "no_duplicate_datetime": true,
+        "strict_ascending": true,
+        "close_finite_positive": true,
+        "at_least_30000_rows": true
+      },
+      "status": "H6_DATA_ELIGIBLE"
+    },
+    "XAUUSD": {
+      "symbol": "XAUUSD",
+      "raw_path": "ml-signal-service/data/raw/mt5/H1/XAUUSD_H1.csv",
+      "sha256": "6DB76DE379FCF0EF65E60597B1A14AC3DD5E3466E01216D7386702CB14FB7F36",
+      "schema": "canonical",
+      "rows": 45809,
+      "first_label": "2019-01-02 01:00:00",
+      "final_label": "2026-09-30 14:00:00",
+      "validation": {
+        "no_null_datetime": true,
+        "no_duplicate_datetime": true,
+        "strict_ascending": true,
+        "close_finite_positive": true,
+        "at_least_30000_rows": true
+      },
+      "status": "H6_DATA_ELIGIBLE"
+    }
+  },
+  "xauusd_assertion": {
+    "expected": {
+      "sha256": "6DB76DE379FCF0EF65E60597B1A14AC3DD5E3466E01216D7386702CB14FB7F36",
+      "schema": [
+        "datetime",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume"
+      ],
+      "rows": 45809,
+      "first_label": "2019-01-02 01:00:00",
+      "final_label": "2026-09-30 14:00:00"
+    },
+    "passed": true
+  },
+  "decision": "H6_ALL_INSTRUMENTS_DATA_READY",
+  "no_market_statistics_calculated": true
+}

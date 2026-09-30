@@ -1,0 +1,94 @@
+# Experiment Manifest — EXP-2026-04A-BENCHMARK-FOUNDATION
+# Pre-registered: 2026-09-23
+# Status: preregistered
+
+experiment:
+  id: "EXP-2026-04A-BENCHMARK-FOUNDATION"
+  status: "preregistered"
+  created: "2026-09-23"
+  researcher: "quant-fund"
+  stage: "04A"
+  gate: "USER REVIEW REQUIRED BEFORE 04B"
+  supersedes: null
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DAILY EXECUTION CONVENTION (MANDATED, applies to ALL 04A accounting)
+# ═══════════════════════════════════════════════════════════════════════════
+# 1. At close[D], signals and target weights are formed using only
+#    information available through D.
+# 2. The target becomes effective for the next return interval, r[D+1].
+# 3. Transaction costs are booked on D+1 as the modeled entry/rebalance
+#    cost for that next-observation position.
+# 4. This is a DAILY NEXT-OBSERVATION / NEXT-RETURN-INTERVAL research
+#    convention, NOT execution-grade close-to-close fill simulation.
+# 5. The benchmark and all 04A accounting outputs use the same convention.
+# 6. Execution-grade timing, bid/ask fills, and intraday session alignment
+#    remain OUT OF SCOPE and are documented as such.
+# ═══════════════════════════════════════════════════════════════════════════
+
+hypothesis:
+  economic_mechanism: >
+    REMEDIATION, not strategy research. Corrects three confirmed defects
+    from AUDIT-2026-09-23-PHASE-5-5: (H9) missing USD base-currency
+    conversion for non-USD assets; (H1) financing double-charge inside
+    transaction costs; (H5) benchmark convention ambiguity (constant-target
+    free-rebalancing approximation). Establishes USD-denominated,
+    economically-tracked Benchmark A (buy-and-hold) and Benchmark B
+    (monthly-rebalanced, PRIMARY) on a 15-instrument active universe.
+  falsifiable_claim: >
+    With corrected USD conversion and cost accounting, the active
+    equal-weight benchmarks are reproducible, economically consistent,
+    and reported with supplementary moving-block bootstrap confidence
+    intervals for return and Sharpe comparisons.
+  why_existing_results_do_not_already_reject_it: >
+    Not a strategy hypothesis. Prior verdicts are preserved append-only.
+    This experiment re-establishes the BENCHMARK on corrected accounting.
+
+universe:
+  instruments:  # 15 ACTIVE (US10Y, BUND, JGB EXCLUDED per decision)
+    - EURUSD, USDJPY, GBPUSD, AUDUSD, USDCAD, USDCHF, NZDUSD, EURJPY
+    - SPX, NDX, SX5E, NKY
+    - XAUUSD, WTI, COPPER
+  excluded_instruments:
+    - "US10Y (yield-proxy excluded; ADR-003 proposes future homogeneous solution)"
+    - "BUND (ETF proxy excluded; heterogeneous bond leg)"
+    - "JGB / 1343.T (REIT ETF excluded; archived as evidence only)"
+  data_source: "yahoo_finance (raw unchanged)"
+  frequency: "daily"
+  base_currency: "USD"
+
+benchmark_conventions:
+  benchmark_A: "USD buy-and-hold equal-weight after one initial allocation"
+  benchmark_B: "USD monthly-rebalanced equal-weight (PRIMARY active-comparison benchmark)"
+  benchmark_B_detail: >
+    Drifted economic holdings tracked daily; month-end (last trading day)
+    rebalance trade = target(1/N) - drifted holdings; explicit entry cost
+    once; transaction costs via one-way API; financing ONLY via daily
+    holding cost; 1-trading-day next-return-interval lag.
+
+cost_model:
+  financing_location: "DAILY HOLDING COST ONLY (never inside transaction cost)"
+  transaction_cost_api: >
+    core/costs.py::entry_transaction_cost / exit_transaction_cost /
+    one_way_transaction_cost. Derived from symmetric round-trip table
+    as one_way = 0.5 * round_trip. TEMPORARY RESEARCH ASSUMPTION,
+    documented in docs/REMEDIATION_NOTES.md.
+
+statistics:
+  bootstrap: "moving_block, supplementary only (return and Sharpe differences)"
+  block_length: "10 (documented; sensitivity 5/20 reported)"
+  max_drawdown: "observed value, duration, main episodes; NO bootstrap CI as decision gate"
+  original_gates: "N/A for benchmark foundation (no strategy verdict in 04A)"
+
+inputs:
+  data_manifests: []
+  config_snapshot: "git 569eba348c9dcc5f09dffdf1617be72c0aa1826c"
+  inputs_hash: "77e86d1aa99037d3ce21f2f01d430d1b06c0bb880d0b2755460bbe7c3c3292a0"
+
+non_goals:
+  - "No strategy reruns (EXP-2026-04B, gated on user approval of this report)"
+  - "No carry/value rerun (preserved as zero-swap spot proxy)"
+  - "No new signals, no parameter changes, no ML changes"
+  - "No new data downloads, no bond replacement data"
+  - "No paper trading, no Phase 6, no execution-grade FX PnL accounting"
+  - "No modification of portfolio/accounting.py, signals/, raw data, prior outputs"

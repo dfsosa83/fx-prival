@@ -1,0 +1,16 @@
+{
+  "stage": "precheck",
+  "ok": true,
+  "errors": [],
+  "account": {
+    "login": 7409623,
+    "server": "FPMarketsSC-Demo",
+    "currency": "USD",
+    "balance": 5000.05,
+    "equity": 5000.05,
+    "margin": 0.0
+  },
+  "positions": [],
+  "orders": [],
+  "login_called": false
+}

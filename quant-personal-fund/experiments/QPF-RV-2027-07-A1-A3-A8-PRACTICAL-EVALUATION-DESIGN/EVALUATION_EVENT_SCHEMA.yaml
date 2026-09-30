@@ -1,0 +1,67 @@
+schema_version: "1.0"
+common_fields:
+  - run_id
+  - event_id
+  - rule_version_id
+  - instrument
+  - timeframe
+  - timestamp_label_internal_or_source_timestamp
+  - mode
+  - market_data_input_identity
+  - rule_state_before
+  - rule_state_after
+  - error_status
+replay_fields:
+  - replay_input_fixture_id
+  - replay_input_fixture_sha256
+  - candidate_signal_direction
+  - setup_type
+  - structural_level_fields
+  - entry_zone
+  - stop_level
+  - target_level
+  - risk_cap_fields
+  - accept_reject_reason
+  - lifecycle_status
+  - repeat_run_index
+forward_observation_fields:
+  - observation_cycle_index
+  - pending_entry_status
+  - pending_expiry_time
+  - no_setup_marker
+  - observation_window_day_index
+reserved_future_execution_fields:
+  prohibited_in_observation_only: true
+  fields:
+    - order_id
+    - fill_price
+    - fill_time
+    - realized_pnl
+    - unrealized_pnl
+    - account_balance
+    - position_size
+    - broker_response
+  reserved_status_values:
+    - MARKET_FILLED
+    - PENDING_TRIGGERED
+    - VIRTUAL_OPEN
+    - CLOSED_TP
+    - CLOSED_SL
+    - CLOSED_TIMEOUT
+required_status_values:
+  - NO_SETUP
+  - SETUP_DETECTED
+  - SIGNAL_ACCEPTED
+  - ENTRY_PENDING
+  - EXPIRED_UNFILLED
+  - NO_VALID_PENDING
+  - RULE_REJECTED
+  - OBSERVATION_ERROR
+validation_rules:
+  - "observation-only records must contain no order identifier (e.g. order_id)"
+  - "observation-only records must contain no PnL field (realized or unrealized)"
+  - "null is used where no signal or setup exists; fill/order fields must never be fabricated"
+  - "event IDs must be unique per run; rule-version IDs must be present on every record"
+  - "no secret, account, broker, or credential field may appear in any record"
+  - "replay reproducibility compares event records excluding wall-clock run_id"
+  - "XAUUSD records must remain segregated from any FX replay records"

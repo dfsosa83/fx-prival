@@ -1,0 +1,67 @@
+{
+  "config_path": "C:\\Users\\david\\OneDrive\\Documents\\fx-prival\\quant-personal-fund\\experiments\\QPF-RV-2027-12-A1-XAUUSD-ORDERS-DISABLED-FORWARD-OBSERVATION\\A1_OBSERVATION_SESSION_CONFIG.yaml",
+  "contains_broker_or_source_price_data": false,
+  "cycle_count": 2,
+  "demo_verified": true,
+  "engine_state": {
+    "active_trade": null,
+    "broken_level": null,
+    "confirm_candle": null,
+    "daily_halted": false,
+    "direction": "sell",
+    "h1_bias": "BEARISH",
+    "last_action": "NONE",
+    "last_reason": "",
+    "state": "WATCH_ZONE",
+    "timeout_bars": 0,
+    "updated_at": "",
+    "watched_level": {
+      "confirmed_idx": 195,
+      "confirmed_time": "2026-09-30 16:30:00",
+      "consumed": false,
+      "kind": "swing_high",
+      "pivot_idx": 193,
+      "pivot_time": "2026-09-30 15:30:00",
+      "price": 4219.26
+    }
+  },
+  "event_count": 2,
+  "external_demo_activity": false,
+  "first_cycle_utc": "2026-09-30T16:21:44.707379+00:00",
+  "heartbeat_count": 2,
+  "instrument": "XAUUSD",
+  "last_data_timestamps": {
+    "H1": "2026-09-30 18:00:00",
+    "M15": "2026-09-30 19:00:00",
+    "M30": "2026-09-30 18:30:00"
+  },
+  "last_heartbeat_utc": "2026-09-30T16:27:55.854176+00:00",
+  "last_lifecycle_status": "NO_SETUP",
+  "mode": "OBSERVATION_ONLY",
+  "observation_window": {
+    "calendar_days_elapsed": 0,
+    "completed_cycles": 2,
+    "status": "OBSERVATION_WINDOW_INCOMPLETE",
+    "target": {
+      "min_calendar_days": 30,
+      "min_completed_cycles": 50
+    }
+  },
+  "orders_count": 0,
+  "orders_disabled": true,
+  "paused": false,
+  "pending_observed": null,
+  "positions_count": 0,
+  "session_id": "a1_xauusd_observ_20260930",
+  "source_hashes": {
+    "A1_OBSERVATION_ONLY_RUNTIME.py": "766FFC8CDA37A80B4F73FAA985AC34F8DDA74670159D50A5E89FE74E92CA8160",
+    "a1_mt5_demo_observation_environment.py": "0AD8FCD2F7DD82ABA06508489ABE821D5CEE8F31D53B07A41DC347865BAC9F9B",
+    "a1_offline_runner.py": "36E80FC2C85B9BE52C762C215AD58397D9CB13F472033F690C2A876171979FA3",
+    "bias.py": "106999937CFC810C88E58DCCF9476EC63FF998D2CDF08A4BFE43DCD259F8362F",
+    "engine.py": "9653AE906D30583493A49A478CA123B6A190AC16B93B3FD4F9A2CCDD4B2357E8",
+    "levels.py": "63442EBBADAF059B816E49F9FDB28D71471CA4E7C5C98C8C3FE997674E0E49D5"
+  },
+  "status": "ACTIVE",
+  "terminal_path_recorded": false,
+  "trigger": "2026-09-30T16:27:00Z"
+}

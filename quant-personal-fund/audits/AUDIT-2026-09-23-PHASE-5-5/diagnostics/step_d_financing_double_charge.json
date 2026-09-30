@@ -1,0 +1,16 @@
+{
+  "H1_confirmed": true,
+  "mechanism": "financing inside round_trip_cost_pct AND daily hold_cost",
+  "affected": [
+    "SPX",
+    "NDX",
+    "SX5E",
+    "US10Y",
+    "BUND",
+    "NKY",
+    "JGB"
+  ],
+  "benchmark_impact": "none (zero turnover, only daily path fires)",
+  "sleeve_impact": "overstated costs on turnover for financed instruments",
+  "severity": "blocking_for_sleeve_verdicts_if_material"
+}

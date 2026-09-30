@@ -1,0 +1,128 @@
+# Experiment Manifest — EXP-2026-03-SELECTIVE-DERISK-OVERLAY
+# Pre-registered: 2026-09-23
+# Status: preregistered
+
+experiment:
+  id: "EXP-2026-03-SELECTIVE-DERISK-OVERLAY"
+  status: "closed"
+  created: "2026-09-23"
+  researcher: "quant-fund"
+  supersedes: "EXP-2026-02-MACRO-VOL-OVERLAY (HOLD)"
+  verdict: "STOP"
+  verdict_date: "2026-09-23"
+
+hypothesis:
+  economic_mechanism: >
+    EXP-2026-02 established that FRED macro features carry genuine
+    volatility information (11-18 features selected per instrument) but
+    the continuous de-risking mechanism destroyed value by reducing
+    exposure during the recovery as well as the elevated regime. This
+    experiment tests whether a SELECTIVE mechanism — de-risk only when
+    the forecast is confidently elevated (top decile of its recent
+    distribution) — extracts the information without paying the full
+    cost of the blunt mechanism.
+  falsifiable_claim: >
+    An ML vol-forecast overlay that de-risks only in the top decile of
+    forecast vol achieves full-period net Sharpe >= 0.55, strictly
+    improves max drawdown over the equal-weight baseline (-16.7%), and
+    reduces cost-to-gross below 54.5%, net of costs with 1-day lag.
+  why_existing_results_do_not_already_reject_it: >
+    Family 7 (price-only overlay) is closed because its features were
+    reactive. Family 8 (macro overlay, continuous de-risking) is HOLD
+    because the mechanism, not the information, was the failure. This
+    experiment reuses the SAME informative features but changes only
+    the sizing rule. It is not a re-test of Family 7 (information
+    source is different) nor Family 8 (mechanism is different).
+
+universe:
+  instruments:
+    - EURUSD, USDJPY, GBPUSD, AUDUSD, USDCAD, USDCHF, NZDUSD, EURJPY
+    - SPX, NDX, SX5E, NKY, US10Y, BUND, JGB, XAUUSD, WTI, COPPER
+  data_source: "yahoo_finance"
+  frequency: "daily"
+  date_range:
+    start: "2015-01-05"
+    end: "2026-09-18"
+
+signal:
+  definition: >
+    Reuse EXP-2026-02 model setup: daily price features + FRED macro
+    features (3M/10Y yields, term spread, VIX, CPI, unemployment, deltas),
+    noise-voting feature selection (regression mode), LightGBM forecasting
+    forward 30-day realized vol. CHANGE: exposure scale = 0.5 ONLY when
+    forecast vol is in the top decile of its trailing 252-day distribution;
+    otherwise scale = 1.0 (full exposure).
+  directionality: "long_only"
+  holding_horizon: "30 days (vol forecast horizon)"
+  rebalance_frequency: "monthly"
+  parameters:
+    horizon: 30
+    feature_selector: "noise_voting_3model_regression"
+    model: "LightGBM"
+    vol_baseline: "realized_vol_60"
+    derisk_scale: 0.5
+    derisk_quantile: 0.90
+    quantile_window: 252
+    purge_days: 30
+    train_end: "2022-12-31"
+    val_start: "2023-01-01"
+    val_end: "2023-12-31"
+    test_start: "2024-01-01"
+
+cost_model:
+  spread_source: "config/cost_model.yaml"
+  slippage_assumption: "config defaults"
+  commission: "config defaults"
+  financing: "config defaults (annualized daily)"
+  session_conditioning: "none"
+
+portfolio:
+  construction_method: "equal_weight"
+  risk_budget: "equal weight baseline"
+  vol_target: null
+  constraints: "long-only, no leverage"
+
+validation:
+  train_window: "2015-01-05 to 2022-12-31"
+  validation_window: "2023-01-01 to 2023-12-31"
+  sealed_test_window: "2024-01-01 to 2026-09-18"
+  embargo_rule: "30-day purge between train end and val start"
+  bootstrap_method: "moving_block"
+  bootstrap_resamples: 1000
+
+metrics:
+  primary_metric: "sharpe_ratio_net_full_period"
+  secondary_metrics:
+    - "max_drawdown"
+    - "annualized_return"
+    - "cost_to_gross_pnl"
+    - "annualized_turnover"
+  minimum_sample_size: 252
+
+decision_gate:
+  go: >
+    full_period_sharpe >= 0.55 AND
+    max_drawdown > -0.167 (strictly better than baseline) AND
+    cost_to_gross_pnl < 0.545
+  hold: "full_period_sharpe between 0.40 and 0.55, or any one GO condition missed"
+  stop: "full_period_sharpe < 0.40 OR max_drawdown <= -0.167 OR cost_to_gross_pnl >= 0.545"
+
+robustness:
+  checks:
+    - remove_top_trades
+    - year_by_year
+    - regime_split
+    - cost_stress
+    - parameter_stability
+    - unconditional_baseline
+
+inputs:
+  data_manifests: []
+  config_snapshot: "2026-09-23"
+  inputs_hash: ""  # Computed at pre-registration
+
+non_goals:
+  - "No price-direction prediction (closed family)"
+  - "No new information source beyond EXP-2026-02 features"
+  - "No correlation/drawdown target (deferred unless this GO is confirmed)"
+  - "No re-tuning of the model architecture"

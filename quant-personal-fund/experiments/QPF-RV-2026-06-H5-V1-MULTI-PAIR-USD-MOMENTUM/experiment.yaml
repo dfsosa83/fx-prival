@@ -1,0 +1,20 @@
+experiment_id: QPF-RV-2026-06-H5-V1-MULTI-PAIR-USD-MOMENTUM
+parent_design: QPF-RV-2026-05-H5-MULTI-PAIR-USD-MOMENTUM
+stage: H5_V1_IMMUTABLE_MULTISERIES_SNAPSHOT_FREEZE
+timeframe: H1
+clock: INTERNAL_ORDINAL_NOT_UTC
+mandatory_instruments:
+  - EURUSD
+  - GBPUSD
+  - USDJPY
+  - USDCHF
+  - USDCAD
+  - AUDUSD
+  - NZDUSD
+status: SNAPSHOT_FROZEN_PENDING_H5_V1_SCREEN
+research_question: >
+  Whether broad, coherent USD strength or weakness across the mandatory basket,
+  conditioned on high target volatility, predicts directional continuation in
+  the frozen target panel under the parent H5 protocol.
+profitability_claim: false
+trading_authorization: false

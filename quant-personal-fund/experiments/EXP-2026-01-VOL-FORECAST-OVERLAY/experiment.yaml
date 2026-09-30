@@ -1,0 +1,116 @@
+# Experiment Manifest — EXP-2026-01-VOL-FORECAST-OVERLAY
+# Pre-registered: 2026-09-23
+# Status: preregistered
+
+experiment:
+  id: "EXP-2026-01-VOL-FORECAST-OVERLAY"
+  status: "preregistered"
+  created: "2026-09-23"
+  researcher: "quant-fund"
+
+hypothesis:
+  economic_mechanism: >
+    Volatility is persistent but forecastable at short horizons. If a model
+    can forecast elevated forward volatility (next 30 days), reducing portfolio
+    exposure before the elevated regime should improve risk-adjusted returns
+    relative to an unmanaged equal-weight baseline. This is a risk-management
+    overlay, not a price-direction prediction.
+  falsifiable_claim: >
+    A portfolio with ML-forecast-conditional sizing achieves higher net-of-cost
+    Sharpe ratio than the equal-weight baseline on the same instruments and
+    dates, after costs and with a 1-day lag on the overlay signal.
+  why_existing_results_do_not_already_reject_it: >
+    The closed families in the falsification ledger are all price-direction
+    prediction (H1 FX, crosses, gold entries, momentum, macro event). This
+    experiment predicts VOLATILITY, not direction. The transparent baseline
+    (equal-weight) is the comparison — no active strategy has beaten it yet,
+    which makes the benchmark the correct null.
+
+universe:
+  instruments:
+    - EURUSD, USDJPY, GBPUSD, AUDUSD, USDCAD, USDCHF, NZDUSD, EURJPY
+    - SPX, NDX, SX5E, NKY, US10Y, BUND, JGB, XAUUSD, WTI, COPPER
+  data_source: "yahoo_finance"
+  frequency: "daily"
+  date_range:
+    start: "2015-01-05"
+    end: "2026-09-18"
+
+signal:
+  definition: >
+    ML volatility forecast overlay: features from daily OHLCV (returns,
+    realized/EWMA vol, candle structure, MA deviations, RSI, stochastic),
+    noise-voting feature selection, LightGBM regression to forecast
+    forward 30-day realized vol. Exposure scale = f(forecast / baseline).
+  directionality: "long_only"
+  holding_horizon: "30 days (vol forecast horizon)"
+  rebalance_frequency: "monthly"
+  parameters:
+    horizon: 30
+    feature_selector: "noise_voting_3model"
+    model: "LightGBM"
+    vol_baseline: "realized_vol_60"
+    min_scale: 0.5
+    max_scale: 1.0
+    k_sensitivity: 1.0
+    purge_days: 30
+    train_end: "2022-12-31"
+    val_start: "2023-01-01"
+    val_end: "2023-12-31"
+    test_start: "2024-01-01"
+
+cost_model:
+  spread_source: "config/cost_model.yaml"
+  slippage_assumption: "config defaults"
+  commission: "config defaults"
+  financing: "config defaults (annualized daily)"
+  session_conditioning: "none"
+
+portfolio:
+  construction_method: "equal_weight"
+  risk_budget: "equal weight baseline"
+  vol_target: null
+  constraints: "long-only, no leverage"
+
+validation:
+  train_window: "2015-01-05 to 2022-12-31"
+  validation_window: "2023-01-01 to 2023-12-31"
+  sealed_test_window: "2024-01-01 to 2026-09-18"
+  embargo_rule: "30-day purge between train end and val start"
+  bootstrap_method: "moving_block"
+  bootstrap_resamples: 1000
+
+metrics:
+  primary_metric: "sharpe_ratio_net"
+  secondary_metrics:
+    - "annualized_return"
+    - "max_drawdown"
+    - "sortino_ratio"
+    - "cost_to_gross_pnl"
+  minimum_sample_size: 252
+
+decision_gate:
+  go: "net sharpe > baseline sharpe + 0.10 AND max_drawdown < baseline max_drawdown"
+  hold: "net sharpe within baseline sharpe +/- 0.10"
+  stop: "net sharpe < baseline sharpe - 0.10 OR max_drawdown > baseline max_drawdown"
+
+robustness:
+  checks:
+    - remove_top_trades
+    - year_by_year
+    - regime_split
+    - cost_stress
+    - parameter_stability
+    - unconditional_baseline
+
+inputs:
+  data_manifests: []
+  config_snapshot: "2026-09-23"
+  inputs_hash: ""  # Computed at pre-registration
+
+non_goals:
+  - "No price-direction prediction (closed family)"
+  - "No H1 or intraday frequency"
+  - "No triple-barrier labels"
+  - "No cross-sectional momentum"
+  - "No event-reaction signals"

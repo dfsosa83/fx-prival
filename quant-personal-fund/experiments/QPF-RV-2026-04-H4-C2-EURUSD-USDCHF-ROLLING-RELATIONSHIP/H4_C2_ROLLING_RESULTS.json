@@ -1,0 +1,1002 @@
+{
+  "experiment_id": "QPF-RV-2026-04-H4-C2-EURUSD-USDCHF-ROLLING-RELATIONSHIP",
+  "stage": "H4_C2_ROLLING_RELATIONSHIP_SCREEN",
+  "seed": 42,
+  "internal_clock_only": true,
+  "timestamp_labels_are_not_utc": true,
+  "started": "2026-09-29T21:16:47.225861+00:00",
+  "snapshot_hash": {
+    "expected": "67590790F8BF0E20A707792D8DE85077C6D1067BD45035B05744D5D235E1DBF6",
+    "actual": "67590790F8BF0E20A707792D8DE85077C6D1067BD45035B05744D5D235E1DBF6",
+    "hash_ok": true
+  },
+  "input_validation": {
+    "ok": true,
+    "errors": []
+  },
+  "splits": {
+    "T": 48185,
+    "embargo": 30,
+    "train": {
+      "lo": 0,
+      "hi": 28911,
+      "n": 28911
+    },
+    "embargo_1": [
+      28911,
+      28941
+    ],
+    "validation": {
+      "lo": 28941,
+      "hi": 38548,
+      "n": 9607
+    },
+    "embargo_2": [
+      38548,
+      38578
+    ],
+    "sealed": {
+      "lo": 38578,
+      "hi": 48185,
+      "n": 9607
+    },
+    "boundary_labels": {
+      "train_end": "2023-08-22 14:00:00",
+      "val_start": "2023-08-23 21:00:00",
+      "val_end": "2025-03-13 03:00:00",
+      "sealed_start": "2025-03-14 10:00:00",
+      "sealed_end": "2026-09-29 20:00:00"
+    }
+  },
+  "validation": {
+    "W1000": {
+      "summary": {
+        "W": 1000,
+        "complete_blocks": 8,
+        "eligible_blocks": 1,
+        "future_passes": 0,
+        "eligibility_rate": 0.125,
+        "future_pass_rate": 0.0,
+        "not_eligible_for_selection": true,
+        "segment": "validation"
+      },
+      "blocks": [
+        {
+          "segment": "validation",
+          "W": 1000,
+          "E": 1000,
+          "fit_start_index": 28941,
+          "fit_end_index": 29940,
+          "fit_start_label": "2023-08-23 21:00:00",
+          "fit_end_label": "2023-10-20 12:00:00",
+          "eval_start_index": 29941,
+          "eval_end_index": 30940,
+          "eval_start_label": "2023-10-20 13:00:00",
+          "eval_end_label": "2023-12-19 04:00:00",
+          "alpha": -0.014981311198336848,
+          "beta": -0.7373462852497381,
+          "in_window_adf": {
+            "adf_stat": -1.253573626552083,
+            "p_value": 0.6501359705311498,
+            "used_lag": 0,
+            "nobs": 999,
+            "n": 1000,
+            "critical_values": {
+              "1%": -3.4369127451400474,
+              "5%": -2.864437475834273,
+              "10%": -2.568312754566378
+            }
+          },
+          "in_window_ar1": {
+            "a": -1.3581025408443908e-05,
+            "b": -0.005367356692412681,
+            "kappa": 0.005367356692412681,
+            "se_b": 0.004281644554995496,
+            "t": -1.2535736265520825,
+            "p_value": 0.21029089576785853,
+            "half_life_status": "FINITE",
+            "half_life_bars": 128.79437078062935
+          },
+          "historical_eligible": false,
+          "eligibility_failure_reasons": [
+            "adf_fit_p_ge_05",
+            "ar1_fit_p_ge_05"
+          ],
+          "future": null
+        },
+        {
+          "segment": "validation",
+          "W": 1000,
+          "E": 1000,
+          "fit_start_index": 29941,
+          "fit_end_index": 30940,
+          "fit_start_label": "2023-10-20 13:00:00",
+          "fit_end_label": "2023-12-19 04:00:00",
+          "eval_start_index": 30941,
+          "eval_end_index": 31940,
+          "eval_start_label": "2023-12-19 05:00:00",
+          "eval_end_label": "2024-02-19 20:00:00",
+          "alpha": -0.010789195197866978,
+          "beta": -0.7144430761784605,
+          "in_window_adf": {
+            "adf_stat": -1.9387384702906045,
+            "p_value": 0.3140623868157699,
+            "used_lag": 0,
+            "nobs": 999,
+            "n": 1000,
+            "critical_values": {
+              "1%": -3.4369127451400474,
+              "5%": -2.864437475834273,
+              "10%": -2.568312754566378
+            }
+          },
+          "in_window_ar1": {
+            "a": 1.1575282313817774e-05,
+            "b": -0.005039859375592994,
+            "kappa": 0.005039859375592994,
+            "se_b": 0.0025995560787719593,
+            "t": -1.9387384702906059,
+            "p_value": 0.05281512539078211,
+            "half_life_status": "FINITE",
+            "half_life_bars": 137.18617445336838
+          },
+          "historical_eligible": false,
+          "eligibility_failure_reasons": [
+            "adf_fit_p_ge_05",
+            "ar1_fit_p_ge_05"
+          ],
+          "future": null
+        },
+        {
+          "segment": "validation",
+          "W": 1000,
+          "E": 1000,
+          "fit_start_index": 30941,
+          "fit_end_index": 31940,
+          "fit_start_label": "2023-12-19 05:00:00",
+          "fit_end_label": "2024-02-19 20:00:00",
+          "eval_start_index": 31941,
+          "eval_end_index": 32940,
+          "eval_start_label": "2024-02-19 21:00:00",
+          "eval_end_label": "2024-04-17 12:00:00",
+          "alpha": -0.0038255126042230784,
+          "beta": -0.5964380615308547,
+          "in_window_adf": {
+            "adf_stat": -2.1374351434083776,
+            "p_value": 0.22973050462787048,
+            "used_lag": 1,
+            "nobs": 998,
+            "n": 1000,
+            "critical_values": {
+              "1%": -3.4369193380671,
+              "5%": -2.864440383452517,
+              "10%": -2.56831430323573
+            }
+          },
+          "in_window_ar1": {
+            "a": -2.7288681042560942e-06,
+            "b": -0.009322877005858099,
+            "kappa": 0.009322877005858099,
+            "se_b": 0.0041024638919930105,
+            "t": -2.272506779170936,
+            "p_value": 0.023268117549842256,
+            "half_life_status": "FINITE",
+            "half_life_bars": 74.00194952287646
+          },
+          "historical_eligible": false,
+          "eligibility_failure_reasons": [
+            "adf_fit_p_ge_05"
+          ],
+          "future": null
+        },
+        {
+          "segment": "validation",
+          "W": 1000,
+          "E": 1000,
+          "fit_start_index": 31941,
+          "fit_end_index": 32940,
+          "fit_start_label": "2024-02-19 21:00:00",
+          "fit_end_label": "2024-04-17 12:00:00",
+          "eval_start_index": 32941,
+          "eval_end_index": 33940,
+          "eval_start_label": "2024-04-17 13:00:00",
+          "eval_end_label": "2024-06-14 04:00:00",
+          "alpha": 0.038682008647866827,
+          "beta": -0.3584206296778367,
+          "in_window_adf": {
+            "adf_stat": -1.6163055608310082,
+            "p_value": 0.47466667443432775,
+            "used_lag": 0,
+            "nobs": 999,
+            "n": 1000,
+            "critical_values": {
+              "1%": -3.4369127451400474,
+              "5%": -2.864437475834273,
+              "10%": -2.568312754566378
+            }
+          },
+          "in_window_ar1": {
+            "a": -1.301945301766191e-06,
+            "b": -0.005702389922836276,
+            "kappa": 0.005702389922836276,
+            "se_b": 0.0035280395372174838,
+            "t": -1.6163055608310082,
+            "p_value": 0.10634461844616662,
+            "half_life_status": "FINITE",
+            "half_life_bars": 121.20689895275464
+          },
+          "historical_eligible": false,
+          "eligibility_failure_reasons": [
+            "adf_fit_p_ge_05",
+            "ar1_fit_p_ge_05"
+          ],
+          "future": null
+        },
+        {
+          "segment": "validation",
+          "W": 1000,
+          "E": 1000,
+          "fit_start_index": 32941,
+          "fit_end_index": 33940,
+          "fit_start_label": "2024-04-17 13:00:00",
+          "fit_end_label": "2024-06-14 04:00:00",
+          "eval_start_index": 33941,
+          "eval_end_index": 34940,
+          "eval_start_label": "2024-06-14 05:00:00",
+          "eval_end_label": "2024-08-12 20:00:00",
+          "alpha": 0.03949980583989945,
+          "beta": -0.3657044847987394,
+          "in_window_adf": {
+            "adf_stat": -1.6702167078103025,
+            "p_value": 0.44651933888265527,
+            "used_lag": 0,
+            "nobs": 999,
+            "n": 1000,
+            "critical_values": {
+              "1%": -3.4369127451400474,
+              "5%": -2.864437475834273,
+              "10%": -2.568312754566378
+            }
+          },
+          "in_window_ar1": {
+            "a": 2.3973909867749143e-06,
+            "b": -0.004863756669153611,
+            "kappa": 0.004863756669153611,
+            "se_b": 0.0029120512604200455,
+            "t": -1.670216707810303,
+            "p_value": 0.09519037603791432,
+            "half_life_status": "FINITE",
+            "half_life_bars": 142.165862360943
+          },
+          "historical_eligible": false,
+          "eligibility_failure_reasons": [
+            "adf_fit_p_ge_05",
+            "ar1_fit_p_ge_05"
+          ],
+          "future": null
+        },
+        {
+          "segment": "validation",
+          "W": 1000,
+          "E": 1000,
+          "fit_start_index": 33941,
+          "fit_end_index": 34940,
+          "fit_start_label": "2024-06-14 05:00:00",
+          "fit_end_label": "2024-08-12 20:00:00",
+          "eval_start_index": 34941,
+          "eval_end_index": 35940,
+          "eval_start_label": "2024-08-12 21:00:00",
+          "eval_end_label": "2024-10-09 12:00:00",
+          "alpha": 0.04457541444120303,
+          "beta": -0.2840706264971906,
+          "in_window_adf": {
+            "adf_stat": -1.4009877296838817,
+            "p_value": 0.5818024969947581,
+            "used_lag": 2,
+            "nobs": 997,
+            "n": 1000,
+            "critical_values": {
+              "1%": -3.4369259442540416,
+              "5%": -2.8644432969122833,
+              "10%": -2.5683158550174094
+            }
+          },
+          "in_window_ar1": {
+            "a": 8.328300070860521e-06,
+            "b": -0.004396615502876571,
+            "kappa": 0.004396615502876571,
+            "se_b": 0.0029109267350107,
+            "t": -1.5103834287538018,
+            "p_value": 0.1312624686590522,
+            "half_life_status": "FINITE",
+            "half_life_bars": 157.30789064187613
+          },
+          "historical_eligible": false,
+          "eligibility_failure_reasons": [
+            "adf_fit_p_ge_05",
+            "ar1_fit_p_ge_05"
+          ],
+          "future": null
+        },
+        {
+          "segment": "validation",
+          "W": 1000,
+          "E": 1000,
+          "fit_start_index": 34941,
+          "fit_end_index": 35940,
+          "fit_start_label": "2024-08-12 21:00:00",
+          "fit_end_label": "2024-10-09 12:00:00",
+          "eval_start_index": 35941,
+          "eval_end_index": 36940,
+          "eval_start_label": "2024-10-09 13:00:00",
+          "eval_end_label": "2024-12-06 04:00:00",
+          "alpha": 0.023631333769047677,
+          "beta": -0.4897622380067287,
+          "in_window_adf": {
+            "adf_stat": -2.025210378313993,
+            "p_value": 0.2756297782917779,
+            "used_lag": 0,
+            "nobs": 999,
+            "n": 1000,
+            "critical_values": {
+              "1%": -3.4369127451400474,
+              "5%": -2.864437475834273,
+              "10%": -2.568312754566378
+            }
+          },
+          "in_window_ar1": {
+            "a": -1.451049048759776e-06,
+            "b": -0.008688320720555408,
+            "kappa": 0.008688320720555408,
+            "se_b": 0.004290083051909165,
+            "t": -2.0252103783139925,
+            "p_value": 0.04311181415731274,
+            "half_life_status": "FINITE",
+            "half_life_bars": 79.43211132613456
+          },
+          "historical_eligible": false,
+          "eligibility_failure_reasons": [
+            "adf_fit_p_ge_05"
+          ],
+          "future": null
+        },
+        {
+          "segment": "validation",
+          "W": 1000,
+          "E": 1000,
+          "fit_start_index": 35941,
+          "fit_end_index": 36940,
+          "fit_start_label": "2024-10-09 13:00:00",
+          "fit_end_label": "2024-12-06 04:00:00",
+          "eval_start_index": 36941,
+          "eval_end_index": 37940,
+          "eval_start_label": "2024-12-06 05:00:00",
+          "eval_end_label": "2025-02-05 20:00:00",
+          "alpha": -0.09894246298832587,
+          "beta": -1.2438106664356525,
+          "in_window_adf": {
+            "adf_stat": -3.2101861021982154,
+            "p_value": 0.019402587016668315,
+            "used_lag": 1,
+            "nobs": 998,
+            "n": 1000,
+            "critical_values": {
+              "1%": -3.4369193380671,
+              "5%": -2.864440383452517,
+              "10%": -2.56831430323573
+            }
+          },
+          "in_window_ar1": {
+            "a": -5.258051498448718e-06,
+            "b": -0.026379447723758543,
+            "kappa": 0.026379447723758543,
+            "se_b": 0.007486271156852223,
+            "t": -3.5237098912204505,
+            "p_value": 0.0004448610003132695,
+            "half_life_status": "FINITE",
+            "half_life_bars": 25.92791302121037
+          },
+          "historical_eligible": true,
+          "eligibility_failure_reasons": [],
+          "future": {
+            "future_adf": {
+              "adf_stat": -2.246672393388687,
+              "p_value": 0.1897439994690429,
+              "used_lag": 1,
+              "nobs": 998,
+              "n": 1000,
+              "critical_values": {
+                "1%": -3.4369193380671,
+                "5%": -2.864440383452517,
+                "10%": -2.56831430323573
+              }
+            },
+            "future_ar1": {
+              "a": 9.409529183400608e-05,
+              "b": -0.0076693474593668015,
+              "kappa": 0.0076693474593668015,
+              "se_b": 0.0032721246005693303,
+              "t": -2.3438433420391083,
+              "p_value": 0.019281796132353122,
+              "half_life_status": "FINITE",
+              "half_life_bars": 90.03188085163892
+            },
+            "future_pass": false,
+            "future_failure_reasons": [
+              "adf_fit_p_ge_05"
+            ]
+          }
+        }
+      ]
+    },
+    "W2000": {
+      "summary": {
+        "W": 2000,
+        "complete_blocks": 7,
+        "eligible_blocks": 1,
+        "future_passes": 0,
+        "eligibility_rate": 0.14285714285714285,
+        "future_pass_rate": 0.0,
+        "not_eligible_for_selection": true,
+        "segment": "validation"
+      },
+      "blocks": [
+        {
+          "segment": "validation",
+          "W": 2000,
+          "E": 1000,
+          "fit_start_index": 28941,
+          "fit_end_index": 30940,
+          "fit_start_label": "2023-08-23 21:00:00",
+          "fit_end_label": "2023-12-19 04:00:00",
+          "eval_start_index": 30941,
+          "eval_end_index": 31940,
+          "eval_start_label": "2023-12-19 05:00:00",
+          "eval_end_label": "2024-02-19 20:00:00",
+          "alpha": -0.015532176703592686,
+          "beta": -0.748602930140041,
+          "in_window_adf": {
+            "adf_stat": -2.155081677331203,
+            "p_value": 0.2229500197637853,
+            "used_lag": 0,
+            "nobs": 1999,
+            "n": 2000,
+            "critical_values": {
+              "1%": -3.4336254962865045,
+              "5%": -2.862986937508278,
+              "10%": -2.567540287745173
+            }
+          },
+          "in_window_ar1": {
+            "a": -1.772431170908158e-06,
+            "b": -0.00469910696516652,
+            "kappa": 0.00469910696516652,
+            "se_b": 0.002180477433683985,
+            "t": -2.155081677331203,
+            "p_value": 0.03127464037369016,
+            "half_life_status": "FINITE",
+            "half_life_bars": 147.15930512427795
+          },
+          "historical_eligible": false,
+          "eligibility_failure_reasons": [
+            "adf_fit_p_ge_05"
+          ],
+          "future": null
+        },
+        {
+          "segment": "validation",
+          "W": 2000,
+          "E": 1000,
+          "fit_start_index": 29941,
+          "fit_end_index": 31940,
+          "fit_start_label": "2023-10-20 13:00:00",
+          "fit_end_label": "2024-02-19 20:00:00",
+          "eval_start_index": 31941,
+          "eval_end_index": 32940,
+          "eval_start_label": "2024-02-19 21:00:00",
+          "eval_end_label": "2024-04-17 12:00:00",
+          "alpha": 0.013483682984256654,
+          "beta": -0.49401124418888354,
+          "in_window_adf": {
+            "adf_stat": -2.4024492282586145,
+            "p_value": 0.14104632507690357,
+            "used_lag": 0,
+            "nobs": 1999,
+            "n": 2000,
+            "critical_values": {
+              "1%": -3.4336254962865045,
+              "5%": -2.862986937508278,
+              "10%": -2.567540287745173
+            }
+          },
+          "in_window_ar1": {
+            "a": 6.58602073492324e-06,
+            "b": -0.004607507127993813,
+            "kappa": 0.004607507127993813,
+            "se_b": 0.0019178374609537558,
+            "t": -2.4024492282586154,
+            "p_value": 0.016376467162936423,
+            "half_life_status": "FINITE",
+            "half_life_bars": 150.09181580974885
+          },
+          "historical_eligible": false,
+          "eligibility_failure_reasons": [
+            "adf_fit_p_ge_05"
+          ],
+          "future": null
+        },
+        {
+          "segment": "validation",
+          "W": 2000,
+          "E": 1000,
+          "fit_start_index": 30941,
+          "fit_end_index": 32940,
+          "fit_start_label": "2023-12-19 05:00:00",
+          "fit_end_label": "2024-04-17 12:00:00",
+          "eval_start_index": 32941,
+          "eval_end_index": 33940,
+          "eval_start_label": "2024-04-17 13:00:00",
+          "eval_end_label": "2024-06-14 04:00:00",
+          "alpha": 0.046197602158911236,
+          "beta": -0.27331638527033186,
+          "in_window_adf": {
+            "adf_stat": -1.986083143715426,
+            "p_value": 0.2927082948421952,
+            "used_lag": 0,
+            "nobs": 1999,
+            "n": 2000,
+            "critical_values": {
+              "1%": -3.4336254962865045,
+              "5%": -2.862986937508278,
+              "10%": -2.567540287745173
+            }
+          },
+          "in_window_ar1": {
+            "a": -6.304709014354935e-06,
+            "b": -0.004452384103442277,
+            "kappa": 0.004452384103442277,
+            "se_b": 0.0022417913960606235,
+            "t": -1.986083143715426,
+            "p_value": 0.047160606599837986,
+            "half_life_status": "FINITE",
+            "half_life_bars": 155.3331738970264
+          },
+          "historical_eligible": false,
+          "eligibility_failure_reasons": [
+            "adf_fit_p_ge_05"
+          ],
+          "future": null
+        },
+        {
+          "segment": "validation",
+          "W": 2000,
+          "E": 1000,
+          "fit_start_index": 31941,
+          "fit_end_index": 33940,
+          "fit_start_label": "2024-02-19 21:00:00",
+          "fit_end_label": "2024-06-14 04:00:00",
+          "eval_start_index": 33941,
+          "eval_end_index": 34940,
+          "eval_start_label": "2024-06-14 05:00:00",
+          "eval_end_label": "2024-08-12 20:00:00",
+          "alpha": 0.04261838528761669,
+          "beta": -0.32848020945532014,
+          "in_window_adf": {
+            "adf_stat": -2.5120853580096623,
+            "p_value": 0.1125614491302131,
+            "used_lag": 5,
+            "nobs": 1994,
+            "n": 2000,
+            "critical_values": {
+              "1%": -3.4336337202771823,
+              "5%": -2.8629905684254977,
+              "10%": -2.5675422210261676
+            }
+          },
+          "in_window_ar1": {
+            "a": 3.7294532933364147e-07,
+            "b": -0.005162834893217634,
+            "kappa": 0.005162834893217634,
+            "se_b": 0.002250444383354741,
+            "t": -2.2941401846693887,
+            "p_value": 0.02188580863219589,
+            "half_life_status": "FINITE",
+            "half_life_bars": 133.91021580224566
+          },
+          "historical_eligible": false,
+          "eligibility_failure_reasons": [
+            "adf_fit_p_ge_05"
+          ],
+          "future": null
+        },
+        {
+          "segment": "validation",
+          "W": 2000,
+          "E": 1000,
+          "fit_start_index": 32941,
+          "fit_end_index": 34940,
+          "fit_start_label": "2024-04-17 13:00:00",
+          "fit_end_label": "2024-08-12 20:00:00",
+          "eval_start_index": 34941,
+          "eval_end_index": 35940,
+          "eval_start_label": "2024-08-12 21:00:00",
+          "eval_end_label": "2024-10-09 12:00:00",
+          "alpha": 0.051374212075376666,
+          "beta": -0.23514407310821311,
+          "in_window_adf": {
+            "adf_stat": -2.427715621978743,
+            "p_value": 0.13406617391783515,
+            "used_lag": 0,
+            "nobs": 1999,
+            "n": 2000,
+            "critical_values": {
+              "1%": -3.4336254962865045,
+              "5%": -2.862986937508278,
+              "10%": -2.567540287745173
+            }
+          },
+          "in_window_ar1": {
+            "a": 7.48602267871193e-06,
+            "b": -0.005056587770953467,
+            "kappa": 0.005056587770953467,
+            "se_b": 0.0020828583567098465,
+            "t": -2.427715621978743,
+            "p_value": 0.01528210965263034,
+            "half_life_status": "FINITE",
+            "half_life_bars": 136.73118146571
+          },
+          "historical_eligible": false,
+          "eligibility_failure_reasons": [
+            "adf_fit_p_ge_05"
+          ],
+          "future": null
+        },
+        {
+          "segment": "validation",
+          "W": 2000,
+          "E": 1000,
+          "fit_start_index": 33941,
+          "fit_end_index": 35940,
+          "fit_start_label": "2024-06-14 05:00:00",
+          "fit_end_label": "2024-10-09 12:00:00",
+          "eval_start_index": 35941,
+          "eval_end_index": 36940,
+          "eval_start_label": "2024-10-09 13:00:00",
+          "eval_end_label": "2024-12-06 04:00:00",
+          "alpha": 0.018049361889806347,
+          "beta": -0.5158501172883465,
+          "in_window_adf": {
+            "adf_stat": -2.1671206555559066,
+            "p_value": 0.21839438092095736,
+            "used_lag": 0,
+            "nobs": 1999,
+            "n": 2000,
+            "critical_values": {
+              "1%": -3.4336254962865045,
+              "5%": -2.862986937508278,
+              "10%": -2.567540287745173
+            }
+          },
+          "in_window_ar1": {
+            "a": -5.565188145704076e-07,
+            "b": -0.004770455977722888,
+            "kappa": 0.004770455977722888,
+            "se_b": 0.002201287669651774,
+            "t": -2.1671206555559075,
+            "p_value": 0.03034351895762684,
+            "half_life_status": "FINITE",
+            "half_life_bars": 144.95313489494163
+          },
+          "historical_eligible": false,
+          "eligibility_failure_reasons": [
+            "adf_fit_p_ge_05"
+          ],
+          "future": null
+        },
+        {
+          "segment": "validation",
+          "W": 2000,
+          "E": 1000,
+          "fit_start_index": 34941,
+          "fit_end_index": 36940,
+          "fit_start_label": "2024-08-12 21:00:00",
+          "fit_end_label": "2024-12-06 04:00:00",
+          "eval_start_index": 36941,
+          "eval_end_index": 37940,
+          "eval_start_label": "2024-12-06 05:00:00",
+          "eval_end_label": "2025-02-05 20:00:00",
+          "alpha": -0.08746542542849248,
+          "beta": -1.1686992813318202,
+          "in_window_adf": {
+            "adf_stat": -2.917846382685411,
+            "p_value": 0.04331171742837452,
+            "used_lag": 1,
+            "nobs": 1998,
+            "n": 2000,
+            "critical_values": {
+              "1%": -3.433627137787501,
+              "5%": -2.8629876622368218,
+              "10%": -2.5675406736265796
+            }
+          },
+          "in_window_ar1": {
+            "a": -7.561255326268798e-06,
+            "b": -0.010172127823348797,
+            "kappa": 0.010172127823348797,
+            "se_b": 0.003196585592827662,
+            "t": -3.182185343690626,
+            "p_value": 0.0014841515087715249,
+            "half_life_status": "FINITE",
+            "half_life_bars": 67.79464378467297
+          },
+          "historical_eligible": true,
+          "eligibility_failure_reasons": [],
+          "future": {
+            "future_adf": {
+              "adf_stat": -2.245914110183817,
+              "p_value": 0.19000507395026417,
+              "used_lag": 1,
+              "nobs": 998,
+              "n": 1000,
+              "critical_values": {
+                "1%": -3.4369193380671,
+                "5%": -2.864440383452517,
+                "10%": -2.56831430323573
+              }
+            },
+            "future_ar1": {
+              "a": 6.745283776432401e-05,
+              "b": -0.008319412173059308,
+              "kappa": 0.008319412173059308,
+              "se_b": 0.00350959669841409,
+              "t": -2.3704752676621417,
+              "p_value": 0.01795464330475519,
+              "half_life_status": "FINITE",
+              "half_life_bars": 82.9697895788352
+            },
+            "future_pass": false,
+            "future_failure_reasons": [
+              "adf_fit_p_ge_05"
+            ]
+          }
+        }
+      ]
+    },
+    "W5000": {
+      "summary": {
+        "W": 5000,
+        "complete_blocks": 4,
+        "eligible_blocks": 1,
+        "future_passes": 0,
+        "eligibility_rate": 0.25,
+        "future_pass_rate": 0.0,
+        "not_eligible_for_selection": true,
+        "segment": "validation"
+      },
+      "blocks": [
+        {
+          "segment": "validation",
+          "W": 5000,
+          "E": 1000,
+          "fit_start_index": 28941,
+          "fit_end_index": 33940,
+          "fit_start_label": "2023-08-23 21:00:00",
+          "fit_end_label": "2024-06-14 04:00:00",
+          "eval_start_index": 33941,
+          "eval_end_index": 34940,
+          "eval_start_label": "2024-06-14 05:00:00",
+          "eval_end_label": "2024-08-12 20:00:00",
+          "alpha": 0.030949323912592787,
+          "beta": -0.3803659079723649,
+          "in_window_adf": {
+            "adf_stat": -2.6576794267846817,
+            "p_value": 0.08165220505176679,
+            "used_lag": 4,
+            "nobs": 4995,
+            "n": 5000,
+            "critical_values": {
+              "1%": -3.43165984259144,
+              "5%": -2.8621188086591505,
+              "10%": -2.5670781005730454
+            }
+          },
+          "in_window_ar1": {
+            "a": -8.157020861543325e-07,
+            "b": -0.0025841808372331467,
+            "kappa": 0.0025841808372331467,
+            "se_b": 0.001016741101093089,
+            "t": -2.541631133486113,
+            "p_value": 0.011063612081445686,
+            "half_life_status": "FINITE",
+            "half_life_bars": 267.8803184050242
+          },
+          "historical_eligible": false,
+          "eligibility_failure_reasons": [
+            "adf_fit_p_ge_05"
+          ],
+          "future": null
+        },
+        {
+          "segment": "validation",
+          "W": 5000,
+          "E": 1000,
+          "fit_start_index": 29941,
+          "fit_end_index": 34940,
+          "fit_start_label": "2023-10-20 13:00:00",
+          "fit_end_label": "2024-08-12 20:00:00",
+          "eval_start_index": 34941,
+          "eval_end_index": 35940,
+          "eval_start_label": "2024-08-12 21:00:00",
+          "eval_end_label": "2024-10-09 12:00:00",
+          "alpha": 0.04346639049710968,
+          "beta": -0.29256837131058505,
+          "in_window_adf": {
+            "adf_stat": -3.726913858823733,
+            "p_value": 0.003750124610614841,
+            "used_lag": 4,
+            "nobs": 4995,
+            "n": 5000,
+            "critical_values": {
+              "1%": -3.43165984259144,
+              "5%": -2.8621188086591505,
+              "10%": -2.5670781005730454
+            }
+          },
+          "in_window_ar1": {
+            "a": 4.7224876906029055e-06,
+            "b": -0.004315479804078846,
+            "kappa": 0.004315479804078846,
+            "se_b": 0.001192624659546871,
+            "t": -3.6184727269671586,
+            "p_value": 0.0002992771410143738,
+            "half_life_status": "FINITE",
+            "half_life_bars": 160.27197497748284
+          },
+          "historical_eligible": true,
+          "eligibility_failure_reasons": [],
+          "future": {
+            "future_adf": {
+              "adf_stat": -2.0652294727143476,
+              "p_value": 0.25872381237943626,
+              "used_lag": 1,
+              "nobs": 998,
+              "n": 1000,
+              "critical_values": {
+                "1%": -3.4369193380671,
+                "5%": -2.864440383452517,
+                "10%": -2.56831430323573
+              }
+            },
+            "future_ar1": {
+              "a": 0.00011071721230490867,
+              "b": -0.009160585354260386,
+              "kappa": 0.009160585354260386,
+              "se_b": 0.004235139278330579,
+              "t": -2.1629950639713873,
+              "p_value": 0.030778669601468765,
+              "half_life_status": "FINITE",
+              "half_life_bars": 75.31914909297639
+            },
+            "future_pass": false,
+            "future_failure_reasons": [
+              "adf_fit_p_ge_05"
+            ]
+          }
+        },
+        {
+          "segment": "validation",
+          "W": 5000,
+          "E": 1000,
+          "fit_start_index": 30941,
+          "fit_end_index": 35940,
+          "fit_start_label": "2023-12-19 05:00:00",
+          "fit_end_label": "2024-10-09 12:00:00",
+          "eval_start_index": 35941,
+          "eval_end_index": 36940,
+          "eval_start_label": "2024-10-09 13:00:00",
+          "eval_end_label": "2024-12-06 04:00:00",
+          "alpha": 0.03537155172946062,
+          "beta": -0.38014095192817987,
+          "in_window_adf": {
+            "adf_stat": -2.779676695122314,
+            "p_value": 0.06123596153445272,
+            "used_lag": 1,
+            "nobs": 4998,
+            "n": 5000,
+            "critical_values": {
+              "1%": -3.431659055967043,
+              "5%": -2.862118461132801,
+              "10%": -2.5670779155711902
+            }
+          },
+          "in_window_ar1": {
+            "a": -1.0800748866514642e-07,
+            "b": -0.0032527724834290578,
+            "kappa": 0.0032527724834290578,
+            "se_b": 0.0011407075942475205,
+            "t": -2.8515392549611125,
+            "p_value": 0.004368657170650451,
+            "half_life_status": "FINITE",
+            "half_life_bars": 212.74750905453536
+          },
+          "historical_eligible": false,
+          "eligibility_failure_reasons": [
+            "adf_fit_p_ge_05"
+          ],
+          "future": null
+        },
+        {
+          "segment": "validation",
+          "W": 5000,
+          "E": 1000,
+          "fit_start_index": 31941,
+          "fit_end_index": 36940,
+          "fit_start_label": "2024-02-19 21:00:00",
+          "fit_end_label": "2024-12-06 04:00:00",
+          "eval_start_index": 36941,
+          "eval_end_index": 37940,
+          "eval_start_label": "2024-12-06 05:00:00",
+          "eval_end_label": "2025-02-05 20:00:00",
+          "alpha": 0.02968329446016623,
+          "beta": -0.40779286344994337,
+          "in_window_adf": {
+            "adf_stat": -1.1989517883108973,
+            "p_value": 0.6740464635081934,
+            "used_lag": 1,
+            "nobs": 4998,
+            "n": 5000,
+            "critical_values": {
+              "1%": -3.431659055967043,
+              "5%": -2.862118461132801,
+              "10%": -2.5670779155711902
+            }
+          },
+          "in_window_ar1": {
+            "a": -4.145971979968554e-06,
+            "b": -0.0010308561186195347,
+            "kappa": 0.0010308561186195347,
+            "se_b": 0.0007994169641143567,
+            "t": -1.2895099364842484,
+            "p_value": 0.19728054521787175,
+            "half_life_status": "FINITE",
+            "half_life_bars": 672.0529074106346
+          },
+          "historical_eligible": false,
+          "eligibility_failure_reasons": [
+            "adf_fit_p_ge_05",
+            "ar1_fit_p_ge_05"
+          ],
+          "future": null
+        }
+      ]
+    }
+  },
+  "selection": {
+    "selected_W": null,
+    "selection_reason": "no W had >=3 eligible validation blocks",
+    "selected_qualifies": false,
+    "per_W_eligible_for_selection": {
+      "W1000": false,
+      "W2000": false,
+      "W5000": false
+    }
+  },
+  "sealed": {
+    "evaluated": false,
+    "reason": "validation selection failed; sealed not evaluated"
+  },
+  "final_decision": "REJECT_ROLLING_STATISTICAL_VIABILITY",
+  "failed_validation_requirements": {
+    "selected_W": null,
+    "eligible_ge_3": false,
+    "passes_ge_2": false,
+    "pass_rate_ge_060": false,
+    "eligibility_rate_ge_020": false
+  },
+  "statistical_only": true,
+  "not_economic_or_tradable": true,
+  "prohibition_attestation": {
+    "no_costs_pnl_signals_ml_backtest_trading": true
+  },
+  "finished": "2026-09-29T21:16:48.405202+00:00"
+}

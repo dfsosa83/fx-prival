@@ -6,6 +6,22 @@ trading:
   default_risk_profile: MODERATE # VERY_CONSERVATIVE through VERY_AGGRESSIVE
   default_lot_size: 0.08
 
+# EXEC-D1 terminal execution — AUTHORIZED 2026-09-29 (project owner).
+# Real orders are sent to the FP Markets DEMO terminal (FPMarketsSC-Demo,
+# account 7409623, $5,000 demo) for ALL pairs.
+# entry_semantics: reanchor (owner decision 2026-09-29) -> market-enter at the
+# first in-window tick and set SL/TP from the SIGNAL'S PIP DISTANCES measured on
+# the ACTUAL fill (preserves R:R; removes the fixed +-2-pip close-zone latency
+# dependence that caused 0 fills). entry_semantics: zone keeps the legacy
+# in-zone / <=10-min zone-touch behavior.
+# The legacy order bot delegates to run_exec_d1_terminal.py when enabled; it
+# does NOT double-consume signals and does not send orders.
+execution:
+  enabled: true                  # EXEC-D1 terminal runner is the entry path
+  entry_semantics: reanchor      # zone | reanchor (SL/TP re-anchored on the fill)
+  terminal_scope: demo           # demo terminal only (no live account ever)
+  confirm_orders: false          # automated demo testing (owner decision 2026-09-29)
+
 mt5:
   timeout: 30                    # connection timeout seconds
   retries: 3                     # connection retry attempts

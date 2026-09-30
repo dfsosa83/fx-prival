@@ -1,0 +1,103 @@
+# Audit Manifest — AUDIT-2026-09-23-PHASE-5-5
+
+audit:
+  id: "AUDIT-2026-09-23-PHASE-5-5"
+  type: "analysis-only"
+  invasiveness: "non-invasive"
+  policy: "append-only"
+  created: "2026-09-23"
+  approver: "user"
+  status: "in_progress"
+
+objective: >
+  Determine whether the negative active-strategy results and the
+  equal-weight benchmark are economically and mechanically valid,
+  rather than artifacts of asset proxies, return construction,
+  transaction-cost application, rebalancing logic, or portfolio
+  accounting.
+
+# ── Mandatory amendments (user-approved) ────────────────────────────────────
+amendments:
+  - id: A1
+    text: >
+      Reclassified as analysis-only, non-invasive, append-only audit.
+      New diagnostic artifacts allowed ONLY under
+      audits/AUDIT-2026-09-23-PHASE-5-5/. No writes under data/processed/.
+      No modification of source, configs, raw data, strategy parameters,
+      existing experiment outputs, historical reports, prior manifests,
+      or sealed verdicts.
+  - id: A2
+    text: >
+      Statistical inference: moving-block bootstrap for aligned
+      portfolio-return differences (Sharpe, annualized return,
+      volatility) only where assumptions and block length are
+      documented. Max drawdown: report observed max DD, duration,
+      episodes, sensitivity diagnostics. Path resampling labeled
+      exploratory only. No bootstrap CI for max DD as primary criterion.
+  - id: A3
+    text: >
+      Portfolio base-currency and FX-conversion audit added as H9.
+      Missing or inconsistent base-currency conversion is BLOCKING.
+  - id: A4
+    text: >
+      Execution order fixed: a→j as specified.
+  - id: A5
+    text: >
+      Final recommendation limited to PASS / REMEDIATE / HOLD.
+      No strategy recommendation, Phase 6 recommendation, or
+      claim of reopening/closing research families.
+
+# ── Execution order (mandatory) ─────────────────────────────────────────────
+execution_order:
+  a: "Full existing test-suite run and environment capture"
+  b: "Base-currency / instrument-representation classification"
+  c: "Benchmark construction and turnover/cost reconciliation"
+  d: "Financing double-charge trace"
+  e: "Cost waterfall and accounting trace"
+  f: "Data-provenance and adjusted-price audit"
+  g: "Trend and carry/value implementation trace"
+  h: "Statistical and reporting consistency review"
+  i: "LOO/LACO diagnostics and reproducibility manifest"
+  j: "Final audit report and recommendation"
+
+# ── Suspected findings register ─────────────────────────────────────────────
+suspected_findings:
+  - id: H1
+    hypothesis: "Non-FX financing charged twice (round_trip_cost_pct + daily hold_cost)"
+    status: "to_verify"
+  - id: H2
+    hypothesis: "Equity index returns are price-appreciation only (no dividends)"
+    status: "to_verify"
+  - id: H3
+    hypothesis: "Bond leg heterogeneous: yield-proxy (US10Y), ETF (BUND), REIT (JGB)"
+    status: "to_verify"
+  - id: H4
+    hypothesis: "FX swap = 0 for all pairs -> carry verdicts net-of-zero-swap"
+    status: "to_verify"
+  - id: H5
+    hypothesis: "Benchmark cost/gross 29.6% with zero turnover = entry cost + daily holding"
+    status: "to_verify"
+  - id: H6
+    hypothesis: "Turnover reported on unlagged weights; positions lagged 1 day"
+    status: "to_verify"
+  - id: H7
+    hypothesis: "Trend sleeve cap/threshold/renormalize may leave cash residual"
+    status: "to_verify"
+  - id: H8
+    hypothesis: "Futures roll jumps embedded in front-month series, no roll cost applied"
+    status: "to_verify"
+  - id: H9
+    hypothesis: >
+      Portfolio base currency, instrument denomination/trading currency,
+      and FX conversion to base-currency returns may be missing or
+      inconsistent across returns, costs, financing, NAV, attribution,
+      and risk metrics. Non-USD assets may not be economically
+      comparable for a USD-based investor.
+    severity: "blocking_if_confirmed"
+
+# ── Decision standard ───────────────────────────────────────────────────────
+decision_standard:
+  - "PASS: results remain valid under the current implementation"
+  - "REMEDIATE: a confirmed blocking implementation or representation issue requires a controlled rerun"
+  - "HOLD: the audit cannot establish validity because of unresolved data or provenance limitations"
+  prohibited: "strategy recommendation, Phase 6 recommendation, reopening/closing research families"

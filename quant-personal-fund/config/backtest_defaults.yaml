@@ -1,0 +1,14 @@
+# Backtest Defaults
+# Default parameters for the Phase 2 backtesting engine.
+# Override by passing parameters directly to run_backtest().
+
+initial_nav: 1.0                    # Starting NAV (normalized)
+lag: 1                              # Trading days between signal and execution
+allow_short: false                  # Block short positions by default
+max_leverage: 2.0                   # Maximum gross leverage (warn, not enforce)
+periods_per_year: 252               # Trading days per year for annualization
+rf_annual: 0.0                      # Annual risk-free rate (use FRED DGS3MO when available)
+
+# Cost mode: "config" uses config/cost_model.yaml values
+# "stress_2x" doubles all costs for stress testing
+cost_mode: "config"
