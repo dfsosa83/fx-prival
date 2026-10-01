@@ -154,3 +154,71 @@ Credentials are never passed to the SDK. The terminal must already be running an
 The terminal path is **identical for demo and live accounts**. Any read script silently follows whichever account is currently logged in, with no error or warning. Confirm the attached login before trusting any balance, equity, or account-derived figure.
 
 Interpreter: `C:\Users\david\anaconda3\python.exe` — the MetaTrader5 SDK is not present in the default `python` on PATH.
+
+---
+
+## SECTION 12: PENDING ORDER LIFECYCLE
+
+Added 2026-10-01. This section exists because a limit order that never fills is not neutral — it is a measured opportunity cost. On 2026-10-01, six of seven emitted signals failed to fill; the binding constraint was a fixed 10-minute manual cancellation, not the analysis.
+
+### 12.1 Orders Do Not Self-Cancel
+
+A resting LIMIT or STOP persists in the market after the structure that justified it has changed. This is a structural defect in manual execution, not an operator error.
+
+**Mandatory:** every emitted order MUST carry both a **time expiry** and an **invalidation condition**. Neither is optional.
+
+### 12.2 Side-of-Level Rule (learned from T001, T007)
+
+| Order type | Placement rule |
+| :--- | :--- |
+| Retest **BUY** LIMIT | Entry **at or above** the broken support level. Never below it. |
+| Retest **SELL** LIMIT | Entry **at or below** the broken resistance level. Never above it. |
+| Breakout **BUY** STOP | Entry **above** the level being broken. Never at it. |
+| Breakout **SELL** STOP | Entry **below** the level being broken. Never at it. |
+
+T007 placed a BUY LIMIT 1.5 pips below the 158.065 support it was designed to catch. Price reached 158.065, bounced, and the order never filled.
+
+T001 placed a SELL STOP at the exact low of a forming M5 candle. Price wicked 2.16 beyond it before the order was live.
+
+### 12.3 Time Expiry by Trigger Timeframe
+
+The expiry window is set by the **timeframe that generated the trigger**, not by convenience. A trigger formed on M15 needs M15-scale patience.
+
+| Trigger timeframe | Minimum order life | Hard expiry | Bars |
+| :--- | :--- | :--- | :--- |
+| M5 microstructure | 15 min | 30 min | 6 |
+| M15 rejection / CHoCH | 30 min | 60 min | 4 |
+| M30 range / FVG | 60 min | 120 min | 4 |
+| H1/H4 structure | 120 min | 240 min | 4 |
+
+**A pending order that has not filled within the hard expiry MUST be re-validated, not silently cancelled.** Re-validation is: re-read the market, confirm the trigger still holds, then either re-emit with fresh levels or withdraw with the reason logged.
+
+### 12.4 Immediate Invalidation
+
+Cancel the order **regardless of elapsed time** if any of these occur:
+
+- The timeframe named in the trigger closes against the setup (e.g. an M15-close trigger sees an M15 close the other way).
+- Price closes beyond the order's own stop level — the structural context is gone.
+- A higher-timeframe level that justified the setup is breached.
+- Spread exceeds 2× its session median — fill quality is compromised.
+
+### 12.5 What Every Emitted Order Must State
+
+```
+SÍMBOLO:      <symbol>
+DIRECCIÓN:    <BUY|SELL>
+TIPO ORDEN:   <LIMIT|STOP|MARKET>
+VOLUMEN:      <tier size>
+PRECIO:       <entry>
+SL:           <stop>
+TP1/TP2/TP3:  <targets>
+COMENTARIO:   FRIVAL_<setup_id>
+VENCIAMIENTO: <minutes>   ← new, mandatory
+INVALIDACIÓN: <condition that cancels before fill>   ← new, mandatory
+```
+
+### 12.6 Fill Statistics
+
+Track in the log: signals emitted, orders placed, orders filled, orders expired unfilled, mean time-to-fill.
+
+An unfilled rate above 50% means the trigger timeframe and the order placement disagree. Fix the placement, not the patience.
