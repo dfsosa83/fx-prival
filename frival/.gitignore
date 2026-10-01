@@ -1,0 +1,7 @@
+﻿
+# runtime artifacts — regenerated on demand, contain live account identifiers
+frival/context/
+frival/execution_audit.jsonl
+frival/executor_state.json
+frival/trade_log.csv
+frival/data/emergency_stop.txt

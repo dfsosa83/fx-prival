@@ -100,6 +100,29 @@ class FakeMT5Reject(FakeMT5):
         return self._last_error
 
 
+class FakeMT5StrictComment(FakeMT5):
+    """Wrapper with a stricter comment limit than expected: rejects any comment
+    longer than `max_len`, returning the MT5 comment error. Used to prove the
+    minimal-comment fallback still places the order."""
+
+    def __init__(self, max_len=0):
+        super().__init__()
+        self.max_len = max_len
+        self._last = None
+
+    def order_send(self, request):
+        self.sent.append(dict(request))
+        c = request.get("comment") or ""
+        if len(c) > self.max_len:
+            self._last = (-2, 'Invalid "comment" argument')
+            return None
+        self._last = None
+        return SimpleNamespace(retcode=TRADE_RETCODE_DONE, order=1, deal=1)
+
+    def last_error(self):
+        return self._last
+
+
 def u(ts):
     d = datetime.fromisoformat(ts.replace("Z", "+00:00"))
     return d.replace(tzinfo=timezone.utc)
@@ -382,6 +405,15 @@ class TestOrderComment(unittest.TestCase):
         for sid in (a, b):
             self.assertLessEqual(len(et.order_comment(sid)), et.MAX_COMMENT_LEN)
 
+    def test_limit_below_mt5_wrapper_boundary(self):
+        # Verified 2026-10-01: MetaTrader5 5.0.4874 accepts comment length <= 29
+        # and rejects >= 30 with (-2, 'Invalid "comment" argument'). The builder
+        # must stay strictly under that boundary.
+        self.assertLessEqual(et.MAX_COMMENT_LEN, 29)
+        for sid in ("GBPUSD_H1_SELL_2026-10-01T07:00:00Z",
+                    "EURUSD_H1_SELL_2026-10-01T09:00:00Z"):
+            self.assertLessEqual(len(et.order_comment(sid)), 29)
+
 
 class TestRequestGuards(unittest.TestCase):
     def test_validate_levels_orientation(self):
@@ -415,6 +447,16 @@ class TestRequestGuards(unittest.TestCase):
             signal_id="GBPUSD_H1_SELL_2026-09-30T07:00:00Z", symbol="GBPUSD",
             direction="SELL", fill_price=1.10, sl=1.11, tp=1.09)
         self.assertLessEqual(len(fake.sent[0]["comment"]), et.MAX_COMMENT_LEN)
+
+    def test_fallback_retry_uses_minimal_comment(self):
+        fake, executor, _ = make_executor(fake=FakeMT5StrictComment(max_len=2))
+        res = executor.execute_fill(
+            signal_id="GBPUSD_H1_SELL_2026-10-01T07:00:00Z", symbol="GBPUSD",
+            direction="SELL", fill_price=1.10, sl=1.11, tp=1.09)
+        self.assertEqual(res["decision"], "EXECUTED")
+        self.assertEqual(res["comment"], "D1")
+        self.assertEqual(fake.sent[-1]["comment"], "D1")
+        self.assertEqual(len(fake.sent), 2)   # first attempt + minimal fallback
 
     def test_filling_mode_selected_from_symbol_info(self):
         fake, executor, _ = make_executor()

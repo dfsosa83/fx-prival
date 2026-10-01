@@ -50,12 +50,14 @@ EXECUTIONS_LOG = DATA_DIR / "exec_d1_executions.jsonl"
 
 COMMENT_TAG = "D1"
 
-# MT5 hard limit for MqlTradeRequest.comment. The MetaTrader5 Python wrapper
-# rejects (returns None / last_error "(-2, 'Invalid \"comment\" argument')")
-# BEFORE the request reaches the broker whenever it is exceeded, so a comment
-# can never be longer than this. The 2026-09-30 failure: f"D1-{signal_id}"
-# produced 38 chars, so EVERY real order was silently rejected.
-MAX_COMMENT_LEN = 31
+# MT5 allows at most 29 characters for MqlTradeRequest.comment. The
+# MetaTrader5 Python wrapper (v5.0.4874) rejects the request BEFORE it reaches
+# the broker (order_send -> None, last_error "(-2, 'Invalid \"comment\" argument')")
+# for len(comment) >= 30; verified empirically 2026-10-01 (29 accepted, 30
+# rejected). Earlier failures: f"D1-{signal_id}" = 38 chars, then a first fix at
+# 31 chars — both over the real limit, so EVERY real order was rejected.
+# Use 28 to keep a one-character safety margin.
+MAX_COMMENT_LEN = 28
 
 
 def order_comment(signal_id: str, tag: str = COMMENT_TAG) -> str:
@@ -387,13 +389,30 @@ class Mt5Gateway:
             request["tp"] = round(float(tp), digits)
         result = self._mt5.order_send(request)
         if result is None:
+            err = self.last_error()
+            # Defense in depth: if the comment is still refused for any reason
+            # (broker/terminal variant with a stricter limit), retry once with a
+            # minimal comment so a real order is never lost to a comment quirk.
+            if "comment" in str(err).lower():
+                request["comment"] = COMMENT_TAG
+                result = self._mt5.order_send(request)
+                if result is not None:
+                    return {
+                        "success": result.retcode == self._mt5.TRADE_RETCODE_DONE,
+                        "retcode": result.retcode,
+                        "ticket": getattr(result, "order", None),
+                        "deal": getattr(result, "deal", None),
+                        "comment": request["comment"],
+                    }
+                err = self.last_error()
             return {"success": False, "retcode": None,
-                    "error": f"order_send None: {self.last_error()}"}
+                    "error": f"order_send None: {err}"}
         return {
             "success": result.retcode == self._mt5.TRADE_RETCODE_DONE,
             "retcode": result.retcode,
             "ticket": getattr(result, "order", None),
             "deal": getattr(result, "deal", None),
+            "comment": comment,
         }
 
 
@@ -542,6 +561,9 @@ class TerminalExecutor:
             "quote_bid": quote_bid, "quote_ask": quote_ask,
             "lot": lot, "sl": sl, "tp": tp, "retcode": result.get("retcode"),
             "ticket": result.get("ticket"), "deal": result.get("deal"),
+            "comment": result.get("comment"),
+            "comment_len": (len(result["comment"])
+                            if isinstance(result.get("comment"), str) else None),
             "error": result.get("error"),
         }
         self._append_execution(record)
