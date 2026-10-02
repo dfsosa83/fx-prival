@@ -411,6 +411,71 @@ def cmd_manage(a):
         mt5.shutdown()
 
 
+def cmd_cancel(a):
+    """Cancel a pending order in the BROKER, then mark the log row.
+
+    The log is a record, not a control. Writing status=CANCELLED to the CSV
+    does NOT remove the order from the terminal — the broker will still fill
+    it. This command always calls TRADE_ACTION_REMOVE first and only writes
+    the log after the broker confirms.
+
+    Verify mode is the default so a human reads the outcome before the log
+    is touched.
+    """
+    mt5 = _mt5()
+    try:
+        target = a.ticket
+        if a.id:
+            rows = list(csv.DictReader(LOG_PATH.open(newline="", encoding="utf-8")))
+            row = next((r for r in rows if r.get("log_id") == a.id), None)
+            if row is None:
+                print(f"[ABORT] {a.id} not in trade_log.csv")
+                return
+            sym, cmt = row["symbol"], f"FRIVAL_{a.id}"
+            found = next((o for o in (mt5.orders_get() or [])
+                          if o.symbol == sym and o.comment == cmt), None)
+            if found is None:
+                print(f"[INFO] no pending order matches {a.id} (already filled or gone)")
+                return
+            target = found.ticket
+        else:
+            found = next((o for o in (mt5.orders_get() or [])
+                          if o.ticket == target), None)
+            if found is None:
+                print(f"[INFO] ticket {target} not among pending orders")
+                return
+
+        print(f"[TARGET] ticket {found.ticket} {found.symbol} {found.volume_current} @ "
+              f"{found.price_open} SL {found.sl} TP {found.tp} comment {found.comment!r}")
+        res = mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE,
+                              "order": found.ticket, "symbol": found.symbol})
+        done = res is not None and res.retcode in (
+            mt5.TRADE_RETCODE_DONE, mt5.TRADE_RETCODE_DONE_PARTIAL)
+        audit("CANCEL", ticket=found.ticket, symbol=found.symbol,
+              comment=found.comment, retcode=res.retcode if res else None, ok=done)
+        if not done:
+            err = mt5.last_error()
+            print(f"[FAILED] order not removed: retcode={res.retcode if res else None} err={err}")
+            print("            The log row was NOT modified — the order may still be live.")
+            return
+        remaining = len(mt5.orders_get() or [])
+        print(f"[CANCELLED] ticket {found.ticket} removed by broker. "
+              f"pending orders now: {remaining}")
+        if a.id and not a.no_log:
+            rows = list(csv.DictReader(LOG_PATH.open(newline="", encoding="utf-8")))
+            for r in rows:
+                if r.get("log_id") == a.id:
+                    r["status"] = "CANCELLED_UNFILLED"
+                    r["notes"] = (r.get("notes", "") +
+                                  f" BROKER CANCELLED ticket {found.ticket} retcode "
+                                  f"{res.retcode} — removal confirmed by the terminal, not "
+                                  f"assumed from the log.")
+            save_log(rows)
+            print(f"[OK] {a.id} marked CANCELLED_UNFILLED after broker confirmed removal")
+    finally:
+        mt5.shutdown()
+
+
 def cmd_close_all(a):
     if not kill_switch_active() and not a.force:
         print("[ABORT] close-all requires --force or the kill switch file.")
@@ -491,11 +556,15 @@ def main():
     p_place.add_argument("--force", action="store_true")
     sub.add_parser("manage")
     sub.add_parser("status")
+    p_cancel = sub.add_parser("cancel", help="remove a pending order IN THE BROKER, then mark the log")
+    p_cancel.add_argument("--id", help="log_id; resolves the ticket via symbol+comment")
+    p_cancel.add_argument("--ticket", type=int, help="raw ticket number")
+    p_cancel.add_argument("--no-log", action="store_true", help="do not touch trade_log.csv")
     p_close = sub.add_parser("close-all")
     p_close.add_argument("--force", action="store_true")
     p_close.add_argument("--reason", default="")
     a = ap.parse_args()
-    fn = {"place": cmd_place, "manage": cmd_manage,
+    fn = {"place": cmd_place, "manage": cmd_manage, "cancel": cmd_cancel,
           "status": cmd_status, "close-all": cmd_close_all}[a.cmd]
     fn(a)
 
