@@ -111,6 +111,7 @@ def fetch_deals(days: int = 30):
         deals = mt5.history_deals_get(start, end)
         if not deals:
             return {}, {}
+        # Group entry deals by their FRIVAL tag first.
         groups: dict[tuple, list] = {}
         for d in deals:
             cmt = (getattr(d, "comment", "") or "").strip()
@@ -118,6 +119,29 @@ def fetch_deals(days: int = 30):
                 continue
             key = (d.symbol, cmt)
             groups.setdefault(key, []).append(d)
+
+        # When the broker closes on SL or TP it OVERWRITES the exit deal
+        # comment with "[sl X]" or "[tp X]", so the FRIVAL tag only survives
+        # on the entry deal. Attach those exits to the group of the same
+        # symbol whose entry is closest in time BEFORE the exit.
+        for d in deals:
+            cmt = (getattr(d, "comment", "") or "").strip()
+            if not (cmt.upper().startswith("[SL ") or cmt.upper().startswith("[TP ")):
+                continue
+            best = None
+            for key, items in groups.items():
+                if key[0] != d.symbol:
+                    continue
+                ins = [x for x in items if x.entry == DEAL_IN]
+                if not ins:
+                    continue
+                if ins[0].time <= d.time:
+                    delta = d.time - ins[0].time
+                    if best is None or delta < best[0]:
+                        best = (delta, key)
+            if best is not None:
+                groups[best[1]].append(d)
+
         info = {}
         for (sym, _), items in groups.items():
             if sym not in info:
@@ -141,7 +165,13 @@ def match(rows, groups, info):
         sid = r.get("setup_id", "")
         if not sid.upper().startswith(COMMENT_PREFIX):
             continue
-        key = next((k for k in groups if k[1] == sid or k[1].startswith(sid)), None)
+        # The broker comment is the log_id tag ("FRIVAL_T013") while the log's
+        # setup_id carries a date suffix ("FRIVAL_T013_20261002"). Match either
+        # direction so a prefix relationship is not missed.
+        key = next((k for k in groups
+                    if k[1] == sid
+                    or k[1].startswith(sid)
+                    or sid.startswith(k[1])), None)
         if key is None:
             continue
         deals = groups[key]

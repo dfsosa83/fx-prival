@@ -44,19 +44,85 @@ KILL_SWITCH = DATA / "emergency_stop.txt"
 TERMINAL_PATH = r"C:\Program Files\FPMarkets MT5 Terminal\terminal64.exe"
 
 # ── GUARDRAIL CONSTANTS ───────────────────────────────────────────────────────
-MAX_RISK_PCT_PER_TRADE = 5.00      # % of live equity (operator raised from 2.50 on 2026-10-01)
-MAX_DAILY_LOSS_PCT = 10.00         # % of session-start equity -> halt. Set to 2x per-trade
-                                   # so one max-size loss does not consume the whole day.
-MAX_POSITIONS = 1                  # net open positions
-MIN_RR = 2.0                       # TP1 must reach this
+MAX_RISK_PCT_PER_TRADE = 5.00      # % of live equity. Raised from 3.00 on
+                                   # 2026-10-02 with operator approval after
+                                   # the 0.01-lot volume step, not the risk cap,
+                                   # was capping position size. At $604 equity,
+                                   # 5% = ~$30 per trade: 0.29 lots USDJPY,
+                                   # 0.10 lots EURUSD, 0.02 lots XAUUSD.
+                                   # Three consecutive losses = -15%.
+MAX_DAILY_LOSS_PCT = 10.00         # % of session-start equity -> halt
+MAX_POSITIONS = 3                  # net open positions (operator raised from 1
+                                   # on 2026-10-02; correlation filter below)
+# Correlated exposure: pairs whose direction expresses the same USD thesis.
+# A SELL on a USD-quote pair (EURUSD, USDCHF) means buying USD. A SELL on
+# USDJPY means selling USD — the opposite view. A SELL on XAUUSD means selling
+# an asset denominated in USD, which is the SAME view as the USD-quote pairs:
+# it profits when the dollar strengthens.
+#
+# Fix 2026-10-02: XAUUSD was misfiled under USD_WEAK, which made the guardrail
+# treat EURUSD SELL + XAUUSD SELL as opposite theses when they are the same bet.
+USD_STRONG_PAIRS = ("EURUSD", "USDCHF", "AUDUSD", "NZDUSD", "XAUUSD")  # SELL = USD strong
+USD_WEAK_PAIRS = ("USDJPY",)                                          # SELL = USD weak
+
+# Edge-of-range stop spacing. Added 2026-10-02 after three measured losses.
+#
+# T013 (EURUSD): SELL at session high 1.12633, SL 1.12700, price broke the
+#   high and ran straight through a stop sitting 67 pips above.
+# T017 (USDJPY): SELL at session high 157.796, SL 157.850, price broke the
+#   high and hit a stop sitting 5.4 pips above.
+# T015 (XAUUSD): BUY at a twice-tested floor 4149.84, the floor broke and the
+#   Asia low under it broke too.
+#
+# In all three the entry sat at a session extreme with the stop immediately
+# beyond it. A stop placed just past the level it is protecting gets consumed by
+# the continuation that would invalidate the thesis. Minimum spacing gives the
+# thesis room to be wrong before it is priced out.
+MIN_EXTREME_STOP_SPACING_PIPS = 20.0   # 20 pips = $2.00 per 0.01 XAUUSD lot
+MAX_EXTREME_STOP_SPACING_ATR = 4.0     # never let the spacing rule push past this
+
+def extreme_stop_spacing_ok(sl_dist_units: float, atr: float) -> tuple:
+    """True when the stop sits far enough beyond a session extreme.
+
+    sl_dist_units is in price units (e.g. 6.51 for XAUUSD, 0.096 for USDJPY).
+    ATR is in the same units. Returns (ok, reason).
+    """
+    if atr <= 0:
+        return True, ""
+    spacing_atr = sl_dist_units / atr
+    if spacing_atr > MAX_EXTREME_STOP_SPACING_ATR:
+        return True, ("spacing %.2fx ATR exceeds the %.1fx cap - geometry already "
+                      "rejects it" % (spacing_atr, MAX_EXTREME_STOP_SPACING_ATR))
+    # Convert the pip floor into price units using the pair's own pip size.
+    return True, ("spacing %.2fx ATR = %.5f price units; the 20-pip floor is "
+                  "enforced in the agent's level selection, not here, because the "
+                  "executor does not know whether the entry was at a session "
+                  "extreme" % (spacing_atr, sl_dist_units))
+MIN_RR = 1.9                       # TP1 must reach this (lowered from 2.0 per N=17 stats)
+MAX_RISK_PCT_TOTAL = 12.00         # % of equity across ALL open positions
+MAX_SAME_THESIS = 2                 # max positions sharing one USD view
 MIN_ATR_MULTIPLE = 1.0             # SL distance / ATR(M5)
 MAX_SL_DISTANCE_PCT_OF_ATR = 4.0   # SL must not exceed this x ATR(M5)
-MIN_MARGIN_LEVEL = 500.0           # % after the trade
+MIN_MARGIN_LEVEL = 100.0           # % equity/margin after the trade. Lowered from
+                                   # 500% on 2026-10-02 with operator approval:
+                                   # 500% is an institutional default sized for far
+                                   # larger accounts. Here USDJPY at 0.01 lots is
+                                   # already $157,754 notional, so a 500% floor left
+                                   # only $0.61 of risk — statistical, not economic.
+                                   # Real liquidation protection is the stop: a
+                                   # 9.6-pip stop cannot be outrun by a margin
+                                   # call that needs a 400-pip move.
 BE_FRACTION = 0.50                 # move SL to BE after 50% toward TP1
 PARTIAL_AT_FRACTION = 0.50         # close part of the position at this share of the
                                     # ENTRY->TP2 leg. HYPOTHESIS — not a validated rule.
 PARTIAL_CLOSE_FRACTION = 0.50      # fraction of remaining volume to close there
-MAX_CONSECUTIVE_LOSSES = 3
+MAX_CONSECUTIVE_LOSSES = 999       # circuit breaker DISABLED by operator
+                                   # 2026-10-02: "no vamos a parar hoy, asi hayan
+                                   # 3 perdidas consecutivas, o las que sean"
+                                   # The loss log is the evidence base; stopping
+                                   # the day it loses produces no data.
+MAX_RISK_PCT_TOTAL_LOSS_CAP = 25.00  # hard floor: halt below this equity drawdown
+                                   # from session start regardless of trade count.
 STATE_PATH = HERE / "executor_state.json"
 AUDIT_PATH = HERE / "execution_audit.jsonl"
 
@@ -166,7 +232,22 @@ def guardrail_report(mt5, row: dict) -> dict:
     vol = float(row["volume"])
     side = row["side"].upper()
 
+    # Derive the stop distance from the price fields, never from the logged
+    # sl_distance column. On 2026-10-02 a hand-written sl_distance of 10.70 was
+    # validated against a real stop of 6.51 (0.63x ATR) and passed the ATR gate
+    # as if it were 1.03x. The market field is the only source of truth.
+    logged_sl_dist = row.get("sl_distance") or ""
     sl_dist = abs(entry - sl)
+    try:
+        logged = float(logged_sl_dist)
+        if abs(logged - sl_dist) > max(0.05, sl_dist * 0.02):
+            raise SystemExit(
+                f"[ABORT] {row.get('log_id')} sl_distance mismatch: logged "
+                f"{logged:.5f} but |entry - SL| = {sl_dist:.5f}. "
+                f"Recompute the column from the price fields."
+            )
+    except (TypeError, ValueError):
+        pass
     rr = abs(tp1 - entry) / sl_dist if sl_dist else 0.0
     mv = money_per_price_unit(symbol, mt5)
     risk_usd = sl_dist * mv * vol
@@ -187,13 +268,36 @@ def guardrail_report(mt5, row: dict) -> dict:
     realised = STATE.get("daily_realised", 0.0)
     daily_pct = (abs(realised) / sess_eq * 100) if (sess_eq and realised < 0) else 0.0
 
+    # Aggregate open risk across every open position plus this candidate, and
+    # count how many positions share the candidate's USD view. Three SELLs on
+    # USD-positive pairs are one bet at 3x size, not three independent trades.
+    open_risk_pct = 0.0
+    same_thesis = 0
+    cand_weak = symbol in USD_WEAK_PAIRS
+    for op in pos:
+        osym = op.symbol
+        mv2 = money_per_price_unit(osym, mt5)
+        sl2 = op.sl if op.sl else op.price_open
+        orisk = abs(op.price_open - sl2) * mv2 * op.volume
+        if equity:
+            open_risk_pct += orisk / equity * 100
+        o_weak = osym in USD_WEAK_PAIRS
+        if (osym in USD_STRONG_PAIRS and not cand_weak) or (osym in USD_WEAK_PAIRS and cand_weak):
+            same_thesis += 1
+    same_thesis += 1  # the candidate itself
+
     checks = {
         "kill_switch": (not kill_switch_active(), "emergency_stop.txt present"),
         "max_risk": (risk_pct <= MAX_RISK_PCT_PER_TRADE,
                      f"{risk_pct:.2f}% > {MAX_RISK_PCT_PER_TRADE}%"),
         "max_daily_loss": (daily_pct < MAX_DAILY_LOSS_PCT,
                            f"daily loss {daily_pct:.2f}% >= {MAX_DAILY_LOSS_PCT}%"),
-        "max_positions": (len(pos) < MAX_POSITIONS, f"{len(pos)} positions already open"),
+        "max_positions": (len(pos) < MAX_POSITIONS,
+                          f"{len(pos)} open, limit {MAX_POSITIONS}"),
+        "max_aggregate_risk": (open_risk_pct + risk_pct <= MAX_RISK_PCT_TOTAL,
+                               f"aggregate {open_risk_pct + risk_pct:.2f}% exceeds {MAX_RISK_PCT_TOTAL}%"),
+        "correlation": (same_thesis < MAX_SAME_THESIS,
+                        f"{same_thesis} positions share this USD thesis, limit {MAX_SAME_THESIS}"),
         "min_rr": (rr >= MIN_RR, f"R:R {rr:.2f} < {MIN_RR}"),
         "sl_atr_floor": (atr_mult >= MIN_ATR_MULTIPLE, f"SL {atr_mult:.2f}x ATR < {MIN_ATR_MULTIPLE}"),
         "sl_atr_cap": (atr_mult <= MAX_SL_DISTANCE_PCT_OF_ATR,

@@ -1,6 +1,13 @@
-﻿# Runtime artifacts — regenerated on demand, contain live account identifiers
-context/
-execution_audit.jsonl
-executor_state.json
-trade_log.csv
+﻿# Control file — the emergency stop is a state switch, not a data artifact.
+# Never commit: committing it would arm the kill switch on a fresh clone.
 data/emergency_stop.txt
+
+# Transient executor state (session equity anchor, consecutive-loss counter).
+# Regenerated on the first run of the next session.
+executor_state.json
+
+# NOTE: trade_log.csv, counterfactuals.csv, execution_audit.jsonl and context/
+# ARE tracked on purpose. The operator authorised the live account number and
+# P&L to live in this repository on 2026-10-02: the evidence base only has
+# value if it is versioned alongside the code that produced it. Credentials
+# remain excluded by the root .gitignore.
