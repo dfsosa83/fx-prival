@@ -41,7 +41,9 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 CSV_PATH = HERE / "counterfactuals.csv"
-TERMINAL_PATH = r'C:\Program Files\FPMarkets MT5 Terminal\terminal64.exe'
+from mt5_path import resolve_terminal_path
+
+TERMINAL_PATH = resolve_terminal_path(HERE)
 
 FORWARD_BARS_DEFAULT = 30          # ~2.5h on M5, matches notebook horizon scale
 RESOLVE_GRACE_BARS = 2             # don't resolve on the same bar as the signal

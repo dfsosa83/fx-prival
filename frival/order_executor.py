@@ -41,7 +41,9 @@ ROOT = HERE.parent                              # .../fx-prival
 DATA = ROOT / "frival" / "data"
 LOG_PATH = HERE / "trade_log.csv"
 KILL_SWITCH = DATA / "emergency_stop.txt"
-TERMINAL_PATH = r"C:\Program Files\FPMarkets MT5 Terminal\terminal64.exe"
+from mt5_path import resolve_terminal_path
+
+TERMINAL_PATH = resolve_terminal_path(HERE)
 
 # ── GUARDRAIL CONSTANTS ───────────────────────────────────────────────────────
 MAX_RISK_PCT_PER_TRADE = 5.00      # % of live equity. Raised from 3.00 on

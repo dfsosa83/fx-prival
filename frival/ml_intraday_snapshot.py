@@ -45,7 +45,9 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent                      # fx-prival/
 RAW_MT5 = ROOT / "ml-signal-service" / "data" / "raw"
 INTRADAY = RAW_MT5 / "intraday"
-TERMINAL_PATH = r"C:\Program Files\FPMarkets MT5 Terminal\terminal64.exe"
+from mt5_path import resolve_terminal_path
+
+TERMINAL_PATH = resolve_terminal_path(HERE)
 
 SERVER_UTC_OFFSET_H = 3
 # Operator local time is UTC-5 (Panama). The SERVER clock reads UTC+3, so

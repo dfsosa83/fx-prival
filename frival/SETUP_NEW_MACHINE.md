@@ -61,44 +61,58 @@ intend to run `main.py`.
 
 ## 4. Machine-specific paths
 
-Three things are hardcoded and must be changed for a new machine. They are all
-`TERMINAL_PATH` constants plus the Python path in the launchers.
+**Resolved automatically since 2026-10-05.** Nothing to edit. `frival/mt5_path.py`
+picks the terminal path per machine in this order:
 
-| File | Line | Constant |
-|---|---|---|
-| `frival/order_executor.py` | 44 | `TERMINAL_PATH` |
-| `frival/log_trade.py` | 35 | `TERMINAL_PATH` |
-| `frival/counterfactual.py` | 44 | `TERMINAL_PATH` |
-| `frival/market_context.py` | 36 | `TERMINAL_PATH` |
-| `frival/ml_intraday_snapshot.py` | 48 | `TERMINAL_PATH` |
-| `frival/reconcile_deals.py` | 41 | `TERMINAL_PATH` |
-| `frival/test_kill_switch.py` | 43 | inline `mt5.initialize(path=...)` |
-| `frival/*.bat` (4 files) | 6 | `set "PYTHON=..."` |
+1. `MT5_PATH` in the process environment
+2. `MT5_PATH=` in `frival/config/.env` (gitignored, so per machine)
+3. the first known install path that exists on disk
+4. a default, unchanged, so a missing terminal fails loudly
 
-Default value, correct unless MT5 lives elsewhere:
+This exists because the install path is genuinely different between machines —
+note the space:
 
-```python
-TERMINAL_PATH = r'C:\Program Files\FPMarkets MT5 Terminal\terminal64.exe'
 ```
+desktop : C:\Program Files\FPMarkets MT5 Terminal\terminal64.exe
+laptop  : C:\Program Files\FP Markets MT5 Terminal\terminal64.exe
+```
+
+The six scripts that need the path (`order_executor`, `log_trade`,
+`counterfactual`, `market_context`, `ml_intraday_snapshot`, `reconcile_deals`)
+plus `test_kill_switch` all call `resolve_terminal_path(HERE)`. If your terminal
+lives somewhere else entirely, put it in `config/.env` as `MT5_PATH=...` rather
+than editing code.
+
+The four `.bat` launchers in `frival/` still hardcode
+`C:\Users\david\anaconda3\Library\envs\deaf_agent\python.exe`. They drive the
+legacy signal pipeline, not the autonomous trading path, so a new machine can
+ignore them — but they will not run as-is. See the open items in §10.
 
 **Do not run two MT5 terminals logged into the live account simultaneously**
 unless you intend both to trade. `order_executor` places real orders.
 
 ## 5. Credentials
 
-Create `frival/config/.env` from the example:
+Create `frival/config/.env` from `frival/config/.env.example`:
 
 ```
 MT5_LOGIN=81486396
 MT5_PASSWORD=<not in git — supply locally>
 MT5_SERVER=FPMarketsSC-Live
-MT5_PATH=C:\Program Files\FPMarkets MT5 Terminal\terminal64.exe
+MT5_PATH=<full path to terminal64.exe, or leave blank to auto-detect>
 OPENROUTER_API_KEY=<local only>
 PERPLEXITY_API_KEY=<local only>
 ```
 
-The order-placement path authenticates through the logged-in terminal, not
-through this file. It is required for the analysis submodules.
+The order-placement path does **not** read credentials — it attaches to the
+terminal that is already running and logged in. It reads only `MT5_PATH` from
+this file, and only as a fallback. `MT5_LOGIN/PASSWORD/SERVER` are used by
+`data/fetcher.py` for the legacy signal pipeline.
+
+Note: the desktop copy of this file still carries the old **demo** credentials
+(`MT5_LOGIN=7409623`, `MT5_SERVER=FPMarketsSC-Demo`) while its `MT5_PATH` points
+at the live terminal. Harmless for order placement, but do not copy that file to
+a new machine expecting it to be current.
 
 ## 6. Verify before trading
 

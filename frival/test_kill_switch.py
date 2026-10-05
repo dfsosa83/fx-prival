@@ -40,7 +40,8 @@ def run(args):
 
 def snapshot():
     import MetaTrader5 as mt5
-    mt5.initialize(path=r"C:\Program Files\FPMarkets MT5 Terminal\terminal64.exe")
+    from mt5_path import resolve_terminal_path
+    mt5.initialize(path=resolve_terminal_path(HERE))
     try:
         return (mt5.positions_total(), len(mt5.orders_get() or []))
     finally:

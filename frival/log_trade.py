@@ -32,7 +32,9 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 LOG_PATH = HERE / "trade_log.csv"
-TERMINAL_PATH = r"C:\Program Files\FPMarkets MT5 Terminal\terminal64.exe"
+from mt5_path import resolve_terminal_path
+
+TERMINAL_PATH = resolve_terminal_path(HERE)
 
 SERVER_OFFSET_H = 3
 LOCAL_OFFSET_H = -8
