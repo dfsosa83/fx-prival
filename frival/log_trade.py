@@ -307,7 +307,11 @@ def cmd_stats(a):
     if not closed:
         print("no closed trades yet — no performance claim is supportable")
         return
-    pnl = sum(float(r["pnl_usd"]) for r in closed)
+    def _num(row, key):
+        v = (row.get(key) or "").strip()
+        return float(v) if v else 0.0
+
+    pnl = sum(_num(r, "pnl_usd") for r in closed)
     rs = [float(r["r_multiple"]) for r in closed]
     wins = [r for r in rs if r > 0]
     print(f"total PnL ${pnl:.2f}  total R {sum(rs):.2f}  "

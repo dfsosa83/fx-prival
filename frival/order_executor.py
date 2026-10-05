@@ -441,6 +441,39 @@ def cmd_manage(a):
     try:
         rows = list(csv.DictReader(LOG_PATH.open(newline="", encoding="utf-8")))
         acts = []
+        # Map the live position back to its log row by SYMBOL AND ENTRY PRICE.
+        # Matching on status alone was wrong: a stale OPEN row (T010, XAUUSD)
+        # matched before the real row (T020, XAUUSD) and tagged the partial
+        # exit with the wrong setup id. Stale OPEN rows are the root cause, so
+        # they are also retired here.
+        live = {}
+        for op in (mt5.positions_get() or []):
+            live[op.symbol] = op
+        for stale in rows:
+            if stale.get("status") not in ("OPEN", "ORDER_PLACED"):
+                continue
+            ssym = stale.get("symbol")
+            if ssym not in live:
+                stale["status"] = "CLOSED"
+                stale["notes"] = (stale.get("notes", "") +
+                                  " AUTO-RETIRED %s: log row marked OPEN but no live "
+                                  "position for this symbol." % dt.datetime.utcnow()
+                                  .strftime("%Y-%m-%d %H:%M"))
+                audit("STALE_ROW_RETIRED", log_id=stale.get("log_id"), symbol=ssym)
+                continue
+            op = live[ssym]
+            try:
+                if abs(float(stale.get("entry_price") or 0) - op.price_open) > 0.005:
+                    stale["status"] = "CLOSED"
+                    stale["notes"] = (stale.get("notes", "") +
+                                      " AUTO-RETIRED %s: entry %s does not match live "
+                                      "position %s." % (dt.datetime.utcnow()
+                                      .strftime("%Y-%m-%d %H:%M"),
+                                      stale.get("entry_price"), op.price_open))
+                    audit("STALE_ROW_RETIRED", log_id=stale.get("log_id"), symbol=ssym)
+            except ValueError:
+                pass
+
         for r in rows:
             if r.get("status") not in ("OPEN", "ORDER_PLACED"):
                 continue
@@ -486,8 +519,35 @@ def cmd_manage(a):
                 if hit_part and not r.get("be_executed") == "PARTIAL_DONE":
                     close_vol = round(vol * PARTIAL_CLOSE_FRACTION, 2)
                     if close_vol < vol:
-                        res = mt5.positions_close(p.ticket, volume=close_vol)
+                        # Same SDK constraint as close-all: MT5 build 5.0.4874
+                        # has NO positions_close(). A partial close is an
+                        # order_send with TRADE_ACTION_DEAL, `position` set to
+                        # the ticket, and `volume` set to the partial size.
+                        # sl/tp keys MUST be omitted — passing sl=0 raises
+                        # Invalid "sl" argument. `deviation` is required or
+                        # order_send returns None with no diagnostic.
+                        close_req = {
+                            "action": mt5.TRADE_ACTION_DEAL,
+                            "symbol": sym,
+                            "position": p.ticket,
+                            "volume": close_vol,
+                            "type": mt5.ORDER_TYPE_SELL if is_buy else mt5.ORDER_TYPE_BUY,
+                            "price": px,
+                            "deviation": 30,
+                            "magic": 20261001,
+                            "comment": f"FRIVAL_{r.get('log_id','')}_PARTIAL",
+                            "type_time": mt5.ORDER_TIME_GTC,
+                            "type_filling": mt5.ORDER_FILLING_IOC,
+                        }
+                        res = mt5.order_send(close_req)
                         ok = res is not None and res.retcode == mt5.TRADE_RETCODE_DONE
+                        if not ok:
+                            err = mt5.last_error()
+                            audit("PARTIAL_CLOSE_FAILED", log_id=r["log_id"],
+                                  symbol=sym, ticket=p.ticket, last_error=err)
+                            print(f"[FAILED] partial close {sym} #{p.ticket}: "
+                                  f"retcode={res.retcode if res else None} err={err}")
+                            continue
                         pnl = (px - entry) * (1 if is_buy else -1) * close_vol * mv
                         r_sl = abs(partial_at - entry)
                         audit("PARTIAL_CLOSE", log_id=r["log_id"], symbol=sym,

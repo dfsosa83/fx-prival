@@ -1,0 +1,46 @@
+# Frival — autonomous trading stack (order_executor / log_trade / counterfactual /
+# market_context / reconcile_deals).
+#
+# Pin to the base-anaconda interpreter that produced the live results:
+#   Python 3.9.21, MetaTrader5 5.0.4874
+#
+#   C:\Users\david\anaconda3\python.exe -m pip install -r requirements.txt
+#
+# The MT5 Python package is a Windows-only wheel tied to the terminal build.
+# Install it from the official MetaQuotes distribution, not PyPI, or the
+# version will not match the terminal:
+#   https://www.mettester.com/python-packages
+#
+# REQUIRED — the execution and logging path cannot run without these.
+MetaTrader5==5.0.4874
+pandas==2.1.3
+numpy==1.25.2
+
+# REQUIRED by the analysis/agent submodules (agents/, model/, data/).
+# Not on the order-placement path, but imported by main.py at startup.
+joblib>=1.3
+pytz>=2023.3
+requests>=2.31
+openai>=1.0
+
+# ---------------------------------------------------------------------------
+# NOT INSTALLED HERE, and not required for autonomous execution:
+#   scikit-learn  — main.py loads *_Ensemble.joblib bundles that need it, but
+#                   those binaries live in ml-signal-service/models_bin/ which
+#                   is gitignored. The frival live path (order_executor,
+#                   log_trade, counterfactual, market_context) never loads a
+#                   model bundle. Install scikit-learn only if you intend to
+#                   run main.py against the model binaries.
+#   matplotlib, scipy — referenced by the dashboard, not by the trading path.
+# ---------------------------------------------------------------------------
+
+# NOTE ON THE TWO ENVIRONMENTS
+# Two interpreters on this machine both work for trading:
+#   base       C:\Users\david\anaconda3\python.exe
+#              Python 3.9.21 / pandas 2.1.3 / numpy 1.25.2   <- CANONICAL
+#   deaf_agent ...\anaconda3\Library\envs\deaf_agent\python.exe
+#              Python 3.11.11 / pandas 2.2.2 / numpy 2.0.2
+# The .bat launchers hardcode deaf_agent; the autonomous monitor uses base.
+# Both carry MetaTrader5 5.0.4874. Prefer base for anything touching
+# trade_log.csv — the recorded results were produced there, and the pandas
+# major version differs between the two.
