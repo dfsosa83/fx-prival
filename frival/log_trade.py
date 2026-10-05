@@ -257,12 +257,23 @@ def cmd_exit(a):
     entry = float(r["fill_price"] or r["entry_price"])
     volume = float(r["volume"])
     sign = 1.0 if r["side"].upper() == "BUY" else -1.0
-    pnl = (float(a.price) - entry) * sign * volume * TICK_VALUE_PER_LOT_PER_USD
+
+    # The per-symbol USD value of a 1.00 price move must come from the broker's
+    # contract data. It is NOT 100 for every symbol:
+    #   XAUUSD 100 / EURUSD 100000 / USDJPY ~632.
+    # Until 2026-10-05 this function used the module constant (100.0) directly,
+    # so a USDJPY exit reported -0.11 when the broker paid -0.71, and the
+    # r_multiple formula (pnl / sl_distance * volume * value) was dimensionally
+    # wrong: it multiplied where it should have divided by risk_usd.
+    mv = _money_per_price_unit_per_lot(r["symbol"])
+    pnl = (float(a.price) - entry) * sign * volume * mv
+    risk_usd = float(r["sl_distance"]) * volume * mv
+    r_mult = (pnl / risk_usd) if risk_usd else 0.0
     r["exit_time_local"] = local_ts
     r["exit_price"] = a.price
     r["exit_reason"] = a.reason
     r["pnl_usd"] = f"{pnl:.2f}"
-    r["r_multiple"] = f"{pnl / float(r['sl_distance']) * volume * TICK_VALUE_PER_LOT_PER_USD:.2f}"
+    r["r_multiple"] = f"{r_mult:.2f}"
     r["status"] = "CLOSED"
     _save(rows)
     print(f"[{a.id}] closed @ {a.price} ({a.reason}) PnL ${pnl:.2f} R={r['r_multiple']}")

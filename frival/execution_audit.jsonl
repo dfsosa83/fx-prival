@@ -90,3 +90,4 @@
 {"ts_local": "2026-10-05 09:15:32", "ts_server": "2026-10-05 17:15:32", "event": "STALE_ROW_RETIRED", "log_id": null, "symbol": "USDJPY"}
 {"ts_local": "2026-10-05 09:30:44", "ts_server": "2026-10-05 17:30:44", "event": "STALE_ROW_RETIRED", "log_id": null, "symbol": "USDJPY"}
 {"ts_local": "2026-10-05 09:45:25", "ts_server": "2026-10-05 17:45:25", "event": "STALE_ROW_RETIRED", "log_id": null, "symbol": "USDJPY"}
+{"ts_local": "2026-10-05 14:37:54", "ts_server": "2026-10-05 22:37:54", "event": "CLOSE_ALL", "symbol": "USDJPY", "ticket": 254547891, "profit": -0.71, "retcode": 10009, "done": true, "comment": "Request executed"}

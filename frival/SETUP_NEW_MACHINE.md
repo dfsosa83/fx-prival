@@ -133,9 +133,15 @@ most on day one:
 
 - `order_executor.py` is the **only** component authorised to place, modify or
   close orders. `reconcile_deals.py` is read-only.
-- Never `--force`. If a guardrail blocks, fix the levels and re-emit.
-- Positions are held to SL/TP. Early close is an operator-authorised exception
-  only.
+- Never `--force` on `place`. If a guardrail blocks, fix the levels and re-emit.
+- Positions are held to SL/TP, **except** when the thesis is invalidated.
+  On 2026-10-05 the operator gave a standing authorisation: *"PUEDES CERRAR,
+  siempre hazlo si la tesis se invalida."* If the stated invalidation condition
+  triggers (for example an M15 close beyond the level the thesis depends on),
+  close the position with `close-all --force --reason "..."` and record the
+  broker deal. Do not wait for the stop. `close-all` requires `--force` or an
+  armed kill switch; that flag is the flatten confirmation, not a guardrail
+  bypass, and is distinct from the forbidden `place --force`.
 - `MAX_CONSECUTIVE_LOSSES` is set to 999 — the circuit breaker is **disabled by
   operator instruction** (2026-10-02). It will not stop the day. This is
   deliberate; do not "fix" it without the operator.
