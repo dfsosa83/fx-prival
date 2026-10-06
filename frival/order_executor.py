@@ -118,15 +118,20 @@ BE_FRACTION = 0.50                 # move SL to BE after 50% toward TP1
 PARTIAL_AT_FRACTION = 0.50         # close part of the position at this share of the
                                     # ENTRY->TP2 leg. HYPOTHESIS — not a validated rule.
 PARTIAL_CLOSE_FRACTION = 0.50      # fraction of remaining volume to close there
-MAX_CONSECUTIVE_LOSSES = 999       # circuit breaker DISABLED by operator
-                                   # 2026-10-02: "no vamos a parar hoy, asi hayan
-                                   # 3 perdidas consecutivas, o las que sean"
-                                   # The loss log is the evidence base; stopping
-                                   # the day it loses produces no data.
-MAX_RISK_PCT_TOTAL_LOSS_CAP = 25.00  # hard floor: halt below this equity drawdown
+MAX_CONSECUTIVE_LOSSES = 4         # circuit breaker: pause NEW entries after this
+                                   # many straight losses, until a win resets it
+                                   # or a new session day. Operator set 4 on
+                                   # 2026-10-06 (was disabled at 999). Requires
+                                   # refresh_state_from_log(), added the same day:
+                                   # before that the counter was never written, so
+                                   # the breaker never fired at any value.
+MAX_RISK_PCT_TOTAL_LOSS_CAP = 18.00  # hard floor: halt below this equity drawdown
                                    # from session start regardless of trade count.
+                                   # Enforced from 2026-10-06 (constant existed but
+                                   # was never checked before). Operator set 18%.
 STATE_PATH = HERE / "executor_state.json"
 AUDIT_PATH = HERE / "execution_audit.jsonl"
+SERVER_OFFSET_H = 3                # broker server clock = UTC+3 (see log_trade.py)
 
 
 def load_state() -> dict:
@@ -146,6 +151,50 @@ def load_state() -> dict:
 
 def save_state(st: dict) -> None:
     STATE_PATH.write_text(json.dumps(st, indent=2), encoding="utf-8")
+
+
+def refresh_state_from_log() -> dict:
+    """Recompute consecutive_losses and daily_realised from the trade log.
+
+    Before 2026-10-06 these STATE keys were READ by the guardrails but never
+    written, so the consecutive-loss breaker and the daily-loss halt always
+    passed: the desk had no working loss circuit breaker. Recompute from the
+    versioned evidence base each cycle instead of trusting bookkeeping that
+    no code performed. CAPABILITY TEST rows are excluded.
+    """
+    try:
+        rows = list(csv.DictReader(LOG_PATH.open(newline="", encoding="utf-8")))
+    except Exception:
+        rows = []
+    closed = []
+    for r in rows:
+        if r.get("status") != "CLOSED":
+            continue
+        if "CAPABILITY TEST" in (r.get("notes") or "").upper():
+            continue
+        try:
+            pnl = float(r.get("pnl_usd") or 0.0)
+        except ValueError:
+            continue
+        order_ts = r.get("exit_time_local") or r.get("logged_at_server") or ""
+        srv_ts = r.get("logged_at_server") or ""
+        closed.append((order_ts, srv_ts, pnl))
+    closed.sort(key=lambda x: x[0])
+
+    streak = 0
+    for _, _, pnl in reversed(closed):
+        if pnl < 0:
+            streak += 1
+        else:
+            break
+    STATE["consecutive_losses"] = streak
+
+    srv_today = (dt.datetime.utcnow() + dt.timedelta(hours=SERVER_OFFSET_H)) \
+        .strftime("%Y-%m-%d")
+    realised = sum(pnl for _, srv, pnl in closed if srv[:10] == srv_today)
+    STATE["daily_realised"] = round(realised, 2)
+    save_state(STATE)
+    return STATE
 
 
 STATE = load_state()
@@ -269,6 +318,10 @@ def guardrail_report(mt5, row: dict) -> dict:
     sess_eq = STATE.get("session_start_equity") or equity
     realised = STATE.get("daily_realised", 0.0)
     daily_pct = (abs(realised) / sess_eq * 100) if (sess_eq and realised < 0) else 0.0
+    # Hard floor: equity drawdown from session start. MAX_RISK_PCT_TOTAL_LOSS_CAP
+    # was defined but never checked until 2026-10-06 — there was no absolute
+    # stop on a bad run, only per-trade risk.
+    dd_pct = ((sess_eq - equity) / sess_eq * 100) if sess_eq else 0.0
 
     # Aggregate open risk across every open position plus this candidate, and
     # count how many positions share the candidate's USD view. Three SELLs on
@@ -294,6 +347,9 @@ def guardrail_report(mt5, row: dict) -> dict:
                      f"{risk_pct:.2f}% > {MAX_RISK_PCT_PER_TRADE}%"),
         "max_daily_loss": (daily_pct < MAX_DAILY_LOSS_PCT,
                            f"daily loss {daily_pct:.2f}% >= {MAX_DAILY_LOSS_PCT}%"),
+        "equity_floor": (dd_pct < MAX_RISK_PCT_TOTAL_LOSS_CAP,
+                         f"drawdown {dd_pct:.2f}% from session start >= floor "
+                         f"{MAX_RISK_PCT_TOTAL_LOSS_CAP}%"),
         "max_positions": (len(pos) < MAX_POSITIONS,
                           f"{len(pos)} open, limit {MAX_POSITIONS}"),
         "max_aggregate_risk": (open_risk_pct + risk_pct <= MAX_RISK_PCT_TOTAL,
@@ -337,6 +393,7 @@ def cmd_place(a):
     if row is None:
         print(f"[ABORT] {a.id} not found in trade_log.csv")
         return
+    refresh_state_from_log()
     mt5 = _mt5()
     try:
         rep = guardrail_report(mt5, row)
@@ -439,6 +496,7 @@ def cmd_manage(a):
     Partial closing is a HYPOTHESIS, not a validated rule. Every partial is
     recorded with the realised R so the split can be measured in the ledger.
     """
+    refresh_state_from_log()
     mt5 = _mt5()
     try:
         rows = list(csv.DictReader(LOG_PATH.open(newline="", encoding="utf-8")))
@@ -722,7 +780,16 @@ def cmd_status(a):
         print(f"  max risk/trade {MAX_RISK_PCT_PER_TRADE}%   max daily loss {MAX_DAILY_LOSS_PCT}%")
         print(f"  max positions {MAX_POSITIONS}   min R:R {MIN_RR}   "
               f"SL range {MIN_ATR_MULTIPLE}-{MAX_SL_DISTANCE_PCT_OF_ATR}x ATR(M5)")
-        print(f"  min margin level {MIN_MARGIN_LEVEL}%   max consecutive losses {MAX_CONSECUTIVE_LOSSES}")
+        print(f"  min margin level {MIN_MARGIN_LEVEL}%   max consecutive losses {MAX_CONSECUTIVE_LOSSES}   "
+              f"equity floor {MAX_RISK_PCT_TOTAL_LOSS_CAP}%")
+        st = refresh_state_from_log()
+        sess_eq = st.get("session_start_equity") or acct.equity
+        dd = ((sess_eq - acct.equity) / sess_eq * 100) if sess_eq else 0.0
+        print(f"  BREAKER STATE  consecutive losses {st.get('consecutive_losses', 0)}/{MAX_CONSECUTIVE_LOSSES}"
+              f"   daily realised ${st.get('daily_realised', 0.0):.2f}"
+              f"   drawdown {dd:.2f}% (halt at {MAX_RISK_PCT_TOTAL_LOSS_CAP}%)")
+        if st.get("consecutive_losses", 0) >= MAX_CONSECUTIVE_LOSSES:
+            print("  ** HALTED: consecutive-loss breaker active — no new entries this session **")
     finally:
         mt5.shutdown()
 
