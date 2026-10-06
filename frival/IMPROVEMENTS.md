@@ -55,9 +55,19 @@ authorization; the system should learn every time").
 - Open idea: a whipsaw/regime filter (skip retests when the last 3 H1 bars
   alternate with ranges > 1.5x ATR). Measure before enforcing.
 
+### Fix: BUY LIMIT spread nudge (order_executor.py)
+- Quotes/bars are BID, so a BUY LIMIT placed exactly on a bid level only fills
+  after the bid trades ~spread below it. Evidence: T035 BUY LIMIT 4166.50, bid
+  low 4166.6, ask never reached 4166.50 -> unfilled, then price ran to 4184 and
+  the +2.73R target hit without us. `cmd_place` now places a BUY LIMIT at
+  `level + spread` (guarded to stay below the ask) so a touch of the intended
+  level fills. SELL LIMITs are unaffected (they fill on the bid, which matches
+  how levels are read). Toggle: `NUDGE_BUY_LIMIT_BY_SPREAD`; nudges are audited
+  as `LIMIT_ENTRY_NUDGE`.
+
 ## Backlog (candidate improvements, not yet done)
 - Whipsaw/regime filter (measure first).
-- Limit-entry spread buffer to reduce near-miss fills.
 - Hard-enforce momentum filter once `mom_alignment` has ~20-30 samples.
 - Tighten the executor `sl_distance` mismatch tolerance (currently
   `max(0.05, 2%)` — 0.05 is ~500 pips on EURUSD).
+- Verify the BUY LIMIT nudge in live fills (compare logged level vs fill).

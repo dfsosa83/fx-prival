@@ -132,6 +132,9 @@ MAX_RISK_PCT_TOTAL_LOSS_CAP = 18.00  # hard floor: halt below this equity drawdo
 STATE_PATH = HERE / "executor_state.json"
 AUDIT_PATH = HERE / "execution_audit.jsonl"
 SERVER_OFFSET_H = 3                # broker server clock = UTC+3 (see log_trade.py)
+NUDGE_BUY_LIMIT_BY_SPREAD = True   # see cmd_place: quotes are bid, so a BUY LIMIT
+                                   # on a bid level only fills after the bid goes
+                                   # ~spread below it (the T035 near-miss).
 
 
 def load_state() -> dict:
@@ -420,6 +423,17 @@ def cmd_place(a):
         elif is_buy:
             otype = mt5.ORDER_TYPE_BUY_LIMIT if entry <= mkt else mt5.ORDER_TYPE_BUY_STOP
             price = entry
+            if otype == mt5.ORDER_TYPE_BUY_LIMIT and NUDGE_BUY_LIMIT_BY_SPREAD:
+                # Quotes/bars are BID. A BUY LIMIT fills when the ASK reaches it,
+                # so one placed exactly on a bid level only fills once the bid
+                # trades ~spread below it. T035 proved the cost: the bid low was
+                # 4166.6 but the ask never reached the 4166.50 limit, so it never
+                # filled and the +2.73R target then hit without us. Nudge the
+                # entry up by the current spread so a touch of the intended level
+                # actually fills; guard so it stays below the ask (a limit).
+                spread = max(tick.ask - tick.bid, 0.0)
+                if entry + spread < tick.ask:
+                    price = entry + spread
         else:
             otype = mt5.ORDER_TYPE_SELL_LIMIT if entry >= mkt else mt5.ORDER_TYPE_SELL_STOP
             price = entry
@@ -440,9 +454,14 @@ def cmd_place(a):
                           f"would not rest as a limit. Signal intended a breakdown?")
                     return
 
+        if not a.market and abs(price - entry) > 1e-9:
+            audit("LIMIT_ENTRY_NUDGE", log_id=a.id, level=entry, placed=price,
+                  spread=tick.ask - tick.bid)
+            print(f"[NUDGE] BUY LIMIT level {entry} placed at {price} "
+                  f"(+{tick.ask - tick.bid:.5f} spread so a bid touch fills)")
+
         req = {
-            "action": mt5.TRADE_ACTION_DEAL if a.market else mt5.TRADE_ACTION_PENDING,
-            "symbol": rep["symbol"],
+            "action": mt5.TRADE_ACTION_DEAL if a.market else mt5.TRADE_ACTION_PENDING,            "symbol": rep["symbol"],
             "volume": rep["volume"],
             "type": otype,
             "price": price,
