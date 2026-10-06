@@ -1,0 +1,372 @@
+{
+  "log_id": "T031",
+  "setup_id": "FRIVAL_T031_20261006",
+  "captured_at_local": "2026-10-06 02:21:08",
+  "captured_at_server": "2026-10-06 10:21:08",
+  "account": {
+    "login": 81486396,
+    "server": "FPMarketsSC-Live",
+    "balance": 660.14,
+    "equity": 660.14,
+    "leverage": 500,
+    "open_positions": 0
+  },
+  "quote": {
+    "bid": 4138.84,
+    "ask": 4139.08,
+    "spread_points": 24,
+    "contract_size": 100.0,
+    "tick_value": 1.0,
+    "swap_long": -63.88,
+    "swap_short": 39.45
+  },
+  "atr14": {
+    "M5": "4.47",
+    "M15": "6.26",
+    "M30": "11.81",
+    "H1": "13.36",
+    "H4": "37.76"
+  },
+  "levels": {
+    "H1": {
+      "window_bars": 40,
+      "high": 4196.8,
+      "low": 4105.0,
+      "close": 4138.83
+    },
+    "M15": {
+      "window_bars": 40,
+      "high": 4152.15,
+      "low": 4105.0,
+      "close": 4138.83
+    },
+    "M5": {
+      "window_bars": 40,
+      "high": 4143.12,
+      "low": 4113.42,
+      "close": 4138.83
+    }
+  },
+  "bars_m5": [
+    {
+      "server_time": "2026-10-06 08:45:00",
+      "utc_time": "2026-10-06 05:45:00",
+      "open": 4121.79,
+      "high": 4123.0,
+      "low": 4121.31,
+      "close": 4122.68,
+      "tick_volume": 393,
+      "spread": 23
+    },
+    {
+      "server_time": "2026-10-06 08:50:00",
+      "utc_time": "2026-10-06 05:50:00",
+      "open": 4122.63,
+      "high": 4122.73,
+      "low": 4119.9,
+      "close": 4120.13,
+      "tick_volume": 535,
+      "spread": 23
+    },
+    {
+      "server_time": "2026-10-06 08:55:00",
+      "utc_time": "2026-10-06 05:55:00",
+      "open": 4120.1,
+      "high": 4121.02,
+      "low": 4116.76,
+      "close": 4119.93,
+      "tick_volume": 653,
+      "spread": 23
+    },
+    {
+      "server_time": "2026-10-06 09:00:00",
+      "utc_time": "2026-10-06 06:00:00",
+      "open": 4120.0,
+      "high": 4120.81,
+      "low": 4113.42,
+      "close": 4116.9,
+      "tick_volume": 958,
+      "spread": 19
+    },
+    {
+      "server_time": "2026-10-06 09:05:00",
+      "utc_time": "2026-10-06 06:05:00",
+      "open": 4116.73,
+      "high": 4120.86,
+      "low": 4116.73,
+      "close": 4120.81,
+      "tick_volume": 701,
+      "spread": 19
+    },
+    {
+      "server_time": "2026-10-06 09:10:00",
+      "utc_time": "2026-10-06 06:10:00",
+      "open": 4120.87,
+      "high": 4123.45,
+      "low": 4119.14,
+      "close": 4122.81,
+      "tick_volume": 714,
+      "spread": 19
+    },
+    {
+      "server_time": "2026-10-06 09:15:00",
+      "utc_time": "2026-10-06 06:15:00",
+      "open": 4122.87,
+      "high": 4128.69,
+      "low": 4122.87,
+      "close": 4128.27,
+      "tick_volume": 929,
+      "spread": 21
+    },
+    {
+      "server_time": "2026-10-06 09:20:00",
+      "utc_time": "2026-10-06 06:20:00",
+      "open": 4128.29,
+      "high": 4131.25,
+      "low": 4126.65,
+      "close": 4130.94,
+      "tick_volume": 854,
+      "spread": 19
+    },
+    {
+      "server_time": "2026-10-06 09:25:00",
+      "utc_time": "2026-10-06 06:25:00",
+      "open": 4130.97,
+      "high": 4134.42,
+      "low": 4129.36,
+      "close": 4133.92,
+      "tick_volume": 805,
+      "spread": 19
+    },
+    {
+      "server_time": "2026-10-06 09:30:00",
+      "utc_time": "2026-10-06 06:30:00",
+      "open": 4133.86,
+      "high": 4135.17,
+      "low": 4130.8,
+      "close": 4130.95,
+      "tick_volume": 855,
+      "spread": 19
+    },
+    {
+      "server_time": "2026-10-06 09:35:00",
+      "utc_time": "2026-10-06 06:35:00",
+      "open": 4130.92,
+      "high": 4132.65,
+      "low": 4129.42,
+      "close": 4131.54,
+      "tick_volume": 776,
+      "spread": 19
+    },
+    {
+      "server_time": "2026-10-06 09:40:00",
+      "utc_time": "2026-10-06 06:40:00",
+      "open": 4131.5,
+      "high": 4131.97,
+      "low": 4130.05,
+      "close": 4130.57,
+      "tick_volume": 632,
+      "spread": 19
+    },
+    {
+      "server_time": "2026-10-06 09:45:00",
+      "utc_time": "2026-10-06 06:45:00",
+      "open": 4130.63,
+      "high": 4134.67,
+      "low": 4130.4,
+      "close": 4132.58,
+      "tick_volume": 794,
+      "spread": 19
+    },
+    {
+      "server_time": "2026-10-06 09:50:00",
+      "utc_time": "2026-10-06 06:50:00",
+      "open": 4132.57,
+      "high": 4133.19,
+      "low": 4129.95,
+      "close": 4131.44,
+      "tick_volume": 589,
+      "spread": 19
+    },
+    {
+      "server_time": "2026-10-06 09:55:00",
+      "utc_time": "2026-10-06 06:55:00",
+      "open": 4131.42,
+      "high": 4133.23,
+      "low": 4130.21,
+      "close": 4131.5,
+      "tick_volume": 709,
+      "spread": 19
+    },
+    {
+      "server_time": "2026-10-06 10:00:00",
+      "utc_time": "2026-10-06 07:00:00",
+      "open": 4131.7,
+      "high": 4134.27,
+      "low": 4129.51,
+      "close": 4131.5,
+      "tick_volume": 964,
+      "spread": 19
+    },
+    {
+      "server_time": "2026-10-06 10:05:00",
+      "utc_time": "2026-10-06 07:05:00",
+      "open": 4131.68,
+      "high": 4134.25,
+      "low": 4129.08,
+      "close": 4130.8,
+      "tick_volume": 826,
+      "spread": 20
+    },
+    {
+      "server_time": "2026-10-06 10:10:00",
+      "utc_time": "2026-10-06 07:10:00",
+      "open": 4130.75,
+      "high": 4137.82,
+      "low": 4128.35,
+      "close": 4137.82,
+      "tick_volume": 828,
+      "spread": 19
+    },
+    {
+      "server_time": "2026-10-06 10:15:00",
+      "utc_time": "2026-10-06 07:15:00",
+      "open": 4138.28,
+      "high": 4143.12,
+      "low": 4137.56,
+      "close": 4138.83,
+      "tick_volume": 1054,
+      "spread": 19
+    },
+    {
+      "server_time": "2026-10-06 10:20:00",
+      "utc_time": "2026-10-06 07:20:00",
+      "open": 4138.85,
+      "high": 4139.67,
+      "low": 4137.7,
+      "close": 4138.83,
+      "tick_volume": 207,
+      "spread": 19
+    }
+  ],
+  "bars_m15": [
+    {
+      "server_time": "2026-10-06 08:00:00",
+      "utc_time": "2026-10-06 05:00:00",
+      "open": 4121.34,
+      "high": 4124.52,
+      "low": 4120.38,
+      "close": 4121.97,
+      "tick_volume": 1508,
+      "spread": 23
+    },
+    {
+      "server_time": "2026-10-06 08:15:00",
+      "utc_time": "2026-10-06 05:15:00",
+      "open": 4121.9,
+      "high": 4125.93,
+      "low": 4120.27,
+      "close": 4121.54,
+      "tick_volume": 1599,
+      "spread": 23
+    },
+    {
+      "server_time": "2026-10-06 08:30:00",
+      "utc_time": "2026-10-06 05:30:00",
+      "open": 4121.52,
+      "high": 4125.09,
+      "low": 4120.21,
+      "close": 4121.78,
+      "tick_volume": 1561,
+      "spread": 23
+    },
+    {
+      "server_time": "2026-10-06 08:45:00",
+      "utc_time": "2026-10-06 05:45:00",
+      "open": 4121.79,
+      "high": 4123.0,
+      "low": 4116.76,
+      "close": 4119.93,
+      "tick_volume": 1581,
+      "spread": 23
+    },
+    {
+      "server_time": "2026-10-06 09:00:00",
+      "utc_time": "2026-10-06 06:00:00",
+      "open": 4120.0,
+      "high": 4123.45,
+      "low": 4113.42,
+      "close": 4122.81,
+      "tick_volume": 2373,
+      "spread": 19
+    },
+    {
+      "server_time": "2026-10-06 09:15:00",
+      "utc_time": "2026-10-06 06:15:00",
+      "open": 4122.87,
+      "high": 4134.42,
+      "low": 4122.87,
+      "close": 4133.92,
+      "tick_volume": 2588,
+      "spread": 19
+    },
+    {
+      "server_time": "2026-10-06 09:30:00",
+      "utc_time": "2026-10-06 06:30:00",
+      "open": 4133.86,
+      "high": 4135.17,
+      "low": 4129.42,
+      "close": 4130.57,
+      "tick_volume": 2263,
+      "spread": 19
+    },
+    {
+      "server_time": "2026-10-06 09:45:00",
+      "utc_time": "2026-10-06 06:45:00",
+      "open": 4130.63,
+      "high": 4134.67,
+      "low": 4129.95,
+      "close": 4131.5,
+      "tick_volume": 2092,
+      "spread": 19
+    },
+    {
+      "server_time": "2026-10-06 10:00:00",
+      "utc_time": "2026-10-06 07:00:00",
+      "open": 4131.7,
+      "high": 4137.82,
+      "low": 4128.35,
+      "close": 4137.82,
+      "tick_volume": 2618,
+      "spread": 19
+    },
+    {
+      "server_time": "2026-10-06 10:15:00",
+      "utc_time": "2026-10-06 07:15:00",
+      "open": 4138.28,
+      "high": 4143.12,
+      "low": 4137.56,
+      "close": 4138.83,
+      "tick_volume": 1261,
+      "spread": 19
+    }
+  ],
+  "signal": {
+    "side": "BUY",
+    "order_type": "LIMIT",
+    "volume": "0.05",
+    "entry_price": "4135.50",
+    "stop_loss": "4129.00",
+    "tp1": "4148.27",
+    "tp2": "",
+    "sl_distance": "6.50",
+    "expected_rr_tp1": "1.96",
+    "expected_rr_tp2": "",
+    "risk_usd": "32.50",
+    "risk_pct_equity": "5.42",
+    "trigger_condition": "Retest of the 4135 range top (now support) after the 10:10-10:15 USD-weak breakout to 4143.12",
+    "htf_bias": "BULLISH_BREAKOUT_RETEST - USD sold across XAUUSD/EURUSD/USDJPY; H1 reclaimed the 4130 range",
+    "be_trigger_price": "4132.25",
+    "status": "PENDING_FILL"
+  }
+}

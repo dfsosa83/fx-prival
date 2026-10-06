@@ -496,13 +496,27 @@ def cmd_manage(a):
             mv = money_per_price_unit(sym, mt5)
             vol = float(p.volume)
 
+            # Intrabar extremes since the position opened. A 15-minute poll that
+            # compares only the current tick misses a spike through the BE or
+            # partial level: T030 pierced 4116.76 past its 4119.36 BE trigger
+            # and reverted before the next cycle, so BE never moved and full
+            # stop risk stayed on a +0.9R trade. M5 bar `time` shares the
+            # server-clock epoch with p.time, so no TZ conversion is needed.
+            raw = mt5.copy_rates_from_pos(sym, mt5.TIMEFRAME_M5, 0, 200) or []
+            since_open = [b for b in raw if int(b["time"]) >= int(p.time)]
+            if since_open:
+                hi = max(float(b["high"]) for b in since_open)
+                lo = min(float(b["low"]) for b in since_open)
+            else:
+                hi = lo = float(px)
+
             be = entry + (tp1 - entry) * BE_FRACTION
             partial_at = entry + (tp2 - entry) * PARTIAL_AT_FRACTION if tp2 \
                 else entry + (tp1 - entry) * PARTIAL_AT_FRACTION
 
             # 1 — break-even
             if abs((p.sl or 0) - entry) > 1e-9:
-                hit_be = (px >= be) if is_buy else (px <= be)
+                hit_be = (hi >= be) if is_buy else (lo <= be)
                 if hit_be:
                     req = {"action": mt5.TRADE_ACTION_SLTP, "symbol": sym,
                            "position": p.ticket, "sl": entry, "tp": p.tp}
@@ -517,7 +531,7 @@ def cmd_manage(a):
 
             # 2 — partial close
             if abs((p.sl or 0) - entry) <= 1e-9:      # only after BE is set
-                hit_part = (px >= partial_at) if is_buy else (px <= partial_at)
+                hit_part = (hi >= partial_at) if is_buy else (lo <= partial_at)
                 if hit_part and not r.get("be_executed") == "PARTIAL_DONE":
                     close_vol = round(vol * PARTIAL_CLOSE_FRACTION, 2)
                     if close_vol < vol:
