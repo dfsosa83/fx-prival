@@ -129,18 +129,22 @@ EMERGENCY STOP: echo "STOP" > frival\data\emergency_stop.txt
    machine is live and the cron is scheduled.
 ```
 
-=== AFTER-CLOSE REVIEW — once per day (server 00:00-01:00 = local 16:00-17:00) ===
-When the SERVER clock is in the daily-close window (00:00-01:00 server) and
-frival\reviews\<server-date>.md does not already exist:
-1. Run the deterministic facts generator:
-     python frival\eod_review.py
+=== AFTER-CLOSE REVIEW — once per day ===
+The daily close is server 00:00 (local 16:00). `eod_review.py` picks the trading
+day that just closed (the server date of the most recent trade), so it is safe
+to run at any hour.
+On EVERY cycle, check whether frival\reviews\<latest-traded-day>.md exists.
+- If it does NOT exist and that trading day has closed, run the review:
+1. python frival\eod_review.py
    It writes frival\reviews\<YYYY-MM-DD>.md (facts table) and appends one line
-   to frival\reviews\INDEX.md. It is idempotent (refuses if today's file exists).
+   to frival\reviews\INDEX.md. It is idempotent (refuses if the file exists).
 2. Open the file and replace the "Lessons (agent)" and "Changes made"
-   placeholders with 3-5 sentences of interpretation and any rule changes made
-   (reference commit hashes). Promote a lesson into frival\IMPROVEMENTS.md (and
-   OPERATIONS.md if a rule changed) only when it is durable.
-3. Do NOT place orders in this window — the market is closed and spreads are
-   blown out. If the window was missed because the app was closed, run it on the
-   next cycle that lands in the window.
+   placeholders with 3-5 sentences of interpretation and the commit hashes of
+   changes made. Promote a durable lesson into frival\IMPROVEMENTS.md (and
+   OPERATIONS.md if a rule changed).
+- Prefer the close window (server 00:00-01:00 = local 16:00-17:00) and do NOT
+  place orders in it (market closed, spreads blown out). But if that window was
+  missed (e.g. the app was closed), run the review on the NEXT cycle at any hour
+  — a missed review must never be silently dropped.
 Anchor the trigger on the SERVER clock, not local (DST-safe). Weekends: skip.
+The dedicated cron `5 16 * * 1-5` (16:05 local) is a second trigger.
