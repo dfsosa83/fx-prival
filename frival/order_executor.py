@@ -132,9 +132,9 @@ MAX_RISK_PCT_TOTAL_LOSS_CAP = 18.00  # hard floor: halt below this equity drawdo
 STATE_PATH = HERE / "executor_state.json"
 AUDIT_PATH = HERE / "execution_audit.jsonl"
 SERVER_OFFSET_H = 3                # broker server clock = UTC+3 (see log_trade.py)
-NUDGE_BUY_LIMIT_BY_SPREAD = True   # see cmd_place: quotes are bid, so a BUY LIMIT
-                                   # on a bid level only fills after the bid goes
-                                   # ~spread below it (the T035 near-miss).
+NUDGE_LIMIT_ENTRY_BY_SPREAD = True  # see cmd_place: quotes are bid, so a limit
+                                    # placed exactly on a level can miss by the
+                                    # spread (T035 buy, T039 sell). Both are nudged.
 
 
 def load_state() -> dict:
@@ -423,7 +423,7 @@ def cmd_place(a):
         elif is_buy:
             otype = mt5.ORDER_TYPE_BUY_LIMIT if entry <= mkt else mt5.ORDER_TYPE_BUY_STOP
             price = entry
-            if otype == mt5.ORDER_TYPE_BUY_LIMIT and NUDGE_BUY_LIMIT_BY_SPREAD:
+            if otype == mt5.ORDER_TYPE_BUY_LIMIT and NUDGE_LIMIT_ENTRY_BY_SPREAD:
                 # Quotes/bars are BID. A BUY LIMIT fills when the ASK reaches it,
                 # so one placed exactly on a bid level only fills once the bid
                 # trades ~spread below it. T035 proved the cost: the bid low was
@@ -437,6 +437,16 @@ def cmd_place(a):
         else:
             otype = mt5.ORDER_TYPE_SELL_LIMIT if entry >= mkt else mt5.ORDER_TYPE_SELL_STOP
             price = entry
+            if otype == mt5.ORDER_TYPE_SELL_LIMIT and NUDGE_LIMIT_ENTRY_BY_SPREAD:
+                # Mirror of the BUY case. A SELL LIMIT fills when the BID reaches
+                # it; placed exactly on a bid level it can miss by the spread
+                # (T039: bid high 4137.46 vs the 4137.50 entry - a 0.04 miss,
+                # then the +? move ran to the target without us). Nudge DOWN by
+                # the spread so a touch of the intended level fills; guard so it
+                # stays above the bid (a limit).
+                spread = max(tick.ask - tick.bid, 0.0)
+                if entry - spread > tick.bid:
+                    price = entry - spread
 
         # A pending order priced on the wrong side of the book would fill
         # instantly or never. Refuse rather than guess.
@@ -457,8 +467,8 @@ def cmd_place(a):
         if not a.market and abs(price - entry) > 1e-9:
             audit("LIMIT_ENTRY_NUDGE", log_id=a.id, level=entry, placed=price,
                   spread=tick.ask - tick.bid)
-            print(f"[NUDGE] BUY LIMIT level {entry} placed at {price} "
-                  f"(+{tick.ask - tick.bid:.5f} spread so a bid touch fills)")
+            print(f"[NUDGE] LIMIT level {entry} placed at {price} "
+                  f"({'+' if is_buy else '-'}{tick.ask - tick.bid:.5f} spread so a touch fills)")
 
         req = {
             "action": mt5.TRADE_ACTION_DEAL if a.market else mt5.TRADE_ACTION_PENDING,            "symbol": rep["symbol"],

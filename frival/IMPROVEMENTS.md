@@ -67,6 +67,14 @@ authorization; the system should learn every time").
 
 ## 2026-10-07
 
+### Fix: SELL LIMIT spread nudge (mirror of the BUY nudge)
+- A SELL LIMIT fills when the BID reaches it, so one placed exactly on a bid
+  level can miss by the spread. T039 proved it: bid high 4137.46 vs the 4137.50
+  entry — a 0.04 miss — and the target (4123.18) then nearly printed without us.
+  `cmd_place` now nudges a SELL LIMIT down by the spread (guarded above the
+  bid), symmetric to the BUY nudge. Constant renamed
+  `NUDGE_BUY_LIMIT_BY_SPREAD` -> `NUDGE_LIMIT_ENTRY_BY_SPREAD` (both sides).
+
 ### Fix: manage skipped every gold position (BE/partial never ran)
 - `cmd_manage` mapped a live position to its log row with a fixed entry
   tolerance of 0.005. A gold order fills at the bid/ask, so the fill differs
