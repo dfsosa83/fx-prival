@@ -65,6 +65,23 @@ authorization; the system should learn every time").
   how levels are read). Toggle: `NUDGE_BUY_LIMIT_BY_SPREAD`; nudges are audited
   as `LIMIT_ENTRY_NUDGE`.
 
+## 2026-10-07
+
+### Fix: manage skipped every gold position (BE/partial never ran)
+- `cmd_manage` mapped a live position to its log row with a fixed entry
+  tolerance of 0.005. A gold order fills at the bid/ask, so the fill differs
+  from the signal entry by ~the spread (T038: signal 4149.00, fill 4149.04).
+  0.04 > 0.005, so T038 was marked CLOSED in memory and skipped by the
+  management loop — BE and partial never ran on ANY gold position. Tolerance
+  is now symbol-aware (`max(0.005, 0.25 * ATR(M5))`).
+- The new intrabar line used `mt5.copy_rates_from_pos(...) or []`, which raises
+  "truth value of an array with more than one element is ambiguous". Fixed with
+  an explicit None check.
+- Evidence: T038 reached +2R (price 4141.33, BE level 4144.52) and manage did
+  nothing; after the fix manage moved the SL to break-even 4149.04.
+- Note: `cmd_manage` still does not persist its in-memory stale-row retires
+  (no save_log call). Low impact today but worth aligning.
+
 ## Backlog (candidate improvements, not yet done)
 - **Retest limits miss in trends.** T035 (BUY) and T037 (SELL) both went
   unfilled while their targets printed — in a trend the retest never comes and

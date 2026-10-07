@@ -542,7 +542,13 @@ def cmd_manage(a):
                 continue
             op = live[ssym]
             try:
-                if abs(float(stale.get("entry_price") or 0) - op.price_open) > 0.005:
+                # Tolerance is symbol-aware: a gold BUY/SELL fills at the bid/ask,
+                # so the fill differs from the signal entry by ~the spread
+                # (T038 signal 4149.00, fill 4149.04). A fixed 0.005 retired
+                # every gold position from management (no BE/partial). Use a
+                # quarter-ATR, which is >> spread on all three symbols.
+                tol = max(0.005, 0.25 * (atr(mt5, ssym, "M5") or 0.0))
+                if abs(float(stale.get("entry_price") or 0) - op.price_open) > tol:
                     stale["status"] = "CLOSED"
                     stale["notes"] = (stale.get("notes", "") +
                                       " AUTO-RETIRED %s: entry %s does not match live "
@@ -579,7 +585,9 @@ def cmd_manage(a):
             # and reverted before the next cycle, so BE never moved and full
             # stop risk stayed on a +0.9R trade. M5 bar `time` shares the
             # server-clock epoch with p.time, so no TZ conversion is needed.
-            raw = mt5.copy_rates_from_pos(sym, mt5.TIMEFRAME_M5, 0, 200) or []
+            raw = mt5.copy_rates_from_pos(sym, mt5.TIMEFRAME_M5, 0, 200)
+            if raw is None:
+                raw = []
             since_open = [b for b in raw if int(b["time"]) >= int(p.time)]
             if since_open:
                 hi = max(float(b["high"]) for b in since_open)
