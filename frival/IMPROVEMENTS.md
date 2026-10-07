@@ -66,6 +66,11 @@ authorization; the system should learn every time").
   as `LIMIT_ENTRY_NUDGE`.
 
 ## Backlog (candidate improvements, not yet done)
+- **Retest limits miss in trends.** T035 (BUY) and T037 (SELL) both went
+  unfilled while their targets printed — in a trend the retest never comes and
+  the entry then goes stale (T011 rule) and is cancelled. Measure how often
+  retest limits fill vs run away; consider a continuation/stop-entry variant,
+  or accepting a shallower retest.
 - Whipsaw/regime filter (measure first).
 - Hard-enforce momentum filter once `mom_alignment` has ~20-30 samples.
 - Tighten the executor `sl_distance` mismatch tolerance (currently
