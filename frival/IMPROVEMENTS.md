@@ -83,6 +83,14 @@ authorization; the system should learn every time").
   flag, do NOT cancel an otherwise valid setup solely because it is AGAINST,
   until ~20-30 samples are measured. Lesson: measure before enforcing.
 
+### Fix: EOD review targeted the wrong day at the close
+- The daily close is server 00:00, so a review run in the 00:00-01:00 window
+  (the dedicated cron fires 16:05 local = server 00:05) had a wall-clock server
+  date of the NEXT day. `eod_review.py` would have written a near-empty review
+  for the new day instead of the one that just closed. Default day is now taken
+  from the most recent trade's `logged_at_server` (the trading day that just
+  ended), falling back to the server date only if the log is empty.
+
 ### Fix: exit PnL ignored partial closes
 - `log_trade.py exit` computed PnL as `(exit-entry) x full volume`, ignoring
   partial closes. T041 booked **+78.75** when the broker actually paid **+38.47**

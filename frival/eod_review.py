@@ -72,7 +72,16 @@ def main():
     for i, a in enumerate(args):
         if a == "--date" and i + 1 < len(args):
             day = args[i + 1]
-    day = day or server_now().strftime("%Y-%m-%d")
+    if not day:
+        # The trading day that just closed, not the wall-clock server date: the
+        # daily close is server 00:00, so a review run at server 00:05 has a
+        # server date of the NEXT day. Review the day of the most recent trade.
+        latest = ""
+        for r in load(LOG):
+            s = r.get("logged_at_server") or ""
+            if s > latest:
+                latest = s
+        day = latest[:10] if latest[:10] else server_now().strftime("%Y-%m-%d")
 
     OUTDIR.mkdir(exist_ok=True)
     out = OUTDIR / f"{day}.md"
