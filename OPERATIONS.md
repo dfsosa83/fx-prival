@@ -338,3 +338,28 @@ Docs (repo root / frival):
    whose P&L is not yet in the log. **Do not `apply`.**
 5. Re-read fresh structure (levels from the prior session are stale).
 6. Continue the cycle (STEPS 1-7) with the config in §7.
+
+---
+
+## 16. End-of-day review (daily close)
+
+Once per day, during the close window, the desk consolidates the day.
+
+- **Window:** server **00:00-01:00** (= local 16:00-17:00). Trigger on the
+  **server clock** (DST-safe), never local.
+- **Generator:** `frival/eod_review.py` — deterministic facts only (today's
+  closed trades, day P&L/R, equity vs session start, breaker state,
+  counterfactuals). Writes `frival/reviews/<server-date>.md` and appends a line
+  to `frival/reviews/INDEX.md`. **Idempotent** (refuses if today's file exists;
+  `--force` / `--date` for manual use). It never places/modifies orders.
+- **Agent step:** fill the file's "Lessons (agent)" and "Changes made" sections
+  from the day's `trade_log.csv`, `counterfactuals.csv`, `execution_audit.jsonl`.
+  Promote a lesson into `IMPROVEMENTS.md` (and this file, if a rule changed) only
+  when it is durable.
+- **Two triggers (belt-and-braces):**
+  1. the AFTER-CLOSE rule in the desk brief, checked on every 15-min cycle
+     (robust: any fire landing in the window runs it once); and
+  2. a dedicated cron `5 16 * * 1-5` (16:05 local, weekdays).
+- **Weekends:** skip. Friday's review is the week's last.
+- **If the window is missed** (app closed): run it on the next cycle that lands
+  in the window; do not backfill mid-session.

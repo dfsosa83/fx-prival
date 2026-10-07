@@ -110,7 +110,7 @@ XAUUSD: TRADE / WAIT / OUT — trigger level
 EURUSD: same
 USDJPY: same
 EXPOSURE: net USD direction, or FLAT
-Positions: symbol/side/vol/entry/SL/TP/PnL | Consecutive losses: N/3
+Positions: symbol/side/vol/entry/SL/TP/PnL | Consecutive losses: N/4
 Counterfactuals: resolved N / pending N
 Next reviewed on schedule.
 
@@ -120,11 +120,27 @@ EMERGENCY STOP: echo "STOP" > frival\data\emergency_stop.txt
 1. Confirm the account and flat state:
    python order_executor.py status
    python log_trade.py stats
-   Expect: account 81486396, equity ~655.39, positions 0, pending 0,
-   closed=12, total PnL $61.18, total R 1.92, win rate 5/12.
-   If any of those differ, STOP and report — the machines have diverged.
+   Expect: account 81486396, positions 0, pending 0, and stats consistent
+   with OPERATIONS.md section 11 (which is updated as the desk runs). If the
+   account or flat state differ, STOP and report — the machines have diverged.
 2. Create a recurring cron that sends you this exact prompt every 15 minutes,
    so the desk monitors itself. Use cron_create with cron "*/15 * * * *".
 3. Report your first cycle in the format above, and say explicitly that the
    machine is live and the cron is scheduled.
 ```
+
+=== AFTER-CLOSE REVIEW — once per day (server 00:00-01:00 = local 16:00-17:00) ===
+When the SERVER clock is in the daily-close window (00:00-01:00 server) and
+frival\reviews\<server-date>.md does not already exist:
+1. Run the deterministic facts generator:
+     python frival\eod_review.py
+   It writes frival\reviews\<YYYY-MM-DD>.md (facts table) and appends one line
+   to frival\reviews\INDEX.md. It is idempotent (refuses if today's file exists).
+2. Open the file and replace the "Lessons (agent)" and "Changes made"
+   placeholders with 3-5 sentences of interpretation and any rule changes made
+   (reference commit hashes). Promote a lesson into frival\IMPROVEMENTS.md (and
+   OPERATIONS.md if a rule changed) only when it is durable.
+3. Do NOT place orders in this window — the market is closed and spreads are
+   blown out. If the window was missed because the app was closed, run it on the
+   next cycle that lands in the window.
+Anchor the trigger on the SERVER clock, not local (DST-safe). Weekends: skip.
