@@ -1,5 +1,9 @@
 # Frival desk — agent operating rules
 
+**Master manual: `OPERATIONS.md` (repo root).** Read it first; it consolidates
+how the desk runs, the cycle, sizing, risk controls, commands, logs, and
+onboarding. This file holds the binding rules.
+
 The desk brief is `ACTIVE MONITOR — Frival desk.md`. Work from `frival/` with
 `C:\Users\sosap\anaconda3\envs\frival\python.exe`. These rules supplement the
 brief; where they conflict with a one-off instruction, ask.

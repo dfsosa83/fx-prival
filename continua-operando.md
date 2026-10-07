@@ -1,5 +1,11 @@
 CONTINÚA OPERANDO — Frival desk, ejecución autónoma.
 
+> HISTORICAL (2026-10-02 handoff). The single master operating manual is now
+> `OPERATIONS.md` (repo root) — read that first. This file is kept for the
+> session's context; its balance, paths, config and hours are from 2026-10-02
+> and are partly superseded (real balance now ~$719, paths are
+> `C:\Users\sosap\Documents\fx-prival`, config per `OPERATIONS.md` §7).
+
 Escrito 2026-10-02 al cierre de la primera sesión de ejecución autónoma.
 Este archivo es el punto de reanudación: qué se construyó, qué se aprendió
 y qué hacer al volver el domingo.
