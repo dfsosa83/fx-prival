@@ -37,12 +37,14 @@ the volume from the formula; never reuse a gold lot count on an FX pair.
 
 ## Entry filters
 
-- **Momentum alignment (new).** Do not take an entry against the body of the
-  immediately-preceding H1 candle. Buying straight into a rejection/hammer bar
-  is the one repeatable loss pattern in the ledger (T032). If the prior H1 bar
-  closed strongly against the intended side, WAIT. Every signal records
-  `mom_alignment` (ALIGNED/AGAINST) so this filter can be MEASURED before it is
-  ever hard-enforced in the executor.
+- **Momentum alignment (recorded; DO NOT veto on it yet).** Every signal records
+  `mom_alignment` (ALIGNED/AGAINST). The caution is real — buying straight into a
+  rejection/hammer bar is a repeatable loss pattern (T032). But vetoing every
+  entry whose side opposes the prior H1 body is too blunt: C040 (a SELL flagged
+  AGAINST on 2026-10-07) resolved TP_ONLY for ~+3.1R — the filter would have
+  blocked a big winner. Treat the flag as a reason to scrutinise, not a veto,
+  until ~20-30 samples are MEASURED. Do not cancel an otherwise valid setup
+  solely because `mom_alignment=AGAINST`.
 - The four gates still bind: SL beyond a real swing high/low, FVG or OB;
   SL 1.0-4.0x ATR(M5); R:R >= 1.9 to the order TP; risk <= 5% of equity.
 - When 1.9:1 is only reached at TP2/TP3, use that as the order TP and say so.

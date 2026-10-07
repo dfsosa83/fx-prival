@@ -75,6 +75,14 @@ authorization; the system should learn every time").
   bid), symmetric to the BUY nudge. Constant renamed
   `NUDGE_BUY_LIMIT_BY_SPREAD` -> `NUDGE_LIMIT_ENTRY_BY_SPREAD` (both sides).
 
+### Rule change: momentum filter back to ADVISORY (not a veto)
+- I over-enforced the momentum filter: cancelled T036 on 2026-10-07 because
+  `mom_alignment=AGAINST`. That setup (logged as C040) resolved **TP_ONLY, MFE
+  22.8** — it would have hit its target for ~+3.1R. Vetoing every entry against
+  the prior H1 body is too blunt. AGENTS.md now says: record and scrutinise the
+  flag, do NOT cancel an otherwise valid setup solely because it is AGAINST,
+  until ~20-30 samples are measured. Lesson: measure before enforcing.
+
 ### Fix: manage skipped every gold position (BE/partial never ran)
 - `cmd_manage` mapped a live position to its log row with a fixed entry
   tolerance of 0.005. A gold order fills at the bid/ask, so the fill differs
