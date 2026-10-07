@@ -322,6 +322,47 @@ def _momentum_alignment(side: str, body):
     return body or ""
 
 
+def _resolve_realised_from_broker(row):
+    """Total realised USD for this trade's position, summed over ALL its deals
+    (partials + final), keyed by the entry deal's position_id. Returns None when
+    unavailable.
+
+    cmd_exit computes PnL as (exit-entry) x full volume, which ignores partial
+    closes: T041 booked +78.75 when the broker actually paid +38.47, because
+    0.03 of the 0.05 had already been closed early at +6.81. The broker total is
+    authoritative, so prefer it whenever history is available.
+    """
+    try:
+        import MetaTrader5 as mt5
+    except ImportError:
+        return None
+    if not mt5.initialize(path=TERMINAL_PATH):
+        return None
+    try:
+        log_id = row.get("log_id") or ""
+        symbol = row.get("symbol")
+        frm = dt.datetime.utcnow() - dt.timedelta(days=14)
+        to = dt.datetime.utcnow() + dt.timedelta(days=1)
+        deals = mt5.history_deals_get(frm, to) or []
+        entry = None
+        for d in deals:
+            if (d.symbol == symbol and d.entry == mt5.DEAL_ENTRY_IN
+                    and (d.comment or "") == "FRIVAL_%s" % log_id):
+                entry = d
+                break
+        if entry is None:
+            return None
+        pid = entry.position_id
+        return float(sum(d.profit for d in deals if d.position_id == pid))
+    except Exception:
+        return None
+    finally:
+        try:
+            mt5.shutdown()
+        except Exception:
+            pass
+
+
 def _risk_units(entry: float, sl: float, symbol: str = "XAUUSD") -> float:
     """Risk expressed in PRICE UNITS of the symbol, not dollars."""
     return abs(entry - sl)
@@ -460,7 +501,13 @@ def cmd_exit(a):
     # r_multiple formula (pnl / sl_distance * volume * value) was dimensionally
     # wrong: it multiplied where it should have divided by risk_usd.
     mv = _money_per_price_unit_per_lot(r["symbol"])
-    pnl = (float(a.price) - entry) * sign * volume * mv
+    # Prefer the broker's realised total (sums partials + final); fall back to
+    # the price-delta estimate when history is unavailable.
+    broker_total = _resolve_realised_from_broker(r)
+    if broker_total is not None:
+        pnl = broker_total
+    else:
+        pnl = (float(a.price) - entry) * sign * volume * mv
     risk_usd = float(r["sl_distance"]) * volume * mv
     r_mult = (pnl / risk_usd) if risk_usd else 0.0
     r["exit_time_local"] = local_ts

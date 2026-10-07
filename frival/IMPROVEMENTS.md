@@ -83,6 +83,15 @@ authorization; the system should learn every time").
   flag, do NOT cancel an otherwise valid setup solely because it is AGAINST,
   until ~20-30 samples are measured. Lesson: measure before enforcing.
 
+### Fix: exit PnL ignored partial closes
+- `log_trade.py exit` computed PnL as `(exit-entry) x full volume`, ignoring
+  partial closes. T041 booked **+78.75** when the broker actually paid **+38.47**
+  (0.03 of 0.05 had already closed early at +6.81; only 0.02 reached the TP).
+  New `_resolve_realised_from_broker()` sums every deal sharing the entry
+  deal's `position_id` (partials + final); `exit` now prefers that broker total
+  and falls back to the estimate only when history is unavailable. Verified:
+  T040 -> 12.66, T041 -> 38.47 (both match the broker).
+
 ### Fix: save_log schema crash truncated the ledger (be_executed)
 - The partial-close path sets `be_executed` on a row. `order_executor.save_log`
   took fieldnames from `rows[0]` and raised "dict contains fields not in
