@@ -48,7 +48,7 @@ COLUMNS = [
     "swap_rate_estimate", "threshold_override", "status", "fill_time_local",
     "fill_price", "be_time_local", "be_price", "exit_time_local", "exit_price",
     "exit_reason", "pnl_usd", "r_multiple", "be_trigger_price", "mfe_usd",
-    "mae_usd", "mom_alignment", "notes",
+    "mae_usd", "mom_alignment", "be_executed", "notes",
 ]
 
 CONTRACT_SIZE = 100.0          # XAUUSD oz/lot, verified 2026-09-30

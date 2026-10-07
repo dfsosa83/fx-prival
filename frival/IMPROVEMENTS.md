@@ -83,6 +83,20 @@ authorization; the system should learn every time").
   flag, do NOT cancel an otherwise valid setup solely because it is AGAINST,
   until ~20-30 samples are measured. Lesson: measure before enforcing.
 
+### Fix: save_log schema crash truncated the ledger (be_executed)
+- The partial-close path sets `be_executed` on a row. `order_executor.save_log`
+  took fieldnames from `rows[0]` and raised "dict contains fields not in
+  fieldnames" — AND it had opened the CSV with mode `"w"`, so trade_log.csv was
+  truncated mid-write and T040's row was lost (its partial had already executed
+  at the broker). This only surfaced because the earlier tolerance fix made
+  `manage` actually run on gold positions for the first time.
+- Fix: `save_log` now writes the ordered union of all row keys (with
+  `extrasaction="ignore"` as a safety), and `be_executed` is a real column in
+  `log_trade.COLUMNS`. T040 was reconstructed from `context/T040.json` and
+  reconciled from broker deals (partial +12.96, BE remainder -0.30, net +12.66).
+- Lesson: a writer must be schema-tolerant, and should write-then-rename so a
+  mid-write failure cannot destroy the file.
+
 ### Fix: manage skipped every gold position (BE/partial never ran)
 - `cmd_manage` mapped a live position to its log row with a fixed entry
   tolerance of 0.005. A gold order fills at the bid/ask, so the fill differs

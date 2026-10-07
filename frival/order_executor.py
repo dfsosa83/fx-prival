@@ -263,8 +263,19 @@ def load_log_row(log_id: str):
 
 
 def save_log(rows):
+    # Fieldnames = ordered union of every row's keys. The partial-close path
+    # sets a tool-specific `be_executed` field; with fieldnames taken from
+    # rows[0] alone, csv.DictWriter raised "dict contains fields not in
+    # fieldnames" and the whole save was lost (the broker had already closed
+    # the partial). Persist such fields instead of crashing.
+    fieldnames = list(rows[0].keys())
+    for r in rows:
+        for k in r:
+            if k not in fieldnames:
+                fieldnames.append(k)
     with LOG_PATH.open("w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=list(rows[0].keys()), quoting=csv.QUOTE_MINIMAL)
+        w = csv.DictWriter(f, fieldnames=fieldnames, quoting=csv.QUOTE_MINIMAL,
+                           extrasaction="ignore")
         w.writeheader()
         for r in rows:
             w.writerow(r)
