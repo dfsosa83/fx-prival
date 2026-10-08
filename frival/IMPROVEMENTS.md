@@ -129,6 +129,24 @@ authorization; the system should learn every time").
 - Note: `cmd_manage` still does not persist its in-memory stale-row retires
   (no save_log call). Low impact today but worth aligning.
 
+## 2026-10-08
+
+### Lesson: a violent gold whipsaw defeats retests BOTH ways
+- Gold spent the day in a ~4105-4140 range punctuated by spikes. Two full-risk
+  losses: **T042** (short filled 4117.75, stopped at 4123.02) and **T043**
+  (short filled 4115.98, stopped at 4121.11) — both filled on the intended
+  retest and then the tape reversed straight through the stop.
+- Simultaneously, several setups were RIGHT on direction but the retest never
+  came, so they expired unfilled (**T035, T037, T039**). So in this regime it
+  fails whether you get filled or not: the *regime*, not the setup, is the
+  problem. The desk's job is to recognise it and stand aside.
+- Implication: the retest-limit style needs a **regime filter**, not a better
+  level. Candidate (already in the backlog): skip new entries when the last ~3
+  H1 bars alternate direction with ranges > 1.5x ATR (whipsaw). MEASURE this
+  against the ledger before enforcing — same discipline as the momentum filter.
+- Day result: 2 trades, both −1R range shorts; net −2.33R for the day, session
+  still +$39.82. The discipline saved more than the setups earned.
+
 ## Backlog (candidate improvements, not yet done)
 - **Retest limits miss in trends.** T035 (BUY) and T037 (SELL) both went
   unfilled while their targets printed — in a trend the retest never comes and
