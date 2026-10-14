@@ -153,7 +153,21 @@ def load_state() -> dict:
 
 
 def save_state(st: dict) -> None:
-    STATE_PATH.write_text(json.dumps(st, indent=2), encoding="utf-8")
+    # Write-then-rename so a mid-write failure cannot corrupt the state file.
+    import os
+    import tempfile
+    fd, tmp = tempfile.mkstemp(dir=str(STATE_PATH.parent),
+                               prefix=".executor_state.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(json.dumps(st, indent=2))
+        os.replace(tmp, STATE_PATH)
+    except BaseException:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        raise
 
 
 def refresh_state_from_log() -> dict:
@@ -184,16 +198,23 @@ def refresh_state_from_log() -> dict:
         closed.append((order_ts, srv_ts, pnl))
     closed.sort(key=lambda x: x[0])
 
+    srv_today = (dt.datetime.utcnow() + dt.timedelta(hours=SERVER_OFFSET_H)) \
+        .strftime("%Y-%m-%d")
+
+    # Consecutive losses reset at the server-day boundary (server 00:00 = local
+    # 16:00). Count only trades closed in the current server day, newest first,
+    # stopping at the first win. Previously this scanned the whole ledger and
+    # only a win cleared it, so a halt could never self-heal and the documented
+    # "or a new session day" reset did not exist (audit F-09).
+    today_closed = [c for c in closed if c[1][:10] == srv_today]
     streak = 0
-    for _, _, pnl in reversed(closed):
+    for _, _, pnl in reversed(today_closed):
         if pnl < 0:
             streak += 1
         else:
             break
     STATE["consecutive_losses"] = streak
 
-    srv_today = (dt.datetime.utcnow() + dt.timedelta(hours=SERVER_OFFSET_H)) \
-        .strftime("%Y-%m-%d")
     realised = sum(pnl for _, srv, pnl in closed if srv[:10] == srv_today)
     STATE["daily_realised"] = round(realised, 2)
     save_state(STATE)
@@ -273,12 +294,28 @@ def save_log(rows):
         for k in r:
             if k not in fieldnames:
                 fieldnames.append(k)
-    with LOG_PATH.open("w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=fieldnames, quoting=csv.QUOTE_MINIMAL,
-                           extrasaction="ignore")
-        w.writeheader()
-        for r in rows:
-            w.writerow(r)
+    # Write-then-rename: compose the new ledger beside the target and atomically
+    # replace it. Until 2026-10-07 save_log opened LOG_PATH with mode "w", so a
+    # mid-write exception truncated the live file and lost T040's row. A rename
+    # on the same filesystem is atomic, so the old ledger survives any failure.
+    import os
+    import tempfile
+    fd, tmp = tempfile.mkstemp(dir=str(LOG_PATH.parent), prefix=".trade_log.",
+                               suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=fieldnames, quoting=csv.QUOTE_MINIMAL,
+                               extrasaction="ignore")
+            w.writeheader()
+            for r in rows:
+                w.writerow(r)
+        os.replace(tmp, LOG_PATH)
+    except BaseException:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        raise
 
 
 def guardrail_report(mt5, row: dict) -> dict:
@@ -289,7 +326,11 @@ def guardrail_report(mt5, row: dict) -> dict:
     info = mt5.symbol_info(symbol)
     tick = mt5.symbol_info_tick(symbol)
     if not info or not tick:
-        return {"ok": False, "reason": "symbol/tick unavailable"}
+        # Keep the SAME shape as the normal return (which cmd_place indexes via
+        # rep["failed"]). Returning only {"ok","reason"} made cmd_place raise
+        # KeyError('failed') — fail-closed, but with no audit line. (audit F-…)
+        msg = "symbol/tick unavailable"
+        return {"ok": False, "failed": [msg], "reason": msg}
 
     entry = float(row["entry_price"])
     sl = float(row["stop_loss"])
@@ -303,12 +344,17 @@ def guardrail_report(mt5, row: dict) -> dict:
     # as if it were 1.03x. The market field is the only source of truth.
     logged_sl_dist = row.get("sl_distance") or ""
     sl_dist = abs(entry - sl)
+    # Tolerance is symbol-aware. The old floor of 0.05 is ~500 pips on EURUSD
+    # (and ~$5/lot gold), so a grossly wrong sl_distance passed for FX. Use a
+    # few broker ticks as the absolute floor and tighten the relative band to 1%
+    # (logged sl_distance is written at 5dp, well inside this on all three).
+    tol = max((info.trade_tick_size or 0.0) * 5.0, sl_dist * 0.01)
     try:
         logged = float(logged_sl_dist)
-        if abs(logged - sl_dist) > max(0.05, sl_dist * 0.02):
+        if abs(logged - sl_dist) > tol:
             raise SystemExit(
                 f"[ABORT] {row.get('log_id')} sl_distance mismatch: logged "
-                f"{logged:.5f} but |entry - SL| = {sl_dist:.5f}. "
+                f"{logged:.5f} but |entry - SL| = {sl_dist:.5f} (tol {tol:.5f}). "
                 f"Recompute the column from the price fields."
             )
     except (TypeError, ValueError):
@@ -323,8 +369,23 @@ def guardrail_report(mt5, row: dict) -> dict:
 
     pos = mt5.positions_get() or []
     ps = pip_size(symbol, info.digits)
-    notional = vol * info.trade_contract_size * entry
-    margin_needed = notional / acct.leverage if acct.leverage else notional
+    # Margin from the broker, not a hand-rolled notional. The old formula used
+    # notional = vol * contract_size * entry, which treats a JPY-quoted pair's
+    # price as USD: for USDJPY 1.00 lot it returned ~$31,638 instead of ~$200
+    # (158x too high), hard-capping USDJPY at ~0.02 lots and blocking correctly
+    # sized setups (audit F-03). order_calc_margin already applies leverage and
+    # is currency-aware for all three symbols. The USD notional below is kept
+    # only for the audit record (base-USD symbols must not multiply by price).
+    _action = mt5.ORDER_TYPE_BUY if side == "BUY" else mt5.ORDER_TYPE_SELL
+    margin_needed = mt5.order_calc_margin(_action, symbol, vol, entry)
+    if margin_needed is None:
+        notional = vol * info.trade_contract_size * entry
+        margin_needed = notional / acct.leverage if acct.leverage else notional
+        margin_source = "fallback_notional"
+    else:
+        notional = vol * info.trade_contract_size * (
+            entry if info.currency_base != acct.currency else 1.0)
+        margin_source = "order_calc_margin"
     margin_after = acct.margin + margin_needed
     margin_level_after = (equity / margin_after * 100) if margin_after > 0 else 9999.0
 
@@ -392,7 +453,8 @@ def guardrail_report(mt5, row: dict) -> dict:
         "rr_tp1": rr, "atr_m5": a5, "sl_atr_multiple": atr_mult,
         "money_per_unit": mv, "risk_usd": risk_usd, "risk_pct": risk_pct,
         "equity": equity, "margin_level_after": margin_level_after,
-        "notional": notional, "session_start_equity": sess_eq,
+        "notional": notional, "margin_source": margin_source,
+        "session_start_equity": sess_eq,
         "daily_realised": realised, "daily_loss_pct": daily_pct,
         "be_trigger": entry + (tp1 - entry) * BE_FRACTION,
     }
@@ -541,6 +603,7 @@ def cmd_manage(a):
     try:
         rows = list(csv.DictReader(LOG_PATH.open(newline="", encoding="utf-8")))
         acts = []
+        retired = False
         # Map the live position back to its log row by SYMBOL AND ENTRY PRICE.
         # Matching on status alone was wrong: a stale OPEN row (T010, XAUUSD)
         # matched before the real row (T020, XAUUSD) and tagged the partial
@@ -549,17 +612,28 @@ def cmd_manage(a):
         live = {}
         for op in (mt5.positions_get() or []):
             live[op.symbol] = op
+        # A live PENDING order is not a position, so a row with status
+        # ORDER_PLACED must be matched against orders_get() before it is
+        # retired. Until 2026-10-12 only positions_get() was consulted, so every
+        # resting limit was auto-retired each cycle and its row wrongly marked
+        # CLOSED (the T048 bug; audit F-06). Pair on symbol + FRIVAL_<log_id>.
+        pendings = set()
+        for o in (mt5.orders_get() or []):
+            pendings.add((o.symbol, o.comment or ""))
         for stale in rows:
             if stale.get("status") not in ("OPEN", "ORDER_PLACED"):
                 continue
             ssym = stale.get("symbol")
             if ssym not in live:
+                if (ssym, "FRIVAL_%s" % stale.get("log_id")) in pendings:
+                    continue          # live resting order — not stale
                 stale["status"] = "CLOSED"
                 stale["notes"] = (stale.get("notes", "") +
                                   " AUTO-RETIRED %s: log row marked OPEN but no live "
                                   "position for this symbol." % dt.datetime.utcnow()
                                   .strftime("%Y-%m-%d %H:%M"))
                 audit("STALE_ROW_RETIRED", log_id=stale.get("log_id"), symbol=ssym)
+                retired = True
                 continue
             op = live[ssym]
             try:
@@ -577,6 +651,7 @@ def cmd_manage(a):
                                       .strftime("%Y-%m-%d %H:%M"),
                                       stale.get("entry_price"), op.price_open))
                     audit("STALE_ROW_RETIRED", log_id=stale.get("log_id"), symbol=ssym)
+                    retired = True
             except ValueError:
                 pass
 
@@ -688,6 +763,11 @@ def cmd_manage(a):
                     else:
                         acts.append(f"PARTIAL {sym} skipped: close fraction rounds to full volume")
 
+        # Persist any stale-row retires even when no BE/partial fired — until
+        # 2026-10-07 they were mutated in memory only, so `manage` re-retired
+        # the same rows every cycle and the log kept stale OPEN rows.
+        if retired:
+            save_log(rows)
         if acts:
             for s in acts:
                 print(s)

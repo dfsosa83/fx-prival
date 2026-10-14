@@ -52,6 +52,7 @@ COLUMNS = [
     "cf_id", "logged_at_local", "logged_at_server", "symbol", "side", "order_type",
     "volume", "entry_price", "stop_loss", "tp1", "sl_distance", "rr_tp1",
     "signal_bar_time_server", "signal_close", "signal_atr_m5", "spread_at_signal",
+    "regime", "regime_detail",
     "reject_reason", "trigger_condition", "horizon_bars", "resolved_bar_time_server",
     "outcome", "bars_held", "tp_touched", "sl_touched", "first_touch",
     "mfe", "mae", "adverse_first", "would_be_r_usd", "notes",
@@ -86,11 +87,24 @@ def _load():
 
 
 def _save(rows):
-    with CSV_PATH.open('w', newline='', encoding='utf-8') as f:
-        w = csv.DictWriter(f, fieldnames=COLUMNS, quoting=csv.QUOTE_MINIMAL)
-        w.writeheader()
-        for r in rows:
-            w.writerow({c: r.get(c, '') for c in COLUMNS})
+    # Write-then-rename: never truncate the evidence base on a mid-write failure.
+    import os
+    import tempfile
+    fd, tmp = tempfile.mkstemp(dir=str(CSV_PATH.parent), prefix='.counterfactuals.',
+                               suffix='.tmp')
+    try:
+        with os.fdopen(fd, 'w', newline='', encoding='utf-8') as f:
+            w = csv.DictWriter(f, fieldnames=COLUMNS, quoting=csv.QUOTE_MINIMAL)
+            w.writeheader()
+            for r in rows:
+                w.writerow({c: r.get(c, '') for c in COLUMNS})
+        os.replace(tmp, CSV_PATH)
+    except BaseException:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        raise
 
 
 def _next_id(rows):
@@ -135,6 +149,12 @@ def cmd_consider(a):
     ps = PIP.get(a.symbol, 0.0001)
     spread_pips = (info.spread * info.trade_tick_size / ps) if info else ''
 
+    try:
+        from log_trade import _regime
+        regime, regime_detail = _regime(a.symbol)
+    except Exception:
+        regime, regime_detail = '', ''
+
     row = {c: '' for c in COLUMNS}
     row.update({
         'cf_id': cf_id, 'logged_at_local': local_ts, 'logged_at_server': server_ts,
@@ -143,6 +163,7 @@ def cmd_consider(a):
         'sl_distance': f'{sl_dist:.5f}', 'rr_tp1': f'{rr:.2f}',
         'signal_bar_time_server': str(last_bar), 'signal_close': f'{sig_close:.5f}',
         'signal_atr_m5': atr, 'spread_at_signal': f'{spread_pips:.1f}',
+        'regime': regime, 'regime_detail': regime_detail,
         'reject_reason': a.reject_reason, 'trigger_condition': a.trigger,
         'horizon_bars': a.horizon, 'outcome': 'PENDING', 'notes': a.notes,
     })
@@ -257,6 +278,16 @@ def cmd_stats(a):
             mrr = [float(x['would_be_r_usd']) for x in v if x.get('would_be_r_usd')]
             print(f'  {k:24s} n={len(v):3d}  TP-first {t:3d} ({t / len(v) * 100:5.1f}%)  '
                   f'meanR {statistics.mean(mrr):+.2f}' if mrr else f'  {k:24s} n={len(v):3d}')
+    byreg = {}
+    for r in rows:
+        byreg.setdefault(r.get('regime') or 'NA', []).append(r)
+    if any(k != 'NA' for k in byreg):
+        print('\nby regime (whipsaw measurement):')
+        for k in sorted(byreg):
+            v = byreg[k]
+            mrr = [float(x['would_be_r_usd']) for x in v if x.get('would_be_r_usd')]
+            print(f'  {k:12s} n={len(v):3d}  meanR {statistics.mean(mrr):+.2f}'
+                  if mrr else f'  {k:12s} n={len(v):3d}')
 
 
 def cmd_show(a):

@@ -48,7 +48,7 @@ COLUMNS = [
     "swap_rate_estimate", "threshold_override", "status", "fill_time_local",
     "fill_price", "be_time_local", "be_price", "exit_time_local", "exit_price",
     "exit_reason", "pnl_usd", "r_multiple", "be_trigger_price", "mfe_usd",
-    "mae_usd", "mom_alignment", "be_executed", "notes",
+    "mae_usd", "mom_alignment", "regime", "regime_detail", "be_executed", "notes",
 ]
 
 CONTRACT_SIZE = 100.0          # XAUUSD oz/lot, verified 2026-09-30
@@ -81,11 +81,34 @@ def _load():
 
 
 def _save(rows):
-    with LOG_PATH.open("w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=COLUMNS, quoting=csv.QUOTE_MINIMAL)
-        w.writeheader()
-        for r in rows:
-            w.writerow({c: r.get(c, "") for c in COLUMNS})
+    # Write-then-rename: compose beside the target and atomically replace, so a
+    # mid-write failure cannot truncate the ledger (see order_executor.save_log).
+    # Fieldnames = COLUMNS plus any extra keys a row carries, so fields written
+    # by other tools (e.g. order_executor's be_executed) are never silently
+    # dropped on the next log_trade save (audit P1-01).
+    import os
+    import tempfile
+    fieldnames = list(COLUMNS)
+    for r in rows:
+        for k in r:
+            if k not in fieldnames:
+                fieldnames.append(k)
+    fd, tmp = tempfile.mkstemp(dir=str(LOG_PATH.parent), prefix=".trade_log.",
+                               suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=fieldnames, quoting=csv.QUOTE_MINIMAL,
+                               extrasaction="ignore")
+            w.writeheader()
+            for r in rows:
+                w.writerow(r)
+        os.replace(tmp, LOG_PATH)
+    except BaseException:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        raise
 
 
 def _next_id(rows):
@@ -322,6 +345,65 @@ def _momentum_alignment(side: str, body):
     return body or ""
 
 
+def _regime(symbol: str):
+    """Classify the immediate H1 regime for whipsaw MEASUREMENT.
+
+    Recorded on every signal; it does NOT gate anything yet. The 2026-10-08
+    session lost T042/T043 (and T029/T033/T034 were the same shape) to a range
+    that reversed straight through the stop, so the backlog wants a whipsaw
+    filter — but only after it is MEASURED against the ledger (same discipline
+    that stopped the momentum filter from being over-enforced twice).
+
+    WHIPSAW  = last 3 completed H1 bars strictly alternate direction
+               (BULL/BEAR/BULL or BEAR/BULL/BEAR) AND each bar's range > 1.5x
+               ATR(H1).
+    ALTERNATING = directions alternate but at least one range is <= 1.5x ATR(H1).
+    TREND    = directions do not strictly alternate.
+
+    Returns (flag, detail). detail keeps the per-bar range/ATR(H1) ratios so
+    the 1.5x threshold can be retuned from the data.
+    """
+    try:
+        import MetaTrader5 as mt5
+        import pandas as pd
+    except ImportError:
+        return "", ""
+    if not mt5.initialize(path=TERMINAL_PATH):
+        return "", ""
+    try:
+        d = pd.DataFrame(mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_H1, 0, 20))
+        if len(d) < 5:
+            return "", ""
+        done = d.iloc[:-1]                     # drop the forming bar
+        pc = done["close"].shift(1)
+        tr = pd.concat([
+            done["high"] - done["low"],
+            (done["high"] - pc).abs(),
+            (done["low"] - pc).abs(),
+        ], axis=1).max(axis=1)
+        atr = float(tr.tail(14).mean())
+        if atr <= 0:
+            return "", ""
+        last3 = done.tail(3)
+        dirs, ratios = [], []
+        for _, b in last3.iterrows():
+            o = float(b["open"]); c = float(b["close"])
+            dirs.append(1 if c > o else (-1 if c < o else 0))
+            ratios.append((float(b["high"]) - float(b["low"])) / atr)
+        alt = all(x != 0 for x in dirs) and dirs[0] != dirs[1] and dirs[1] != dirs[2]
+        big = all(r > 1.5 for r in ratios)
+        detail = "alt=%d rH1atr=%s" % (1 if alt else 0, ",".join(f"{r:.2f}" for r in ratios))
+        flag = "WHIPSAW" if (alt and big) else ("ALTERNATING" if alt else "TREND")
+        return flag, detail
+    except Exception:
+        return "", ""
+    finally:
+        try:
+            mt5.shutdown()
+        except Exception:
+            pass
+
+
 def _resolve_realised_from_broker(row):
     """Total realised USD for this trade's position, summed over ALL its deals
     (partials + final), keyed by the entry deal's position_id. Returns None when
@@ -395,6 +477,14 @@ def cmd_signal(a):
     srv_hour = int(server_ts[11:13])
     body = _prior_h1_body(a.symbol)
     mom = _momentum_alignment(a.side, body)
+    regime, regime_detail = _regime(a.symbol)
+    risk_pct_val = (risk / eq_now * 100.0) if eq_now else 0.0
+    undersized = bool(eq_now) and risk_pct_val < 1.0
+    notes = (a.notes or "").strip()
+    if undersized:
+        tag = f"[UNDERSIZED risk_pct={risk_pct_val:.2f}]"
+        if tag not in notes:
+            notes = (notes + " " + tag).strip()
 
     row = {c: "" for c in COLUMNS}
     row.update({
@@ -426,7 +516,9 @@ def cmd_signal(a):
         "status": "PENDING_FILL",
         "be_trigger_price": f"{entry - direction * sl_dist * 0.5:.5f}",
         "mom_alignment": mom,
-        "notes": a.notes,
+        "regime": regime,
+        "regime_detail": regime_detail,
+        "notes": notes,
     })
     # Upsert by log_id: re-emitting a corrected signal for the same id must
     # UPDATE the existing row, never append a second one. Before 2026-10-06
@@ -447,9 +539,12 @@ def cmd_signal(a):
           f"SL {sl} TP1 {tp1}{flag}")
     print(f"  risk ${risk:.2f} ({row['risk_pct_equity']}% of equity)  "
           f"RR1 {rr1:.2f}  ATR_H1 {row['atr_h1_at_signal']}  ATR_M5 {row['atr_m5_at_signal']}  "
-          f"MOM {mom or 'n/a'}")
+          f"MOM {mom or 'n/a'}  REGIME {regime or 'n/a'}")
     if rr1 < MIN_RR:
         print(f"  WARNING: expected R:R {rr1:.2f} < {MIN_RR}. Record the reason in --notes.")
+    if undersized:
+        print(f"  WARNING: realised risk {risk_pct_val:.2f}% < 1.0% - UNDERSIZED for the "
+              f"5% budget. Check money_per_price_unit for {a.symbol}.")
 
 
 def cmd_fill(a):
@@ -571,6 +666,14 @@ def cmd_stats(a):
     print(f"avg R {sum(rs)/len(rs):.2f}  best {max(rs):.2f}  worst {min(rs):.2f}")
     ov = [r for r in rows if r.get("threshold_override") == "YES"]
     print(f"below-threshold signals logged: {len(ov)}")
+    reg = {}
+    for r in closed:
+        reg.setdefault(r.get("regime") or "NA", []).append(float(r["r_multiple"]))
+    if any(k != "NA" for k in reg):
+        print("by regime (closed):")
+        for k in sorted(reg):
+            v = reg[k]
+            print(f"  {k:12s} n={len(v):3d}  meanR {sum(v) / len(v):+.2f}  sumR {sum(v):+.2f}")
 
 
 def cmd_size(a):
@@ -587,6 +690,9 @@ def cmd_size(a):
     print(f"  volume {vol:.2f} lots  ->  realised risk ${risk:.2f} "
           f"({risk / eq * 100:.2f}% of equity)" if eq else f"  volume {vol:.2f} lots")
     print(f"  use: log_trade.py signal ... --volume {vol:.2f}  (or --risk-pct {rp:g})")
+    if eq and (risk / eq * 100) < 1.0:
+        print(f"  WARNING: realised risk {risk / eq * 100:.2f}% < 1.0% - UNDERSIZED; "
+              f"the volume hit the broker minimum for {a.symbol}.")
 
 
 def main():
