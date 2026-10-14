@@ -156,9 +156,17 @@ most on day one:
   broker deal. Do not wait for the stop. `close-all` requires `--force` or an
   armed kill switch; that flag is the flatten confirmation, not a guardrail
   bypass, and is distinct from the forbidden `place --force`.
-- `MAX_CONSECUTIVE_LOSSES` is set to 999 — the circuit breaker is **disabled by
-  operator instruction** (2026-10-02). It will not stop the day. This is
-  deliberate; do not "fix" it without the operator.
+- `MAX_CONSECUTIVE_LOSSES` is set to **4** — the circuit breaker is **active by
+  operator instruction** (2026-10-06, was disabled at 999; commit e62838c).
+  After 4 straight losses it pauses new entries until a win or a new session
+  day, and it now **resets at the server-day boundary** (server 00:00 = local
+  16:00). Do not change it without the operator.
+- Margin for the guardrail comes from `mt5.order_calc_margin()`, not a
+  hand-rolled notional (USDJPY was hard-capped at ~0.02 lots before 2026-10-12;
+  audit F-03). Fixed.
+- **Instrumentation:** run `python quality_gate.py log` every cycle (appends
+  data-quality status to `data/quality_gates.csv`; `stats` prints the
+  block-rate). Measurement only — places no orders. See OPERATIONS.md §9.
 - Guardrails in force: `MAX_POSITIONS=3`, `MAX_RISK_PCT_PER_TRADE=5.00`,
   `MAX_RISK_PCT_TOTAL=12.00`, `MAX_SAME_THESIS=2`, `MIN_RR=1.9`,
   `MIN_MARGIN_LEVEL=100.0`, `MAX_POSITIONS` is effectively 1 net position by
@@ -189,6 +197,18 @@ Not blockers, but the next laptop inherits them:
   touch a `PENDING_FILL` row by design, so this needs a direct log edit.
 - `trade_log.CORRUPT-9rows.csv.bak` is a debug artifact from the 2026-10-04 row-
   loss incident. Untracked, and should stay that way.
-- Counterfactual stats at N=36 read **−0.074R mean, t-stat −0.25**. The filter
-  destroying the most R is `NO_STRUCTURAL_TARGET` at −0.95R, not the 1.9R
-  floor. Any tuning should start there, not with the geometry gates.
+- Counterfactual stats at N=47 resolved read **+0.41R mean, t-stat +1.52** — but
+  that headline mean is INFLATED by no-fill artifacts (F-10). By reason:
+  `LEVEL_ALREADY_TESTED` +0.40R (do NOT block), `NO_STRUCTURAL_TARGET` −0.43R
+  (keep this filter), `R_R_BELOW_2_TO_TP1` −0.27R (the 1.9R floor is justified).
+  Tuning starts at `NO_STRUCTURAL_TARGET`, not with the geometry gates.
+- **The 15-min cron is session-scoped.** Check `cron_list` before creating one:
+  create `*/15 * * * *` only if missing (prompt = the full text of
+  `ACTIVE MONITOR — Frival desk.md`), so the desk is not run twice. A second
+  cron `5 16 * * 1-5` (16:05 local) triggers the EOD review.
+- **External audit (2026-10-11, `auditorias/`) is PENDING OPERATOR APPROVAL.** The
+  isolated worktrees (`frival-p001-wt`, `frival-p002-wt`) are NOT to be merged or
+  acted on. Open tickets needing a decision: **F-01** (`close-all` flattens every
+  position on the account — no ownership filter) and **F-04** (`place` has no
+  idempotency/reservation before `order_send`). F-03/F-06/F-09/F-10 are already
+  handled. See OPERATIONS.md §17.

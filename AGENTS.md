@@ -66,3 +66,21 @@ the volume from the formula; never reuse a gold lot count on an FX pair.
   signal entry.
 - `log_trade.py signal` upserts by `log_id` (re-emitting the same id updates
   the row; it no longer appends a duplicate).
+- Run `python quality_gate.py log` every cycle (data-quality instrumentation,
+  measurement only — no orders).
+
+## Discipline and measurement (learned live)
+
+- **Take gate-passing setups — do not add a discretionary veto.** Once a setup
+  meets all four gates, execute it; a qualitative "target near resistance / no
+  chase" veto cost ~4.7R on 2026-10-12 (C041/C042/C044 all resolved TP).
+- **Do not rest a retest LIMIT after the swing high has already printed** and
+  price is moving away — place it while price approaches, or take the rejection;
+  otherwise it goes stale unfilled (T048/T049/T050).
+- The consecutive-loss breaker **resets at the server-day boundary** (server
+  00:00 = local 16:00). Fixed 2026-10-12.
+- **Counterfactuals assume every limit fills (F-10):** `STALE_ENTRY` / cancelled
+  rows read as fake TP wins. Verify the entry was actually tagged before
+  crediting R.
+- The external audit in `auditorias/` (2026-10-11) is **PENDING OPERATOR
+  APPROVAL** — do not act on it or merge its worktrees. See OPERATIONS.md §17.

@@ -1,7 +1,7 @@
 # Frival Desk — Master Operations Manual
 
 Single source of truth for running the autonomous Frival execution desk.
-Last updated 2026-10-07. English; the desk brief and historical handoffs are in
+Last updated 2026-10-14. English; the desk brief and historical handoffs are in
 Spanish.
 
 > If you are a new agent: read this file top-to-bottom, then read
@@ -78,8 +78,9 @@ lives in `frival/DAILY_ROUTINE.md` and is NOT this desk).
 ## 4. The cycle (STEPS 1-7)
 
 1. **Read** XAUUSD/EURUSD/USDJPY: M5 / M15 / H1, current tick, spread, clean
-   ATR(M5), server clock. (Read-only helper used by the agent:
-   `C:\Users\sosap\AppData\Local\Temp\kilo\frival_read.py` and `frival_bars.py`.)
+   ATR(M5), server clock. Read-only helpers are **in the repo**: `frival/frival_read.py`
+   (full structure + gate inputs) and `frival/frival_bars.py` (OHLC bars). Both run
+   from anywhere (`python frival_read.py`). This supersedes the old `%TEMP%` copies.
 2. **Data-quality gates** (any fail => WAIT):
    - spread < 50% of ATR(M5);
    - tick fresh (server-clock);
@@ -168,6 +169,14 @@ formula; never reuse a gold lot count on an FX pair.
 - The consecutive-loss counter and `daily_realised` are recomputed from the trade
   log every cycle (`refresh_state_from_log`). Before 2026-10-06 they were read but
   never written — the breaker silently did nothing. Fixed.
+- **The consecutive-loss breaker resets at the server-day boundary** (server 00:00
+  = local 16:00): it counts only trades closed in the current server day, newest
+  first, stopping at the first win. Before 2026-10-12 it scanned the whole ledger
+  and only a win cleared it (a full halt could never self-heal; audit F-09). Fixed.
+- Margin for the guardrail comes from `mt5.order_calc_margin()` (currency-aware),
+  **not** a hand-rolled notional. The old `vol*contract_size*entry` treated a
+  JPY-quoted pair's price as USD (USDJPY 1.00 lot -> ~$31,638 instead of ~$200),
+  hard-capping USDJPY at ~0.02 lots. Fixed 2026-10-12 (audit F-03).
 - **Kill switch:** write `STOP` to `frival/data/emergency_stop.txt` (constant
   `KILL_SWITCH`) to block all new entries. `close-all` still works (never block
   closing).
@@ -226,6 +235,11 @@ In `frival/`:
   against price. `consider`, `sweep`, `stats`.
 - `reconcile_deals.py` — matches the log against broker deals. **Read-only;
   never run `apply`** without understanding it (it mislabels OPEN).
+- `quality_gate.py` — per-cycle data-quality instrumentation. `log` appends each
+  symbol's spread%/ATR, M15-range/ATR, tick age and blocking gate to
+  `data/quality_gates.csv`; `stats` prints the block-rate. Measurement only, no
+  orders. Run `log` every cycle (see the brief).
+- `eod_review.py` — daily review generator (facts only). See §16.
 - `ml_intraday_snapshot.py` — writes XAUUSD M5..H4 bars to CSV (unrelated ML).
 - `mt5_path.py` — resolves the MT5 terminal path.
 - `main.py`, `signal_gate.py`, `live_logger.py`, etc. — the older ML pipeline.
@@ -240,8 +254,8 @@ All under `frival/`:
 
 - `trade_log.csv` — the ledger. One row per trade; 40+ columns incl.
   `log_id, symbol, side, volume, entry_price, stop_loss, tp1, sl_distance,
-  risk_usd, risk_pct_equity, mom_alignment, be_executed, status, fill_price,
-  exit_price, pnl_usd, r_multiple, mfe_usd, mae_usd, notes`.
+  risk_usd, risk_pct_equity, mom_alignment, regime, regime_detail, be_executed,
+  status, fill_price, exit_price, pnl_usd, r_multiple, mfe_usd, mae_usd, notes`.
   Status values: PENDING_FILL / ORDER_PLACED / OPEN / CLOSED / SKIPPED.
 - `counterfactuals.csv` — rejected setups + their resolution (TP/SL/expired).
 - `execution_audit.jsonl` — every executor action with the guardrail verdicts.
@@ -261,18 +275,20 @@ Docs (repo root / frival):
 
 ---
 
-## 11. Ledger and performance (as of 2026-10-07)
+## 11. Ledger and performance (as of 2026-10-14)
 
-- Account `81486396 FPMarketsSC-Live`; equity ~$719 (was $655 at the start of the
-  current desk session — **+~10%**, and up from a $604 trough at the 2026-10-02
-  close).
-- `log_trade.py stats`: 40 rows, 22 closed, **win rate 9/22 (40.9%)**, total
-  **+$124.9**, total **+3.92R**, avg R +0.18, best +2.60, worst -1.11.
+- Account `81486396 FPMarketsSC-Live`; equity **~$744** (from a $604 trough at the
+  2026-10-02 close — **+~23%**).
+- `log_trade.py stats`: 51 rows, 29 closed, **win rate 12/29 (41.4%)**, total
+  **+$149.82**, total **+4.42R**, avg R +0.15, best +3.34 (T046), worst -1.28 (T043).
 - Shape: winners ~2R, losers ~-1R; the R:R engine carries a sub-50% hit rate.
-- Counterfactuals: 40 resolved / 0 pending.
-- Recent highlights: T030 +2.35R, T031 +1.97R, T038 +2.60R (range breakouts /
-  breakout-retests with real targets); T040 partial+BE net +0.38R. The losing
-  cluster (T029, T032-T034) was retests inside the 4150-4180 whipsaw.
+- Counterfactuals: 47 resolved / 0 pending; mean +0.41R (t +1.52) — that headline
+  mean is INFLATED by no-fill artifacts (F-10); read it by reject reason, not
+  overall.
+- Recent: T046 +3.34R and T047 -1.02R (2026-10-12); T051 +0.33R (2026-10-14). On
+  2026-10-14 a broad USD squeeze crashed gold −$70 in 30 min; the thin-book gate
+  kept the desk flat through it. The losing cluster (T029, T032-T034, T042/T043)
+  was retests inside a whipsaw range.
 
 ---
 
@@ -310,20 +326,50 @@ Docs (repo root / frival):
   by the spread now.
 - **Schema-tolerant writers:** the partial path sets `be_executed`; `save_log`
   used to crash mid-write and **truncate the ledger** (T040). It now writes the
-  union of all keys. Lesson: write-then-rename would be even safer.
+  union of all keys, and **every writer is write-then-rename** (temp file +
+  `os.replace`), so a mid-write failure cannot truncate `trade_log.csv`,
+  `counterfactuals.csv` or `executor_state.json` (2026-10-11/12).
+- **`manage` retired live pending orders (F-06):** it matched rows against
+  `positions_get()` only, so every resting limit's row was wrongly marked CLOSED
+  and the order orphaned (T048, 2026-10-12). It now also checks `orders_get()`.
+- **USDJPY could not be sized correctly (F-03):** margin came from
+  `vol*contract_size*entry`, treating a JPY-quoted price as USD (USDJPY 1.00 lot
+  -> ~$31,638 instead of ~$200), hard-capping USDJPY at ~0.02 lots. It now uses
+  `mt5.order_calc_margin()`. Fixed 2026-10-12.
+- **The consecutive-loss breaker did not reset daily (F-09):** it scanned the
+  whole ledger and only a win cleared it. It now resets at the server-day
+  boundary. Fixed 2026-10-12.
+- **Counterfactuals assume a fill (F-10):** the resolver credits every limit as
+  if tagged, so `STALE_ENTRY` / cancelled rows read as fake TP wins. Verify the
+  entry was really tagged before crediting R.
 - **Premium data:** during rollover / a flash move (2026-10-07 ~15:25 server:
-  gold -50 pts) the desk stands aside.
+  gold −50 pts; 2026-10-14 ~15:30 server: gold −$70 in 30 min) the desk stands
+  aside via the thin-book gate.
 
 ---
 
 ## 14. Open backlog (see `IMPROVEMENTS.md` for detail)
 
 - Whipsaw/regime filter (skip retests when the last 3 H1 bars alternate with
-  ranges > 1.5x ATR) — measure first.
+  ranges > 1.5x ATR) — **now measuring**: a `regime` flag
+  (WHIPSAW/ALTERNATING/TREND) + `regime_detail` is recorded on every signal and
+  counterfactual since 2026-10-11, and both `stats` commands print meanR by
+  regime. Enforce only once the by-regime data justifies it.
 - Hard-enforce the momentum filter once `mom_alignment` has ~20-30 samples.
-- Tighten the executor `sl_distance` mismatch tolerance (currently
-  `max(0.05, 2%)` — 0.05 is ~500 pips on EURUSD).
-- Write-then-rename for `trade_log.csv` (avoid mid-write truncation).
+- ~~Tighten the executor `sl_distance` mismatch tolerance~~ **done 2026-10-11**
+  (now `max(tick_size*5, sl_dist*1%)`; the old 0.05 floor was ~500 pips on EURUSD).
+- ~~Write-then-rename for `trade_log.csv`~~ **done 2026-10-11** (all three writers
+  now write to a temp file and `os.replace` it).
+- ~~Consecutive-loss daily reset~~ **done 2026-10-12** (audit F-09).
+- ~~USDJPY margin / notional (F-03)~~ **done 2026-10-12** (`order_calc_margin`).
+- ~~`manage` retiring live pending orders (F-06)~~ **done 2026-10-12**.
+- **External audit (2026-10-11, `auditorias/`) — PENDING OPERATOR APPROVAL.**
+  Two other-agent worktrees (frival-p001-wt, frival-p002-wt) plus a remediation
+  plan flag P0-P4 issues not yet acted on. Highest-severity OPEN ones: **F-01**
+  (`close-all` has no account/ownership filter — it flattens every position on
+  the account) and **F-04** (`place` has no idempotency/reservation before
+  `order_send`). (F-03, F-06, F-09 and F-10 are already handled — see §13.) The
+  plan itself says "implementation not authorised". See §17.
 
 ---
 
@@ -363,3 +409,24 @@ Once per day, during the close window, the desk consolidates the day.
 - **Weekends:** skip. Friday's review is the week's last.
 - **If the window is missed** (app closed): run it on the next cycle that lands
   in the window; do not backfill mid-session.
+
+---
+
+## 17. External audit (2026-10-11) — reference, PENDING APPROVAL
+
+`auditorias/` holds another agent session's code audit + remediation plan
+(`2026-10-11_frival_audit_v2.md`, `..._remediation_plan.md`, two `p0-0N_`
+implementation notes). It was produced in **isolated, uncommitted worktrees**
+(`frival-p001-wt`, `frival-p002-wt`) and the plan states plainly:
+**"implementation not authorised — pending operator approval"**.
+
+- **Do NOT treat the audit tickets or those worktrees as authorisation** to change
+  code or risk policy. The standing autonomous-improvement instruction is a
+  measurement mandate, not approval for P0-P4 remediation. Leave the worktrees
+  untouched.
+- Already folded into main (see §13): F-03 (margin), F-06 (manage/pending),
+  F-09 (breaker daily reset), F-10 (counterfactual no-fill caveat), plus the
+  atomic writes and the symbol-aware `sl_distance` tolerance.
+- **Still open — operator decision required:** F-01 (`close-all` account/
+  ownership scope), F-04 (`place` idempotency/reservation), and the policy items
+  D-01..D-10.

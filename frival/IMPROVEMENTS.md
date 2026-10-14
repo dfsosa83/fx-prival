@@ -147,13 +147,186 @@ authorization; the system should learn every time").
 - Day result: 2 trades, both −1R range shorts; net −2.33R for the day, session
   still +$39.82. The discipline saved more than the setups earned.
 
+## 2026-10-11
+
+### Measurement: whipsaw regime recorded (no behaviour change) — P1
+- `log_trade.py signal` and `counterfactual.py consider` now stamp `regime`
+  (WHIPSAW / ALTERNATING / TREND) and `regime_detail` (the three per-bar
+  range/ATR(H1) ratios) on every signal, from the last 3 completed H1 bars.
+  WHIPSAW = directions strictly alternate AND each range > 1.5x ATR(H1).
+- WHY: the losing cluster (T029, T033, T034, T042, T043) is all range-whipsaw,
+  and the 2026-10-08 lesson called for a regime filter — but only after
+  MEASUREMENT (the discipline that twice stopped the momentum filter being
+  over-enforced). `log_trade.py stats` and `counterfactual.py stats` now print
+  meanR **by regime**, so the filter can be decided on data. It does NOT gate
+  entries.
+- First live reads: XAUUSD TREND (rH1atr 0.87/0.74/0.31); USDJPY ALTERNATING
+  (0.61/0.66/1.61). New rows carry the flag; pre-existing rows read NA.
+
+### Guard: undersized-lot warning — P3
+- `log_trade.py signal` warns and stamps `[UNDERSIZED risk_pct=x.xx]` into
+  `notes` when realised risk < 1% of equity; `log_trade.py size` warns too.
+  Catches the desk's most repeated error — a manually passed tiny FX lot
+  (T017 0.01 = -$0.61, T025 0.02 = -$0.71) — at log time. Non-blocking.
+  Verified: USDJPY manual 0.01 lot -> "UNDERSIZED risk_pct=0.18".
+
+### Hardening: write-then-rename on every evidence writer — P4
+- `order_executor.save_log`, `log_trade._save` and `counterfactual._save` now
+  compose the new file beside the target and `os.replace` it, so a mid-write
+  failure can no longer truncate `trade_log.csv` / `counterfactuals.csv` (T040's
+  row was lost this way on 2026-10-07). Closes the §14 backlog item for all
+  three writers. Verified reversibly.
+- NOTE: the 2026-10-11 external audit (`auditorias/`) flags further P0-P4 issues
+  (F-01 `close-all` account scope, F-04 `place` idempotency, F-06 stale rows,
+  F-03 notional/margin unit) as **pending operator approval** — not acted on here.
+
+### Hardening: symbol-aware sl_distance mismatch tolerance
+- `guardrail_report` cross-checks the logged `sl_distance` against
+  `|entry - SL|` with `max(0.05, sl_dist*0.02)`. On EURUSD 0.05 is ~500 pips,
+  so a grossly wrong `sl_distance` passed for FX (the 2026-10-02 bug that let a
+  10.70 column validate a 6.51 stop was gold; FX was still wide open). It is now
+  `max(tick_size * 5, sl_dist * 0.01)`: a few broker ticks absolute, 1% relative.
+  Verified: a matching EURUSD `sl_distance` does not abort; a +0.01 (100-pip)
+  mismatch aborts.
+
+### Hardening: manage persists stale-row retires — P4
+- `cmd_manage` mutated stale OPEN/ORDER_PLACED retires in memory but only
+  called `save_log` when a BE/partial fired, so it re-retired the same rows
+  every cycle. It now persists whenever it retires a row.
+
+### Safe P0/P1 robustness (operator-approved scope, 2026-10-11)
+- **`guardrail_report` response shape** — the symbol/tick-unavailable early
+  return was `{"ok": False, "reason": ...}` with no `failed` key, so
+  `cmd_place` raised `KeyError('failed')` (fail-closed but unaudited). It now
+  returns the same shape as the normal path. (audit remediation P2-02.)
+- **Atomic `save_state`** — write-then-rename like the ledgers, so a mid-write
+  failure cannot corrupt `executor_state.json`.
+- **`log_trade._save` writes the union of keys** — previously only the fixed
+  `COLUMNS`, so a field written by another tool could be silently dropped on
+  the next log_trade save. Now mirrors `order_executor.save_log`. (P1-01.)
+- The external remediation plan's structural tickets (F-01 `close-all` scope,
+  F-04 `place` idempotency/reservation, F-03 notional/margin units, D-01..D-10
+  policy) remain **pending operator approval** and were NOT implemented.
+
+## 2026-10-12
+
+### Live observation — over-discretion cost R in a trend (gold)
+- During the strong 2026-10-12 Asia uptrend (XAUUSD 4184 → 4217) the desk
+  declined two retest-longs; both resolved **TP_ONLY**:
+  - **C041** entry 4191.50 TP 4199.47 → **+1.14R** (rejected `R_R_BELOW_2_TO_TP1`;
+    correct — it was below the 1.9 gate).
+  - **C042** entry 4190.50 TP 4202.01 → **+1.92R** (rejected `NONE_TAKEN` on a
+    qualitative "target sits near the 4199 top" judgement — **wrong**: geometry
+    passed all four gates, R:R 1.92).
+  - **C044** entry 4202.00 TP 4208.56 → **+1.64R** (rejected `NO_STRUCTURAL_TARGET`
+    / SL 0.94x ATR under the 1.0 floor).
+  - All three were `regime=TREND`; in a one-way trend every retest-long worked,
+    so ~4.7R was forgone by the three rejections combined.
+- **Lesson (repeat of the momentum-filter pattern):** once a setup passes all
+  four gates, do NOT add a qualitative veto such as "target near resistance" or
+  "entry needs a pullback / no chase". That is discretion overriding the rule.
+  Re-measure before any policy change. The gates are the filter.
+- **Regime signal to watch:** `regime=TREND` samples now all resolve TP. This is
+  the counterpart to the whipsaw hypothesis — a trend-permissive mode (e.g.
+  relax the R:R floor when H1 bars are NOT alternating) may be worth testing
+  once the regime column has ~20 TREND/WHIPSAW samples. Not a rule yet.
+
+### Fix: F-03 margin-unit bug (USDJPY was hard-capped at ~0.02 lots)
+- `guardrail_report` now takes margin from `mt5.order_calc_margin()` (leverage-
+  aware, currency-correct) instead of `notional = vol * contract_size * entry`.
+  That formula treated USDJPY's JPY-quoted price as USD: 1.00 lot → ~$31,638
+  margin vs the correct ~$200 (158x too high), so **every correctly-sized
+  USDJPY order was blocked** and USDJPY was silently capped at ~0.02 lots
+  (~0.1% risk) — the documented 30-50x undersizing. It cost the only valid
+  USDJPY setup this session (C043, +2.07R, TP_ONLY).
+- Verified: USDJPY 0.95 lot now `ok=True`, risk 4.99%, margin level 348%;
+  XAUUSD/EURUSD margin values unchanged. Falls back to the old formula only if
+  the broker query returns None, and records `margin_source` in the audit.
+- NOTE: the 2026-10-02 policy comment that lowered `MIN_MARGIN_LEVEL` 500→100
+  cited a "$157,754 USDJPY notional" derived from the same bug; that comment is
+  now misleading and should be revisited with the operator.
+
+### Fix: consecutive-loss breaker resets on the new session day (F-09)
+- `refresh_state_from_log` now counts the streak only over trades **closed in
+  the current server day** (newest-first, stopping at the first win), so the
+  breaker resets at the server-day boundary **server 00:00 = local 16:00** —
+  matching the documented "or a new session day". Previously it scanned the
+  whole ledger and only a win cleared it, so a full halt could never self-heal
+  and the code comment was wrong (audit F-09).
+- Verified: breaker now reads **1/4** (only T045 closed in server-day
+  2026-10-12; T042/T043 were 2026-10-08), down from the stale all-time 3/4.
+
+### Fix: manage no longer retires live pending orders (F-06)
+- The stale-row retirement in `cmd_manage` only consulted `positions_get()`, so
+  a live resting LIMIT (status `ORDER_PLACED`, which has **no** position until
+  filled) was auto-retired every cycle and its row wrongly marked `CLOSED`.
+  The 2026-10-12 P4b change ("persist retires") made this stick: **T048** (a
+  live XAUUSD SELL limit) was marked CLOSED, which orphaned the order and reset
+  the loss-streak breaker (a `pnl=0.0` "closed" row breaks it).
+- `manage` now matches `ORDER_PLACED` rows against `orders_get()` by symbol +
+  `FRIVAL_<log_id>` and only retires when neither a matching position nor a
+  matching pending order exists. Verified: T048 stays `ORDER_PLACED`; breaker
+  reads 1/4. (audit F-06 / P1-03, minimal scope.)
+- **Honest note:** the defect was latent (F-06), but my persistence change made
+  it material — the persistence is correct, the row classification was not.
+  Lesson: when persisting a previously in-memory mutation, re-check that the
+  mutation is correct first.
+
+### Observation — retest LIMITs miss by 1-2 pts (2 samples, watch)
+- **T048** (SELL limit 4191.28; the bounce topped 4188.06 in its window) and
+  **T049** (SELL limit 4181.28; bounce topped **4180.07**, 1.2 below) both had
+  the direction right — gold fell to (or past) the target each time — but the
+  resting LIMIT never filled, so both were cancelled stale (C045/C046). The
+  limit is nudged −spread (0.22) yet still sits ~1-2 pts beyond the actual
+  retest high, so shallow pullbacks miss it.
+- **Both resolved `TP_ONLY` (+2.69R / +3.19R) but that is an F-10 no-fill
+  artifact** — gold never returned to either entry after placement (it ranged
+  4154-4175), so the real cost of the two cancels was ~0R. The counterfactual
+  engine credits the full R as if filled; do NOT read these as missed winners
+  until F-10 (a fill model) is addressed.
+- Candidate fix (NOT applied): place the retest LIMIT **at or just inside** the
+  swing/level rather than beyond it, accepting a touch-fill. Measure with the
+  STALE_ENTRY counterfactuals first (fill-assumption caveat F-10 applies, so
+  verify the entry was actually tagged before crediting any R).
+
+### Measurement: data-quality gate instrumented (FX exploration decision)
+- Operator observed that if the gates always block EURUSD/USDJPY, those pairs
+  can never be tested (included or discarded) for lack of samples. Agreed plan:
+  **instrument first, then decide** on any exploration quota.
+- Added `frival/quality_gate.py` (MEASUREMENT ONLY, places no orders): each
+  cycle logs per-symbol spread%/ATR, M15-range/ATR, tick age and which gate
+  blocked (ROLLOVER/STALE/SPREAD/FROZEN/THIN/PASS), with a `spread_only` flag,
+  to `frival/data/quality_gates.csv`. `python quality_gate.py stats` prints the
+  block-rate per symbol. Run `log` every cycle alongside the read.
+- Purpose: after ~1-2 days, tell "FX had no setups" apart from "FX blocked by
+  the spread gate" BEFORE proposing a bounded FX exploration quota. If the
+  spread gate is the dominant FX blocker, the next step is a tagged, reduced
+  risk exploration entry (passes gates 1-4 but fails only spread) - NOT yet
+  implemented, pending the data and operator sign-off.
+- Note: counterfactuals are still logged manually when an FX setup fails only
+  on spread (a setup is needed first; a bare gate-block alone has no levels).
+
+### Gate-stats, day 1 (2026-10-13, n=33 per symbol)
+- XAUUSD: PASS 20 / THIN 12 / ROLLOVER 1 -> **spread-blocked 0%**.
+- EURUSD: PASS 13 / SPREAD 7 / THIN 12 / ROLLOVER 1 -> **spread-blocked 21%**.
+- USDJPY: PASS 17 / SPREAD 6 / THIN 9 / ROLLOVER 1 -> **spread-blocked 18%**.
+- Read: FX is blocked **more by THIN (volatility spike bar) than by SPREAD**, and
+  FX *data-quality PASSES* 40-52% of cycles yet produced no entry — i.e. the
+  binding constraint is **geometry (no 1.9R level), not the spread gate**. Early
+  (1 day, N=33); per the agreed plan, do NOT loosen gates. Re-read when the CSV
+  has ~3+ days. If SPREAD stays a minority blocker, the FX exploration quota is
+  NOT justified.
+- First day of the desk day 2026-10-13 also had **zero fills** (all cycles
+  WAIT); no EOD review is generated for a zero-trade day.
+
 ## Backlog (candidate improvements, not yet done)
 - **Retest limits miss in trends.** T035 (BUY) and T037 (SELL) both went
   unfilled while their targets printed — in a trend the retest never comes and
   the entry then goes stale (T011 rule) and is cancelled. Measure how often
   retest limits fill vs run away; consider a continuation/stop-entry variant,
   or accepting a shallower retest.
-- Whipsaw/regime filter (measure first).
+- Whipsaw/regime filter — now **measuring** (regime column added 2026-10-11);
+  enforce only when the by-regime meanR justifies it.
 - Hard-enforce momentum filter once `mom_alignment` has ~20-30 samples.
 - Tighten the executor `sl_distance` mismatch tolerance (currently
   `max(0.05, 2%)` — 0.05 is ~500 pips on EURUSD).

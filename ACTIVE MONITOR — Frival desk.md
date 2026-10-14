@@ -13,21 +13,34 @@ workdir  = C:\Users\sosap\Documents\fx-prival\frival
 
 Read frival/SETUP_NEW_MACHINE.md and frival/DAILY_ROUTINE.md before your first
 cycle. Key facts already verified on this machine: account 81486396
-FPMarketsSC-Live, equity ~655.39, MT5 SDK 5.0.4874, kill switch 8/8.
+FPMarketsSC-Live, MT5 SDK 5.0.4874. Equity is LIVE — read it from
+`order_executor.py status`; never trust a number printed in a doc.
 
 === STEP 1 — READ ===
 XAUUSD, EURUSD, USDJPY: M5(15), M15(8), H1(6), tick + spread + tick age.
 Triple clock: local UTC-5 / server UTC+3 (server = local + 8h).
 
 DATA QUALITY GATES (block if any fails):
-  - Rollover window 23:00-00:30 server -> no new entries (open positions are
-    held through it; SL/TP stay live at the broker)
+  - Daily close/rollover window 00:00-01:00 SERVER -> no new entries (open
+    positions are held through it; SL/TP stay live at the broker). OPERATIONS.md
+    §3 is authoritative; an older draft said 23:00-00:30 and was an hour off.
   - Tick age > 5 min -> stale quote, no trade
   - Spread > 50% of clean ATR(M5) -> no trade
   - Clean ATR(M5) < 1.0 -> frozen data, no trade
   - Last M15 range > 2.0x clean ATR(M5) -> thin book spike, no trade
   - Price in a structural VOID (no level within 15 points either side) -> no trade
 Clean ATR: exclude bars where high==low OR tick_volume < 30% of median.
+
+INSTRUMENTATION (measurement only, places no orders): every cycle run
+  python quality_gate.py log          (script: frival/quality_gate.py)
+appends per-symbol spread%/ATR, M15-range/ATR, tick age and which gate blocked
+(ROLLOVER/STALE/SPREAD/FROZEN/THIN/PASS) to data/quality_gates.csv. `python
+quality_gate.py stats` prints the block-rate. Purpose: over days, tell "FX had
+no setups" apart from "FX was blocked by the spread gate" before deciding on any
+bounded FX exploration quota. Structural-void / no-level stays an agent call.
+Day-1 result (2026-10-13): FX was blocked MORE by THIN than SPREAD (spread ~18-21%)
+and still found no setups -> FX is setup-starved, not spread-capped; do NOT loosen
+gates on this evidence.
 
 === STEP 2 — GEOMETRY (this is the gate that matters) ===
 A setup is EXECUTABLE when all four hold:
@@ -71,19 +84,29 @@ Log every REJECTED setup for data, not as a substitute for execution:
 Check for ID collisions first: `python counterfactual.py stats` and look at
 the csv. Duplicate C0NN ids crashed the sweep once.
 
-Measured at N=36 (mean -0.074R, t-stat -0.25 — mildly negative, not
-significant). By reject reason, and these supersede the old brief:
-  LEVEL_ALREADY_TESTED    n=15  +0.38R  <- best filter; do NOT block on it
+Measured at N=47 resolved (mean +0.41R, t-stat +1.52 — POSITIVE but short of the
+t>2 significance bar, and INFLATED by no-fill artifacts; see CAVEAT below). By
+reject reason, and these supersede the old brief:
+  LEVEL_ALREADY_TESTED    n=17  +0.40R  <- best filter; do NOT block on it
   CORRELATION             n= 2  +0.50R
-  NONE_TAKEN              n= 5  +0.05R
-  R_R_BELOW_2_TO_TP1      n= 9  -0.35R  <- was +0.04 "neutral"; no longer
-  NO_STRUCTURAL_TARGET    n= 4  -0.95R  <- keep this filter, never relax it
+  NONE_TAKEN              n= 6  +0.42R
+  MOMENTUM_AGAINST        n= 1  +3.14R  <- one more data point against a hard veto
+  MARGIN_UNIT_BLOCK       n= 1  +2.07R  <- C043, blocked by the old F-03 bug
+  STALE_ENTRY             n= 3  +2.60R  <- ARTIFACT (entry never filled)
+  NO_STRUCTURAL_TARGET    n= 5  -0.43R  <- keep this filter, never relax it
+  R_R_BELOW_2_TO_TP1      n=11  -0.27R  <- the 1.9R floor is justified
 The filter destroying the most R is NO_STRUCTURAL_TARGET. That is where any
 tuning should start, not the 1.9R floor.
+CAVEAT (F-10): the engine ASSUMES every limit fills. STALE_ENTRY / cancelled
+rows therefore read as fake TP wins. Before crediting any R to a counterfactual,
+verify the entry was actually tagged on the chart.
 
 === STEP 5 — CIRCUIT BREAKER ===
-MAX_CONSECUTIVE_LOSSES is set to 999: the operator disabled it on 2026-10-02.
-It will not halt the day. Do not "fix" this without the operator.
+MAX_CONSECUTIVE_LOSSES = 4 (order_executor.py:121). The operator set it on
+2026-10-06 (was disabled at 999); commit e62838c. It IS active: after 4 straight
+losses it pauses NEW entries until a win or a new session day, and it RESETS at
+the server-day boundary (server 00:00 = local 16:00). Do not change it without
+the operator. (OPERATIONS.md §7 is the authoritative table.)
 
 === STEP 6 — POSITION MANAGEMENT ===
 Bracket every entry with SL and TP. Move SL to breakeven at 50% of the
@@ -120,11 +143,15 @@ EMERGENCY STOP: echo "STOP" > frival\data\emergency_stop.txt
 1. Confirm the account and flat state:
    python order_executor.py status
    python log_trade.py stats
-   Expect: account 81486396, positions 0, pending 0, and stats consistent
-   with OPERATIONS.md section 11 (which is updated as the desk runs). If the
-   account or flat state differ, STOP and report — the machines have diverged.
-2. Create a recurring cron that sends you this exact prompt every 15 minutes,
-   so the desk monitors itself. Use cron_create with cron "*/15 * * * *".
+   Expect: account 81486396, positions 0, pending 0. If the account number or
+   the flat state differ, STOP and report — the machines have diverged.
+2. Ensure the recurring cron exists. Check first with cron_list: a cron
+   `*/15 * * * *` is normally ALREADY ARMED (id wku_...). Only create one if it
+   is missing, so you do not run the desk twice:
+   cron_create with cron "*/15 * * * *" and the FULL text of this brief as the
+   prompt (the desk is self-monitoring; each fire = exactly one cycle). The
+   optional second trigger is cron "5 16 * * 1-5" (16:05 local) for the EOD
+   review.
 3. Report your first cycle in the format above, and say explicitly that the
    machine is live and the cron is scheduled.
 ```
@@ -142,6 +169,12 @@ On EVERY cycle, check whether frival\reviews\<latest-traded-day>.md exists.
    placeholders with 3-5 sentences of interpretation and the commit hashes of
    changes made. Promote a durable lesson into frival\IMPROVEMENTS.md (and
    OPERATIONS.md if a rule changed).
+2b. REVIEW THE GATE LOG (once per day): run `python quality_gate.py stats`.
+   Record the per-symbol block-rate (PASS / SPREAD / THIN / ...) in the review.
+   After >=1 full day of rows, if EURUSD/USDJPY are blocked mostly by SPREAD
+   (rather than "no setup"), raise the bounded FX exploration proposal (tagged,
+   reduced-risk, capped - see IMPROVEMENTS.md) to the operator. If they are
+   mostly setup-starved (no level/target), say so and do NOT loosen gates.
 - Prefer the close window (server 00:00-01:00 = local 16:00-17:00) and do NOT
   place orders in it (market closed, spreads blown out). But if that window was
   missed (e.g. the app was closed), run the review on the NEXT cycle at any hour
